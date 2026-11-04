@@ -1,0 +1,1537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Hub · Operations Handoff Board</title>
+<style>
+  :root {
+    --bg: #e8eaee;
+    --side: #16181d;
+    --surface: #f4f5f7;
+    --surface-2: #f7f8fa;
+    --card: #ffffff;
+    --field: #f1f2f4;
+    --line: #d7dbe0;
+    --line-2: #e2e5e9;
+    --ink: #15171a;
+    --ink-2: #2a2e35;
+    --muted: #5d636c;
+    --red: #b5141e;
+    --red-border: #a2111a;
+    --red-dark: #9b111b;
+    --indigo: #2e3394;
+    --green: #2f7a1e;
+    --brown: #6a2b0a;
+    --tab-active: #d9d9f4;
+    --tab-active-line: #b9bbe6;
+    --tab-active-ink: #272a6c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr) 368px;
+    height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    background: var(--side);
+    color: #e6e8eb;
+    padding: 26px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  .brand-title { font-size: 23px; font-weight: 700; letter-spacing: -.01em; color: #f2f3f5; }
+  .brand-sub { margin-top: 10px; font-size: 14px; line-height: 1.55; color: #9aa0a8; }
+  .side-label {
+    margin: 44px 12px 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6c727b;
+  }
+  .side-nav { display: flex; flex-direction: column; gap: 6px; }
+  .side-item {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; border: 0; background: transparent; cursor: pointer; text-align: left;
+    padding: 12px 12px; border-radius: 10px;
+    font-size: 16px; font-weight: 700; color: #c3c7cd;
+  }
+  .side-item:hover { background: #20232a; color: #eef0f2; }
+  .side-item.active { background: #272b33; color: #ffffff; }
+  .side-item .n { font-size: 13px; font-weight: 600; color: #8b919a; }
+  .side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 13px; line-height: 1.5; color: #8b919a; border-top: 1px solid #262930; }
+  .side-foot b { color: #d9dce0; }
+
+  /* ---------- Main ---------- */
+  .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #d3d7dc; }
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 18px;
+    background: #eceef1;
+    border-bottom: 1px solid #d5d9de;
+  }
+  .search {
+    flex: 1; min-width: 160px;
+    display: flex; align-items: center; gap: 10px;
+    height: 46px; padding: 0 14px;
+    background: var(--surface); border: 1px solid #d0d4da; border-radius: 14px;
+  }
+  .search:focus-within { border-color: #9da3ac; background: #fff; }
+  .search-ico { font-size: 17px; }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 18px; color: var(--ink-2); }
+  .search input::placeholder { color: #4b5058; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 44px; padding: 0 16px;
+    border: 1px solid #cdd1d7; border-radius: 12px;
+    background: var(--surface-2); color: var(--ink);
+    font-size: 17px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04);
+    transition: background .12s, filter .12s, transform .05s;
+  }
+  .btn:hover { background: #fff; }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible, .btn-sm:focus-visible, .tab:focus-visible { outline: 2px solid #5257c9; outline-offset: 2px; }
+  .btn-red { background: var(--red); border-color: var(--red-border); color: #fff; }
+  .btn-red:hover { background: #c2161f; }
+  .topbar .btn { height: 46px; }
+
+  .content { flex: 1; overflow: auto; padding: 18px 18px 20px; }
+
+  .hero {
+    background: var(--surface); border: 1px solid #d9dce1; border-radius: 18px;
+    padding: 22px 22px 18px; margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(15,20,30,.05);
+  }
+  .hero h1 { margin: 0 0 10px; font-size: 27px; font-weight: 700; letter-spacing: -.01em; }
+  .hero p { margin: 0; max-width: 920px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }
+  .hero-actions { display: flex; gap: 10px; margin: 18px 0 16px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid #cfd3d9; background: #f6f7f9; border-radius: 999px;
+    padding: 8px 16px; font-size: 15px; font-weight: 600; cursor: pointer; color: var(--ink-2);
+  }
+  .tab:hover { background: #fff; }
+  .tab.active { background: var(--tab-active); border-color: var(--tab-active-line); color: var(--tab-active-ink); }
+
+  .stats { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 16px; margin-bottom: 16px; }
+  .stat {
+    text-align: left; cursor: pointer;
+    background: var(--surface); border: 1px solid #d9dce1; border-radius: 16px;
+    padding: 18px 16px 16px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
+  }
+  .stat:hover { background: #fafbfc; }
+  .stat.active { border-color: #9a9ee0; box-shadow: 0 0 0 2px #d5d6f4; }
+  .stat-label { font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .stat-value { margin: 10px 0 6px; font-size: 35px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 14.5px; line-height: 1.35; color: var(--ink-2); }
+
+  .filters {
+    display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 16px; align-items: end;
+    background: var(--surface); border: 1px solid #d9dce1; border-radius: 16px;
+    padding: 14px 14px 12px; margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(15,20,30,.05);
+  }
+  .flabel-top { display: block; margin: 0 0 8px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .select, .input, .textarea {
+    width: 100%; height: 46px; padding: 0 12px;
+    border: 1px solid #c9cdd3; border-radius: 12px; background: #fafafb;
+    font-size: 18px; color: var(--ink-2); outline: none;
+  }
+  .select:focus, .input:focus, .textarea:focus { border-color: #8d93c9; box-shadow: 0 0 0 3px #e0e1f6; background: #fff; }
+  .textarea { height: auto; min-height: 96px; padding: 10px 12px; resize: vertical; line-height: 1.45; font-size: 16px; }
+  .filters .btn { width: 100%; height: 46px; }
+
+  /* ---------- Board ---------- */
+  .board {
+    display: flex; gap: 18px; align-items: stretch;
+    overflow: auto; max-height: 660px; min-height: 360px;
+    padding-bottom: 6px;
+  }
+  .col {
+    flex: 0 0 290px;
+    display: flex; flex-direction: column;
+    background: #eef0f3; border: 1px solid #d8dce1; border-radius: 16px;
+    transition: background .12s, border-color .12s;
+  }
+  .col.drop { background: #e4e6f7; border-color: #a6a9e2; }
+  .col-head {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; gap: 10px;
+    padding: 15px 14px; background: #f6f7f9;
+    border-bottom: 1px solid #e0e3e7; border-radius: 16px 16px 0 0;
+  }
+  .dot { width: 13px; height: 13px; border-radius: 50%; flex: none; }
+  .col-head h3 { margin: 0; flex: 1; font-size: 18.5px; font-weight: 700; }
+  .count {
+    min-width: 27px; height: 27px; padding: 0 6px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px solid #c9ccd2; font-size: 12.5px; font-weight: 700;
+  }
+  .col-body { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+  .empty-col {
+    border: 1px dashed #c6cad1; border-radius: 12px; padding: 18px 12px;
+    text-align: center; color: var(--muted); font-size: 14px; background: rgba(255,255,255,.4);
+  }
+
+  .card {
+    background: var(--card); border: 1px solid #dfe2e6; border-radius: 14px;
+    padding: 14px 14px 16px; box-shadow: 0 1px 3px rgba(20,24,30,.07);
+    cursor: grab;
+  }
+  .card.dragging { opacity: .5; }
+  .card.flash { animation: flash 1.6s ease-out; }
+  @keyframes flash {
+    0% { box-shadow: 0 0 0 0 rgba(181,20,30,0); }
+    25% { box-shadow: 0 0 0 4px rgba(181,20,30,.45); }
+    100% { box-shadow: 0 1px 3px rgba(20,24,30,.07); }
+  }
+  .card-ref { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+  .card-title { margin: 3px 0 10px; font-size: 17px; font-weight: 700; line-height: 1.3; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tag { padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; line-height: 1.25; }
+  .p-High { background: #f5d6d9; color: #9f1d26; }
+  .p-Medium { background: #f6edc1; color: #6a5100; }
+  .p-Low { background: #dbe6fb; color: #2a4c9a; }
+  .tag-team { background: #e4e4f7; color: #343a8a; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .field { background: var(--field); border-radius: 10px; padding: 8px 9px 9px; min-width: 0; }
+  .field-l { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #3d4148; line-height: 1.2; }
+  .field-v { margin-top: 5px; font-size: 15px; font-weight: 600; line-height: 1.3; color: #1d2025; overflow-wrap: break-word; }
+  .field-v.overdue { color: var(--red); }
+  .desc { margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: #24282e; overflow-wrap: anywhere; }
+  .block-reason { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: #fbe9ea; color: #8e1720; font-size: 13.5px; line-height: 1.45; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .btn-sm {
+    border: 1px solid transparent; border-radius: 9px; padding: 8px 12px;
+    font-size: 13.5px; font-weight: 700; cursor: pointer; color: #fff; line-height: 1.2;
+    transition: filter .12s;
+  }
+  .btn-sm:hover { filter: brightness(1.12); }
+  .b-indigo { background: var(--indigo); border-color: #272b80; }
+  .b-green { background: var(--green); border-color: #286a19; }
+  .b-brown { background: var(--brown); border-color: #5a2408; }
+  .b-del { background: var(--red-dark); border-color: #850e17; }
+  .b-plain { background: #f7f8fa; border-color: #cfd3d9; color: var(--ink); }
+  .b-plain:hover { filter: none; background: #fff; }
+
+  /* ---------- Generic sheets (Posts / Files / Notes / Overview) ---------- */
+  .sheet {
+    background: var(--surface); border: 1px solid #d9dce1; border-radius: 18px;
+    padding: 20px 20px 22px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
+  }
+  .sheet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .sheet-head h2 { margin: 0; font-size: 21px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .composer { display: grid; gap: 10px; margin-bottom: 18px; }
+  .composer-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .composer-row .select, .composer-row .input { flex: 1; min-width: 180px; font-size: 16px; height: 44px; }
+  .entry {
+    background: var(--card); border: 1px solid #dfe2e6; border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .entry-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .entry-top b { font-size: 15.5px; }
+  .entry-top .when { color: var(--muted); font-size: 13px; }
+  .entry-top .spacer { flex: 1; }
+  .entry p { margin: 0; font-size: 15px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dropzone {
+    border: 1.5px dashed #bfc4cc; border-radius: 14px; padding: 22px; text-align: center;
+    background: #eef0f3; color: var(--ink-2); font-size: 15px; margin-bottom: 14px; cursor: pointer;
+  }
+  .dropzone.drop { background: #e4e6f7; border-color: #9da1de; }
+  .file-row { display: flex; align-items: center; gap: 12px; }
+  .file-ico {
+    width: 40px; height: 40px; border-radius: 10px; flex: none;
+    display: grid; place-items: center; background: #e4e4f7; color: #343a8a; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  }
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border: 1px solid #dfe2e6; border-radius: 14px; overflow: hidden; }
+  .table th, .table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #eceef1; font-size: 15px; }
+  .table th { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: #3d4148; background: #f6f7f9; }
+  .table tr:last-child td { border-bottom: 0; }
+  .table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table tbody tr { cursor: pointer; }
+  .table tbody tr:hover td { background: #f8f9fb; }
+  .none { text-align: center; color: var(--muted); padding: 22px; border: 1px dashed #c9cdd3; border-radius: 12px; background: #eff1f4; }
+
+  /* ---------- Right panel ---------- */
+  .panel { background: #eef0f3; overflow: auto; padding: 0 14px 18px; }
+  .panel-head {
+    position: sticky; top: 0; z-index: 3;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 4px 14px; background: #eef0f3;
+  }
+  .panel-head h2 { margin: 0; font-size: 19px; font-weight: 700; }
+  .unread-pill { font-size: 13.5px; font-weight: 700; }
+  .unread-pill.has { color: var(--red); }
+  .pcard {
+    background: var(--surface-2); border: 1px solid #d9dce1; border-radius: 16px;
+    margin-bottom: 16px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
+  }
+  .pcard.flash { animation: flash 1.6s ease-out; }
+  .viewer-card { padding: 16px 18px 16px; }
+  .viewer-name { font-size: 22px; font-weight: 700; }
+  .viewer-card p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; color: #2f343b; }
+  .pcard-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 15px 18px; border-bottom: 1px solid #e1e4e8;
+  }
+  .pcard-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
+  .pcard-head span { font-size: 14px; font-weight: 700; }
+  .inbox { padding: 14px 14px 16px; min-height: 290px; }
+  .empty-box {
+    border: 1px dashed #c9cdd3; background: #eff1f4; border-radius: 12px;
+    padding: 18px 14px; text-align: center; font-size: 14.5px; color: #2f343b;
+  }
+  .alert {
+    background: #fff; border: 1px solid #e3d3d5; border-left: 4px solid var(--red);
+    border-radius: 12px; padding: 12px 12px 12px 14px; margin-bottom: 10px;
+  }
+  .alert-msg { font-size: 14.5px; font-weight: 700; line-height: 1.45; }
+  .alert-meta { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+  .alert-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  .form-scroll { max-height: 300px; overflow: auto; padding: 14px 18px 18px; }
+  .form-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px 14px; }
+  .form-grid label { min-width: 0; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-grid label > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .form-grid .input, .form-grid .select { height: 46px; font-size: 17.5px; padding: 0 14px; }
+  .form-grid .input::placeholder, .form-grid .textarea::placeholder { color: #4a4f57; }
+  .form-actions { display: flex; gap: 10px; }
+  .form-actions .btn { flex: 1; height: 44px; font-size: 16px; }
+  .form-error { color: var(--red); font-size: 13.5px; font-weight: 700; min-height: 0; }
+
+  .activity { padding: 4px 18px 14px; }
+  .act { padding: 13px 0; border-bottom: 1px dashed #dde0e4; }
+  .act:last-child { border-bottom: 0; }
+  .act-msg { font-size: 15.5px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+  .act-meta { margin-top: 3px; font-size: 14px; color: #2a2e35; }
+  .act-meta .type { text-transform: uppercase; letter-spacing: .02em; }
+
+  /* ---------- Toasts / dialog ---------- */
+  .toasts { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; }
+  .toast {
+    pointer-events: auto; width: 340px; max-width: calc(100vw - 32px);
+    background: #1b1e24; color: #f2f3f5; border-radius: 12px; padding: 12px 14px;
+    font-size: 14.5px; line-height: 1.45; box-shadow: 0 10px 30px rgba(10,12,16,.28);
+    animation: toastIn .2s ease-out;
+  }
+  .toast.pop { background: #fff; color: var(--ink); border: 1px solid #e3d3d5; border-left: 5px solid var(--red); padding: 14px 14px 12px; }
+  .toast.pop .t-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .toast.pop .t-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .toast.out { opacity: 0; transform: translateY(6px); transition: .25s; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  dialog {
+    border: 0; padding: 0; border-radius: 16px; width: min(460px, calc(100vw - 32px));
+    background: var(--surface-2); color: var(--ink); box-shadow: 0 20px 60px rgba(10,12,16,.35);
+  }
+  dialog::backdrop { background: rgba(10,12,16,.45); }
+  .dlg-head { padding: 16px 18px; border-bottom: 1px solid #e1e4e8; font-size: 18px; font-weight: 700; }
+  .dlg-body { padding: 16px 18px; font-size: 15px; line-height: 1.55; display: grid; gap: 12px; }
+  .dlg-body label > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .dlg-body .input, .dlg-body .select { font-size: 16px; }
+  .dlg-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 0 18px 18px; }
+  .dlg-foot .btn { height: 42px; font-size: 15.5px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1280px) {
+    .stats { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .filters { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  @media (max-width: 1080px) {
+    .app { display: block; height: auto; }
+    .sidebar { padding-bottom: 16px; }
+    .side-label { margin-top: 20px; }
+    .side-nav { flex-direction: row; flex-wrap: wrap; }
+    .side-item { width: auto; gap: 10px; }
+    .side-foot { display: none; }
+    .main { border-right: 0; }
+    .content { overflow: visible; }
+    .topbar { position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
+    .panel { border-top: 1px solid #d3d7dc; }
+  }
+  @media (max-width: 640px) {
+    .content { padding: 14px 16px; }
+    .topbar { padding: 10px 16px; }
+    .search { flex-basis: 100%; }
+    .topbar .btn { flex: 1; padding: 0 10px; font-size: 15px; }
+    .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .filters { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 22px; }
+    .panel { padding: 0 16px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Design Hub</div>
+      <div class="brand-sub">Handoff board with unread alerts for the next owner.</div>
+    </div>
+    <div class="side-label">Workspace</div>
+    <nav class="side-nav" id="sideNav"></nav>
+    <div class="side-foot" id="sideFoot"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <label class="search">
+        <span class="search-ico" aria-hidden="true">🔎</span>
+        <input id="search" type="search" placeholder="Search task, ref, team or owner" autocomplete="off" aria-label="Search">
+      </label>
+      <button class="btn" id="btnSample" type="button">Load sample</button>
+      <button class="btn" id="btnClear" type="button">Clear</button>
+      <button class="btn btn-red" id="btnNew" type="button">New handoff</button>
+    </header>
+
+    <div class="content" id="content">
+      <section class="hero">
+        <h1>Operations Handoff Board</h1>
+        <p>Click <b>Complete &amp; handoff</b> on any item to transfer ownership. The next owner will receive an unread alert in the Action Inbox and, when viewing as that person, a pop-up notification.</p>
+        <div class="hero-actions">
+          <button class="btn" id="btnMarkRead" type="button">Mark alerts read</button>
+          <button class="btn btn-red" id="btnCreate" type="button">Create item</button>
+        </div>
+        <div class="tabs" id="tabs" role="tablist">
+          <button class="tab" type="button" data-tab="posts">Posts</button>
+          <button class="tab" type="button" data-tab="files">Files</button>
+          <button class="tab" type="button" data-tab="board">Board</button>
+          <button class="tab" type="button" data-tab="notes">Notes</button>
+        </div>
+      </section>
+
+      <!-- Board view -->
+      <section id="view-board">
+        <div class="stats" id="stats"></div>
+        <div class="filters">
+          <label><span class="flabel-top">View as</span><select class="select" id="fViewer"></select></label>
+          <label><span class="flabel-top">Current team</span><select class="select" id="fTeam"></select></label>
+          <label><span class="flabel-top">Priority</span>
+            <select class="select" id="fPriority">
+              <option value="all">All priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </label>
+          <label><span class="flabel-top">Focus</span>
+            <select class="select" id="fFocus">
+              <option value="all">All items</option>
+              <option value="mine">Assigned to me</option>
+              <option value="next">Coming to me next</option>
+              <option value="overdue">Overdue</option>
+              <option value="blocked">Blocked</option>
+              <option value="alerts">With unread alerts</option>
+            </select>
+          </label>
+          <button class="btn" id="btnReset" type="button">Reset filters</button>
+        </div>
+        <div class="board" id="board"></div>
+      </section>
+
+      <!-- Posts view -->
+      <section id="view-posts" hidden>
+        <div class="sheet">
+          <div class="sheet-head"><h2>Posts</h2><span class="muted" id="postsCount"></span></div>
+          <form class="composer" id="postForm">
+            <textarea class="textarea" id="postText" placeholder="Share an update with the team…" required></textarea>
+            <div class="composer-row">
+              <select class="select" id="postRef" aria-label="Linked item"></select>
+              <button class="btn btn-red" type="submit">Post update</button>
+            </div>
+          </form>
+          <div id="postList"></div>
+        </div>
+      </section>
+
+      <!-- Files view -->
+      <section id="view-files" hidden>
+        <div class="sheet">
+          <div class="sheet-head"><h2>Files</h2><span class="muted" id="filesCount"></span></div>
+          <div class="composer-row" style="margin-bottom:12px">
+            <select class="select" id="fileRef" aria-label="Link files to item"></select>
+          </div>
+          <div class="dropzone" id="dropzone" tabindex="0" role="button">
+            <b>Drop files here</b> or click to choose · files up to 750 KB are stored for download
+          </div>
+          <input type="file" id="fileInput" multiple hidden>
+          <div id="fileList"></div>
+        </div>
+      </section>
+
+      <!-- Notes view -->
+      <section id="view-notes" hidden>
+        <div class="sheet">
+          <div class="sheet-head"><h2>Notes</h2><span class="muted" id="notesCount"></span></div>
+          <form class="composer" id="noteForm">
+            <input class="input" id="noteTitle" placeholder="Note title" required style="font-size:16px">
+            <textarea class="textarea" id="noteBody" placeholder="Write a note…"></textarea>
+            <div class="composer-row"><span class="muted" id="noteMode" style="flex:1">New note</span>
+              <button class="btn" type="button" id="noteCancel" hidden>Cancel</button>
+              <button class="btn btn-red" type="submit" id="noteSave">Save note</button>
+            </div>
+          </form>
+          <div id="noteList"></div>
+        </div>
+      </section>
+
+      <!-- Team overview view -->
+      <section id="view-overview" hidden>
+        <div class="sheet">
+          <div class="sheet-head"><h2>Team Overview</h2><span class="muted">Click a team to filter the board</span></div>
+          <div id="overview"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Right panel -->
+  <aside class="panel">
+    <div class="panel-head"><h2>Operations Panel</h2><span class="unread-pill" id="panelUnread">0 unread</span></div>
+
+    <div class="pcard viewer-card">
+      <div class="viewer-name" id="viewerName">A. Chan</div>
+      <p>Switch “View as” to simulate what each team member sees.</p>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-head"><h3>Action Inbox</h3><span id="inboxUnread">0 unread</span></div>
+      <div class="inbox" id="inbox"></div>
+    </div>
+
+    <div class="pcard" id="formCard">
+      <div class="pcard-head"><h3>Create or Edit Handoff</h3><span id="formMode">New</span></div>
+      <form class="form-scroll" id="form" novalidate>
+        <div class="form-grid">
+          <label class="full"><span>Task title</span><input class="input" id="f_title" placeholder="Custody model data ownership review"></label>
+          <label><span>Reference</span><input class="input" id="f_ref" placeholder="OMD-001"></label>
+          <label><span>Priority</span>
+            <select class="select" id="f_priority"><option>High</option><option selected>Medium</option><option>Low</option></select>
+          </label>
+          <label><span>Current team</span><input class="input" id="f_team" list="dlTeams" placeholder="Team"></label>
+          <label><span>Current owner</span><input class="input" id="f_owner" list="dlPeople" placeholder="Owner"></label>
+          <label><span>Next team</span><input class="input" id="f_nextTeam" list="dlTeams" placeholder="—"></label>
+          <label><span>Next owner</span><input class="input" id="f_nextOwner" list="dlPeople" placeholder="—"></label>
+          <label><span>Due date</span><input class="input" id="f_due" type="date"></label>
+          <label><span>Status</span>
+            <select class="select" id="f_status">
+              <option value="assigned">Assigned</option>
+              <option value="progress">In Progress</option>
+              <option value="blocked">Blocked</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+          <label class="full"><span>Description</span><textarea class="textarea" id="f_desc" placeholder="What needs to happen before this is passed on?"></textarea></label>
+          <div class="full form-error" id="formError"></div>
+          <div class="full form-actions">
+            <button class="btn" type="button" id="formCancel">Reset</button>
+            <button class="btn btn-red" type="submit" id="formSave">Save handoff</button>
+          </div>
+        </div>
+      </form>
+      <datalist id="dlTeams"></datalist>
+      <datalist id="dlPeople"></datalist>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-head"><h3>Recent Activity</h3><span>Latest events</span></div>
+      <div class="activity" id="activity"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <div class="dlg-head" id="dlgTitle"></div>
+    <div class="dlg-body" id="dlgBody"></div>
+    <div class="dlg-foot">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn btn-red" type="button" id="dlgOk">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORE_KEY = 'designhub.handoff.v1';
+  const MAX_FILE_BYTES = 750 * 1024;
+
+  const PEOPLE = [
+    { name: 'A. Chan',  team: 'Operations Design' },
+    { name: 'B. Lee',   team: 'Data Governance' },
+    { name: 'C. Wong',  team: 'Controls' },
+    { name: 'D. Patel', team: 'Operations' },
+    { name: 'E. Ng',    team: 'Operations' },
+    { name: 'F. Ho',    team: 'Operations' },
+    { name: 'G. Lim',   team: 'Implementation' },
+  ];
+  const TEAMS = ['Operations Design', 'Data Governance', 'Controls', 'Operations', 'Implementation'];
+  const STATUSES = [
+    { key: 'assigned',  label: 'Assigned',    color: '#3a3fd4' },
+    { key: 'progress',  label: 'In Progress', color: '#c9610d' },
+    { key: 'blocked',   label: 'Blocked',     color: '#cf232b' },
+    { key: 'completed', label: 'Completed',   color: '#2f9d45' },
+  ];
+  const PRIORITY_RANK = { High: 0, Medium: 1, Low: 2 };
+
+  // ---------- helpers ----------
+  const $ = (s, root = document) => root.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  const pad = n => String(n).padStart(2, '0');
+  const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const todayISO = () => isoOf(new Date());
+  const addDays = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return isoOf(new Date(y, m - 1, d + n)); };
+  const fmtTime = ts => new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const fmtSize = b => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
+  const statusLabel = k => (STATUSES.find(s => s.key === k) || {}).label || k;
+  const teamOf = name => (PEOPLE.find(p => p.name === name) || {}).team || '';
+
+  // ---------- state ----------
+  const blank = () => ({
+    items: [], activity: [], alerts: [], posts: [], files: [], notes: [],
+    viewer: 'A. Chan',
+    filters: { team: 'all', priority: 'all', focus: 'all' },
+    search: '', tab: 'board',
+  });
+
+  let S = null;
+  let editingId = null;
+  let editingNoteId = null;
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        const base = blank();
+        return Object.assign(base, data, { filters: Object.assign(base.filters, data.filters || {}) });
+      }
+    } catch (e) { /* storage unavailable */ }
+    return null;
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(S));
+    } catch (e) {
+      // Most likely quota: drop stored file bodies and retry once.
+      if (S.files.some(f => f.data)) {
+        S.files.forEach(f => { delete f.data; });
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); toast('Storage is full — file contents were dropped, metadata kept.'); } catch (e2) { /* ignore */ }
+      }
+    }
+  }
+  function commit() { save(); render(); }
+
+  const getItem = id => S.items.find(i => i.id === id);
+  const isOpen = i => i.status !== 'completed';
+  const isOverdue = i => isOpen(i) && i.due && i.due < todayISO();
+  const unreadFor = name => S.alerts.filter(a => a.to === name && !a.read);
+
+  function allPeople() {
+    const names = new Set(PEOPLE.map(p => p.name));
+    S.items.forEach(i => { if (i.owner) names.add(i.owner); if (i.nextOwner) names.add(i.nextOwner); });
+    return [...names];
+  }
+  function allTeams() {
+    const t = new Set(TEAMS);
+    S.items.forEach(i => { if (i.team) t.add(i.team); if (i.nextTeam) t.add(i.nextTeam); });
+    return [...t];
+  }
+
+  function log(msg, type) {
+    S.activity.unshift({ id: uid(), msg, type, time: Date.now() });
+    if (S.activity.length > 200) S.activity.length = 200;
+  }
+  function addAlert(to, item, msg, type = 'HANDOFF') {
+    const a = { id: uid(), to, from: S.viewer, itemId: item.id, ref: item.ref, msg, type, time: Date.now(), read: false, popped: false };
+    S.alerts.unshift(a);
+    if (to === S.viewer) { a.popped = true; setTimeout(() => popAlert(a), 50); }
+    return a;
+  }
+  function nextRef() {
+    let max = 0;
+    S.items.forEach(i => { const m = /^OMD-(\d+)$/i.exec(i.ref || ''); if (m) max = Math.max(max, +m[1]); });
+    return `OMD-${String(max + 1).padStart(3, '0')}`;
+  }
+
+  // ---------- sample data ----------
+  function sampleState(keepViewer) {
+    const t = todayISO();
+    const now = Date.now();
+    const s = blank();
+    s.viewer = keepViewer || 'A. Chan';
+    const mk = o => Object.assign({ id: uid(), created: now, updated: now, prevStatus: null, blockReason: '' }, o);
+    s.items = [
+      mk({ ref: 'OMD-001', title: 'Custody model data ownership review', priority: 'High', status: 'assigned', team: 'Operations Design', owner: 'A. Chan', nextTeam: 'Data Governance', nextOwner: 'B. Lee', due: t,
+        desc: 'Validate in-scope processes, ownership boundaries and required handoff points before the design pack is passed on.' }),
+      mk({ ref: 'OMD-002', title: 'Maker-checker exception routing', priority: 'Medium', status: 'progress', team: 'Controls', owner: 'C. Wong', nextTeam: 'Operations', nextOwner: 'D. Patel', due: addDays(t, 2),
+        desc: 'Review maker-checker steps, unresolved exceptions and evidence requirements for each handoff.' }),
+      mk({ ref: 'OMD-003', title: 'Reconciliation ownership clarification', priority: 'Low', status: 'blocked', prevStatus: 'progress', team: 'Operations', owner: 'E. Ng', nextTeam: 'Operations', nextOwner: 'F. Ho', due: addDays(t, 1),
+        desc: 'Blocked pending clarification on duplicate ownership in reconciliations.' }),
+      mk({ ref: 'OMD-004', title: 'Implementation readiness note', priority: 'Medium', status: 'completed', team: 'Implementation', owner: 'G. Lim', nextTeam: '', nextOwner: '', due: addDays(t, -1),
+        desc: 'Readiness note issued and archived.' }),
+    ];
+    s.activity = [
+      { id: uid(), msg: 'OMD-002 moved to In Progress by C. Wong.', type: 'STATUS', time: now },
+      { id: uid(), msg: 'Sample board loaded.', type: 'CREATE', time: now },
+    ];
+    s.posts = [
+      { id: uid(), author: 'C. Wong', text: 'Maker-checker evidence checklist is in Files. Please flag any gaps before the Operations handoff.', ref: 'OMD-002', time: now - 3600e3 },
+      { id: uid(), author: 'A. Chan', text: 'Design pack v2 for the custody model is ready for governance review once OMD-001 is handed off to B. Lee.', ref: 'OMD-001', time: now - 7200e3 },
+    ];
+    s.files = [
+      { id: uid(), name: 'custody-model-design-pack-v2.pdf', size: 482113, type: 'application/pdf', by: 'A. Chan', ref: 'OMD-001', time: now - 7000e3 },
+      { id: uid(), name: 'maker-checker-evidence-checklist.xlsx', size: 38211, type: '', by: 'C. Wong', ref: 'OMD-002', time: now - 3500e3 },
+    ];
+    s.notes = [
+      { id: uid(), author: 'A. Chan', title: 'Handoff conventions', body: 'Set the next owner and next team before completing an item. Completing without a next owner closes the item.', time: now - 9000e3 },
+    ];
+    return s;
+  }
+
+  // ---------- filtering ----------
+  function visibleItems() {
+    const { team, priority, focus } = S.filters;
+    const q = S.search.trim().toLowerCase();
+    return S.items.filter(it => {
+      if (team !== 'all' && it.team !== team) return false;
+      if (priority !== 'all' && it.priority !== priority) return false;
+      switch (focus) {
+        case 'mine': if (!(it.owner === S.viewer && isOpen(it))) return false; break;
+        case 'next': if (!(it.nextOwner === S.viewer && isOpen(it))) return false; break;
+        case 'overdue': if (!isOverdue(it)) return false; break;
+        case 'blocked': if (it.status !== 'blocked') return false; break;
+        case 'alerts': if (!S.alerts.some(a => a.to === S.viewer && !a.read && a.itemId === it.id)) return false; break;
+      }
+      if (q) {
+        const hay = [it.ref, it.title, it.team, it.owner, it.nextTeam, it.nextOwner, it.desc, it.priority, statusLabel(it.status)].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    }).sort((a, b) => (PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]) || String(a.due || '9').localeCompare(String(b.due || '9')) || a.ref.localeCompare(b.ref));
+  }
+
+  // ---------- rendering ----------
+  const SIDE_SEARCH = { gov: 'Data Governance', impl: 'Implementation' };
+
+  function render() {
+    renderSidebar();
+    renderTabs();
+    renderStats();
+    renderFilters();
+    renderBoard();
+    renderPanel();
+    if (S.tab === 'posts') renderPosts();
+    if (S.tab === 'files') renderFiles();
+    if (S.tab === 'notes') renderNotes();
+    if (S.tab === 'overview') renderOverview();
+  }
+
+  function renderSidebar() {
+    const involving = t => S.items.filter(i => i.team === t || i.nextTeam === t).length;
+    const openTeams = new Set(S.items.filter(isOpen).map(i => i.team)).size;
+    const entries = [
+      { id: 'posts', label: 'Posts', n: S.posts.length },
+      { id: 'board', label: 'Handoff Board', n: S.items.filter(isOpen).length },
+      { id: 'gov', label: 'Data Governance', n: involving('Data Governance') },
+      { id: 'overview', label: 'Team Overview', n: openTeams },
+      { id: 'impl', label: 'Implementation', n: involving('Implementation') },
+    ];
+    const activeId = (() => {
+      if (S.tab === 'board') {
+        for (const [k, v] of Object.entries(SIDE_SEARCH)) if (S.search === v) return k;
+        return 'board';
+      }
+      return S.tab;
+    })();
+    $('#sideNav').innerHTML = entries.map(e =>
+      `<button class="side-item${e.id === activeId ? ' active' : ''}" type="button" data-side="${e.id}"><span>${esc(e.label)}</span><span class="n">${e.n}</span></button>`
+    ).join('');
+    $('#sideFoot').innerHTML = `Viewing as <b>${esc(S.viewer)}</b><br>${esc(teamOf(S.viewer) || 'No team')}`;
+  }
+
+  function renderTabs() {
+    document.querySelectorAll('#tabs .tab').forEach(b => {
+      const on = b.dataset.tab === S.tab;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on);
+    });
+    ['board', 'posts', 'files', 'notes', 'overview'].forEach(t => { $('#view-' + t).hidden = S.tab !== t; });
+  }
+
+  function renderStats() {
+    const open = S.items.filter(isOpen);
+    const stats = [
+      { key: 'all', label: 'Open items', value: open.length, sub: 'Everything not complete' },
+      { key: 'mine', label: 'Assigned to me', value: open.filter(i => i.owner === S.viewer).length, sub: 'Based on current viewer' },
+      { key: 'overdue', label: 'Overdue', value: open.filter(isOverdue).length, sub: 'Past due and still open' },
+      { key: 'blocked', label: 'Blocked', value: S.items.filter(i => i.status === 'blocked').length, sub: 'Needs intervention' },
+      { key: 'alerts', label: 'Unread alerts', value: unreadFor(S.viewer).length, sub: 'For the current viewer' },
+    ];
+    $('#stats').innerHTML = stats.map(s =>
+      `<button class="stat${S.filters.focus !== 'all' && S.filters.focus === s.key ? ' active' : ''}" type="button" data-focus="${s.key}">
+        <div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div><div class="stat-sub">${s.sub}</div>
+      </button>`).join('');
+  }
+
+  function renderFilters() {
+    const people = allPeople();
+    $('#fViewer').innerHTML = people.map(p => `<option${p === S.viewer ? ' selected' : ''}>${esc(p)}</option>`).join('');
+    const teams = allTeams();
+    $('#fTeam').innerHTML = `<option value="all">All teams</option>` + teams.map(t => `<option${t === S.filters.team ? ' selected' : ''}>${esc(t)}</option>`).join('');
+    $('#fPriority').value = S.filters.priority;
+    $('#fFocus').value = S.filters.focus;
+    if ($('#search') !== document.activeElement) $('#search').value = S.search;
+    $('#dlTeams').innerHTML = teams.map(t => `<option value="${esc(t)}">`).join('');
+    $('#dlPeople').innerHTML = people.map(p => `<option value="${esc(p)}">`).join('');
+  }
+
+  function fieldHTML(label, value, cls = '') {
+    return `<div class="field"><div class="field-l">${label}</div><div class="field-v ${cls}">${esc(value || '—')}</div></div>`;
+  }
+
+  function cardHTML(it) {
+    const b = (act, label, cls) => `<button class="btn-sm ${cls}" type="button" data-act="${act}" data-id="${it.id}">${label}</button>`;
+    let actions = '';
+    if (it.status === 'completed') {
+      actions = b('edit', 'Edit', 'b-plain') + b('delete', 'Delete', 'b-del');
+    } else {
+      actions = b('start', 'Start', 'b-indigo') + b('handoff', 'Complete &amp; handoff', 'b-green') +
+        (it.status === 'blocked' ? b('unblock', 'Unblock', 'b-indigo') : b('block', 'Block', 'b-brown')) +
+        b('setnext', 'Set next', 'b-plain') + b('edit', 'Edit', 'b-plain') + b('delete', 'Delete', 'b-del');
+    }
+    return `<article class="card" draggable="true" data-id="${it.id}" id="card-${it.id}">
+      <div class="card-ref">${esc(it.ref)}</div>
+      <h4 class="card-title">${esc(it.title)}</h4>
+      <div class="tags"><span class="tag p-${esc(it.priority)}">${esc(it.priority)}</span>${it.team ? `<span class="tag tag-team">${esc(it.team)}</span>` : ''}</div>
+      <div class="fields">
+        ${fieldHTML('Current owner', it.owner)}
+        ${fieldHTML('Next owner', it.nextOwner)}
+        ${fieldHTML('Next team', it.nextTeam)}
+        ${fieldHTML('Due date', it.due, isOverdue(it) ? 'overdue' : '')}
+      </div>
+      ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ''}
+      ${it.status === 'blocked' && it.blockReason ? `<div class="block-reason"><b>Reason:</b> ${esc(it.blockReason)}</div>` : ''}
+      <div class="actions">${actions}</div>
+    </article>`;
+  }
+
+  function renderBoard() {
+    const list = visibleItems();
+    const filtered = S.search || S.filters.team !== 'all' || S.filters.priority !== 'all' || S.filters.focus !== 'all';
+    $('#board').innerHTML = STATUSES.map(st => {
+      const its = list.filter(i => i.status === st.key);
+      const empty = `<div class="empty-col">${S.items.length === 0 ? 'No items yet — create one or load the sample.' : filtered ? 'No matching items' : 'Drop items here'}</div>`;
+      return `<div class="col" data-status="${st.key}">
+        <div class="col-head"><span class="dot" style="background:${st.color}"></span><h3>${st.label}</h3><span class="count">${its.length}</span></div>
+        <div class="col-body">${its.map(cardHTML).join('') || empty}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderPanel() {
+    const unread = unreadFor(S.viewer);
+    $('#viewerName').textContent = S.viewer;
+    for (const el of [$('#panelUnread'), $('#inboxUnread')]) {
+      el.textContent = `${unread.length} unread`;
+      el.classList.toggle('has', unread.length > 0);
+    }
+    $('#panelUnread').classList.add('unread-pill');
+    $('#inbox').innerHTML = unread.length
+      ? unread.map(a => `<div class="alert">
+          <div class="alert-msg">${esc(a.msg)}</div>
+          <div class="alert-meta">${esc(a.type)} · from ${esc(a.from)} · ${fmtTime(a.time)}</div>
+          <div class="alert-actions">
+            <button class="btn-sm b-indigo" type="button" data-alert-open="${a.id}">Open item</button>
+            <button class="btn-sm b-plain" type="button" data-alert-read="${a.id}">Mark read</button>
+          </div></div>`).join('')
+      : `<div class="empty-box">No unread alerts for the current viewer.</div>`;
+
+    $('#activity').innerHTML = S.activity.length
+      ? S.activity.slice(0, 40).map(a => `<div class="act"><div class="act-msg">${esc(a.msg)}</div><div class="act-meta"><span class="type">${esc(a.type)}</span> · ${fmtTime(a.time)}</div></div>`).join('')
+      : `<div class="act"><div class="act-meta">No activity yet.</div></div>`;
+
+    $('#formMode').textContent = editingId ? `Editing ${(getItem(editingId) || {}).ref || ''}` : 'New';
+  }
+
+  function refOptions(selected) {
+    return `<option value="">No linked item</option>` + S.items.map(i => `<option value="${esc(i.ref)}"${i.ref === selected ? ' selected' : ''}>${esc(i.ref)} · ${esc(i.title)}</option>`).join('');
+  }
+
+  function renderPosts() {
+    const sel = $('#postRef').value;
+    $('#postRef').innerHTML = refOptions(sel);
+    $('#postText').placeholder = `Share an update as ${S.viewer}…`;
+    $('#postsCount').textContent = `${S.posts.length} post${S.posts.length === 1 ? '' : 's'}`;
+    const list = [...S.posts].sort((a, b) => b.time - a.time);
+    $('#postList').innerHTML = list.length ? list.map(p => `<div class="entry">
+        <div class="entry-top"><b>${esc(p.author)}</b><span class="when">${fmtTime(p.time)}</span>
+          ${p.ref ? `<span class="tag tag-team" style="cursor:pointer" data-goto-ref="${esc(p.ref)}">${esc(p.ref)}</span>` : ''}
+          <span class="spacer"></span>
+          ${p.author === S.viewer ? `<button class="btn-sm b-plain" type="button" data-post-del="${p.id}">Delete</button>` : ''}
+        </div><p>${esc(p.text)}</p></div>`).join('')
+      : `<div class="none">No posts yet.</div>`;
+  }
+
+  function renderFiles() {
+    const sel = $('#fileRef').value;
+    $('#fileRef').innerHTML = refOptions(sel);
+    $('#filesCount').textContent = `${S.files.length} file${S.files.length === 1 ? '' : 's'}`;
+    const list = [...S.files].sort((a, b) => b.time - a.time);
+    $('#fileList').innerHTML = list.length ? list.map(f => {
+      const ext = (f.name.split('.').pop() || 'file').slice(0, 4);
+      return `<div class="entry file-row">
+        <div class="file-ico">${esc(ext)}</div>
+        <div class="file-meta"><div class="file-name" title="${esc(f.name)}">${esc(f.name)}</div>
+          <div class="file-sub">${fmtSize(f.size)} · ${esc(f.by)} · ${fmtTime(f.time)}${f.ref ? ` · ${esc(f.ref)}` : ''}${f.data ? '' : ' · metadata only'}</div></div>
+        ${f.data ? `<button class="btn-sm b-indigo" type="button" data-file-dl="${f.id}">Download</button>` : ''}
+        <button class="btn-sm b-del" type="button" data-file-del="${f.id}">Remove</button>
+      </div>`;
+    }).join('') : `<div class="none">No files yet.</div>`;
+  }
+
+  function renderNotes() {
+    $('#notesCount').textContent = `${S.notes.length} note${S.notes.length === 1 ? '' : 's'}`;
+    const list = [...S.notes].sort((a, b) => b.time - a.time);
+    $('#noteList').innerHTML = list.length ? list.map(n => `<div class="entry">
+        <div class="entry-top"><b>${esc(n.title)}</b><span class="when">${esc(n.author)} · ${fmtTime(n.time)}</span><span class="spacer"></span>
+          <button class="btn-sm b-plain" type="button" data-note-edit="${n.id}">Edit</button>
+          <button class="btn-sm b-del" type="button" data-note-del="${n.id}">Delete</button>
+        </div>${n.body ? `<p>${esc(n.body)}</p>` : ''}</div>`).join('')
+      : `<div class="none">No notes yet.</div>`;
+  }
+
+  function renderOverview() {
+    const rows = allTeams().map(t => {
+      const its = S.items.filter(i => i.team === t);
+      return {
+        t,
+        open: its.filter(isOpen).length,
+        assigned: its.filter(i => i.status === 'assigned').length,
+        progress: its.filter(i => i.status === 'progress').length,
+        blocked: its.filter(i => i.status === 'blocked').length,
+        overdue: its.filter(isOverdue).length,
+        done: its.filter(i => i.status === 'completed').length,
+        incoming: S.items.filter(i => isOpen(i) && i.nextTeam === t).length,
+      };
+    });
+    $('#overview').innerHTML = `<table class="table"><thead><tr>
+        <th>Team</th><th class="num">Open</th><th class="num">Assigned</th><th class="num">In progress</th><th class="num">Blocked</th><th class="num">Overdue</th><th class="num">Completed</th><th class="num">Incoming</th>
+      </tr></thead><tbody>${rows.map(r => `<tr data-team="${esc(r.t)}"><td><b>${esc(r.t)}</b></td><td class="num">${r.open}</td><td class="num">${r.assigned}</td><td class="num">${r.progress}</td><td class="num">${r.blocked}</td><td class="num">${r.overdue}</td><td class="num">${r.done}</td><td class="num">${r.incoming}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  // ---------- toasts & dialog ----------
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    $('#toasts').appendChild(el);
+    setTimeout(() => dismiss(el), 3800);
+  }
+  function dismiss(el) { if (!el.isConnected) return; el.classList.add('out'); setTimeout(() => el.remove(), 260); }
+
+  function popAlert(a) {
+    const el = document.createElement('div');
+    el.className = 'toast pop';
+    el.innerHTML = `<div class="t-title">🔔 New alert for ${esc(a.to)}</div><div>${esc(a.msg)}</div>
+      <div class="t-actions"><button class="btn-sm b-indigo" type="button">Open item</button><button class="btn-sm b-plain" type="button">Dismiss</button></div>`;
+    const [openBtn, closeBtn] = el.querySelectorAll('button');
+    openBtn.onclick = () => { dismiss(el); openAlert(a.id); };
+    closeBtn.onclick = () => dismiss(el);
+    $('#toasts').appendChild(el);
+    setTimeout(() => dismiss(el), 9000);
+  }
+
+  function popPendingForViewer() {
+    const pending = unreadFor(S.viewer).filter(a => !a.popped);
+    pending.slice(0, 3).forEach((a, i) => setTimeout(() => popAlert(a), 120 * i));
+    if (pending.length > 3) setTimeout(() => toast(`+${pending.length - 3} more unread alerts in the Action Inbox.`), 400);
+    if (pending.length) { pending.forEach(a => { a.popped = true; }); save(); }
+  }
+
+  const dlg = $('#dlg');
+  function modal({ title, html, ok = 'Confirm', okClass = 'btn-red', onOpen, onOk }) {
+    $('#dlgTitle').textContent = title;
+    $('#dlgBody').innerHTML = html;
+    const okBtn = $('#dlgOk');
+    okBtn.textContent = ok;
+    okBtn.className = 'btn ' + okClass;
+    okBtn.onclick = () => { if (onOk($('#dlgBody')) !== false) dlg.close(); };
+    dlg.showModal();
+    if (onOpen) onOpen($('#dlgBody'));
+  }
+  dlg.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') { e.preventDefault(); $('#dlgOk').click(); }
+  });
+
+  // ---------- item actions ----------
+  function moveTo(id, status, opts = {}) {
+    const it = getItem(id);
+    if (!it || it.status === status) return;
+    if (status === 'blocked') { it.prevStatus = it.status; } else { it.blockReason = ''; }
+    it.status = status;
+    it.updated = Date.now();
+    log(`${it.ref} moved to ${statusLabel(status)} by ${S.viewer}.`, 'STATUS');
+    if (!opts.silent) toast(`${it.ref} moved to ${statusLabel(status)}.`);
+    commit();
+    flashCard(id);
+  }
+
+  function startItem(id) {
+    const it = getItem(id);
+    if (!it) return;
+    if (it.status === 'progress') { toast(`${it.ref} is already in progress.`); return; }
+    moveTo(id, 'progress');
+  }
+
+  function completeHandoff(id) {
+    const it = getItem(id);
+    if (!it) return;
+    const by = S.viewer;
+    if (!it.nextOwner) {
+      modal({
+        title: `Complete ${it.ref}?`,
+        html: `<div>No next owner is set, so this will close <b>${esc(it.title)}</b> as completed. To hand it off instead, use <b>Set next</b> first.</div>`,
+        ok: 'Mark completed', okClass: 'btn-red',
+        onOk: () => {
+          it.status = 'completed'; it.blockReason = ''; it.updated = Date.now();
+          log(`${it.ref} completed by ${by}.`, 'STATUS');
+          if (it.owner && it.owner !== by) addAlert(it.owner, it, `${it.ref} "${it.title}" was marked completed by ${by}.`, 'STATUS');
+          commit(); flashCard(id); toast(`${it.ref} completed.`);
+        },
+      });
+      return;
+    }
+    const from = it.owner;
+    const to = it.nextOwner;
+    it.owner = to;
+    it.team = it.nextTeam || teamOf(to) || it.team;
+    it.nextOwner = '';
+    it.nextTeam = '';
+    it.status = 'assigned';
+    it.prevStatus = null;
+    it.blockReason = '';
+    it.updated = Date.now();
+    log(`${it.ref} handed off from ${from || '—'} to ${to} by ${by}.`, 'HANDOFF');
+    addAlert(to, it, `${it.ref} "${it.title}" was handed off to you by ${by}.`, 'HANDOFF');
+    commit();
+    flashCard(id);
+    if (to !== S.viewer) toast(`Handed off to ${to}. They'll see an unread alert when viewing as ${to}.`);
+  }
+
+  function blockItem(id) {
+    const it = getItem(id);
+    if (!it) return;
+    modal({
+      title: `Block ${it.ref}`,
+      html: `<label><span>Reason (optional)</span><textarea class="textarea" id="m_reason" placeholder="What is blocking this item?"></textarea></label>`,
+      ok: 'Block item', okClass: 'btn-red',
+      onOpen: body => $('#m_reason', body).focus(),
+      onOk: body => {
+        const reason = $('#m_reason', body).value.trim();
+        it.prevStatus = it.status;
+        it.status = 'blocked';
+        it.blockReason = reason;
+        it.updated = Date.now();
+        log(`${it.ref} blocked by ${S.viewer}${reason ? `: ${reason}` : ''}.`, 'BLOCK');
+        if (it.owner && it.owner !== S.viewer) addAlert(it.owner, it, `${it.ref} "${it.title}" was blocked by ${S.viewer}${reason ? `: ${reason}` : ''}.`, 'BLOCK');
+        commit(); flashCard(id);
+      },
+    });
+  }
+
+  function unblockItem(id) {
+    const it = getItem(id);
+    if (!it) return;
+    const back = it.prevStatus && it.prevStatus !== 'blocked' && it.prevStatus !== 'completed' ? it.prevStatus : 'assigned';
+    it.status = back;
+    it.prevStatus = null;
+    it.blockReason = '';
+    it.updated = Date.now();
+    log(`${it.ref} unblocked by ${S.viewer} and returned to ${statusLabel(back)}.`, 'STATUS');
+    commit(); flashCard(id);
+  }
+
+  function setNext(id) {
+    const it = getItem(id);
+    if (!it) return;
+    const people = allPeople().filter(p => p !== it.owner);
+    modal({
+      title: `Set next owner · ${it.ref}`,
+      html: `<label><span>Next owner</span><select class="select" id="m_owner"><option value="">— None —</option>${people.map(p => `<option${p === it.nextOwner ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
+             <label><span>Next team</span><input class="input" id="m_team" list="dlTeams" value="${esc(it.nextTeam)}" placeholder="—"></label>`,
+      ok: 'Save next owner', okClass: 'btn-red',
+      onOpen: body => {
+        const sel = $('#m_owner', body);
+        sel.focus();
+        sel.addEventListener('change', () => { const t = teamOf(sel.value); if (t) $('#m_team', body).value = t; if (!sel.value) $('#m_team', body).value = ''; });
+      },
+      onOk: body => {
+        const owner = $('#m_owner', body).value;
+        const team = $('#m_team', body).value.trim();
+        const changed = owner !== it.nextOwner || team !== it.nextTeam;
+        it.nextOwner = owner;
+        it.nextTeam = owner ? (team || teamOf(owner)) : team;
+        it.updated = Date.now();
+        if (changed) {
+          log(owner ? `${it.ref} next owner set to ${owner}${it.nextTeam ? ` (${it.nextTeam})` : ''} by ${S.viewer}.` : `${it.ref} next owner cleared by ${S.viewer}.`, 'EDIT');
+          if (owner && owner !== S.viewer) addAlert(owner, it, `You are the next owner of ${it.ref} "${it.title}" (set by ${S.viewer}).`, 'NEXT');
+        }
+        commit(); flashCard(id);
+      },
+    });
+  }
+
+  function deleteItem(id) {
+    const it = getItem(id);
+    if (!it) return;
+    modal({
+      title: `Delete ${it.ref}?`,
+      html: `<div>This permanently removes <b>${esc(it.title)}</b> and its alerts.</div>`,
+      ok: 'Delete', okClass: 'btn-red',
+      onOk: () => {
+        S.items = S.items.filter(i => i.id !== id);
+        S.alerts = S.alerts.filter(a => a.itemId !== id);
+        if (editingId === id) resetForm();
+        log(`${it.ref} deleted by ${S.viewer}.`, 'DELETE');
+        commit(); toast(`${it.ref} deleted.`);
+      },
+    });
+  }
+
+  function flashCard(id) {
+    requestAnimationFrame(() => {
+      const el = document.getElementById('card-' + id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    });
+  }
+
+  function openAlert(alertId) {
+    const a = S.alerts.find(x => x.id === alertId);
+    if (!a) return;
+    a.read = true;
+    S.tab = 'board';
+    const it = getItem(a.itemId);
+    if (it && !visibleItems().some(i => i.id === it.id)) {
+      S.filters = { team: 'all', priority: 'all', focus: 'all' };
+      S.search = '';
+    }
+    commit();
+    if (it) flashCard(it.id); else toast('That item no longer exists.');
+  }
+
+  function gotoRef(ref) {
+    const it = S.items.find(i => i.ref === ref);
+    if (!it) { toast(`${ref} no longer exists.`); return; }
+    S.tab = 'board';
+    S.filters = { team: 'all', priority: 'all', focus: 'all' };
+    S.search = '';
+    commit(); flashCard(it.id);
+  }
+
+  // ---------- form ----------
+  const F = id => $('#f_' + id);
+  function resetForm() {
+    editingId = null;
+    F('title').value = '';
+    F('ref').value = '';
+    F('ref').placeholder = S.items.length ? nextRef() : 'OMD-001';
+    F('priority').value = 'Medium';
+    F('team').value = teamOf(S.viewer);
+    F('owner').value = S.viewer;
+    F('nextTeam').value = '';
+    F('nextOwner').value = '';
+    F('due').value = '';
+    F('status').value = 'assigned';
+    F('desc').value = '';
+    $('#formError').textContent = '';
+    $('#formSave').textContent = 'Save handoff';
+    $('#formMode').textContent = 'New';
+  }
+  function fillForm(it) {
+    editingId = it.id;
+    F('title').value = it.title;
+    F('ref').value = it.ref;
+    F('priority').value = it.priority;
+    F('team').value = it.team || '';
+    F('owner').value = it.owner || '';
+    F('nextTeam').value = it.nextTeam || '';
+    F('nextOwner').value = it.nextOwner || '';
+    F('due').value = it.due || '';
+    F('status').value = it.status;
+    F('desc').value = it.desc || '';
+    $('#formError').textContent = '';
+    $('#formSave').textContent = 'Update handoff';
+    $('#formMode').textContent = `Editing ${it.ref}`;
+  }
+  function focusForm() {
+    const card = $('#formCard');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#form').scrollTop = 0;
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+    setTimeout(() => F('title').focus({ preventScroll: true }), 250);
+  }
+
+  F('owner').addEventListener('change', () => { const t = teamOf(F('owner').value.trim()); if (t) F('team').value = t; });
+  F('nextOwner').addEventListener('change', () => { const t = teamOf(F('nextOwner').value.trim()); if (t) F('nextTeam').value = t; });
+  $('#formCancel').addEventListener('click', () => { resetForm(); });
+
+  $('#form').addEventListener('submit', e => {
+    e.preventDefault();
+    const d = {
+      title: F('title').value.trim(),
+      ref: F('ref').value.trim().toUpperCase(),
+      priority: F('priority').value,
+      team: F('team').value.trim(),
+      owner: F('owner').value.trim(),
+      nextTeam: F('nextTeam').value.trim(),
+      nextOwner: F('nextOwner').value.trim(),
+      due: F('due').value,
+      status: F('status').value,
+      desc: F('desc').value.trim(),
+    };
+    const err = msg => { $('#formError').textContent = msg; };
+    if (!d.title) { err('Task title is required.'); F('title').focus(); return; }
+    if (!d.owner) { err('Current owner is required.'); F('owner').focus(); return; }
+    if (d.nextOwner && d.nextOwner === d.owner) { err('Next owner must be different from the current owner.'); F('nextOwner').focus(); return; }
+    if (!d.ref) d.ref = nextRef();
+    if (S.items.some(i => i.ref === d.ref && i.id !== editingId)) { err(`Reference ${d.ref} is already in use.`); F('ref').focus(); return; }
+    if (d.nextOwner && !d.nextTeam) d.nextTeam = teamOf(d.nextOwner);
+    if (!d.team) d.team = teamOf(d.owner);
+
+    let id;
+    if (editingId && getItem(editingId)) {
+      const it = getItem(editingId);
+      const before = { ...it };
+      Object.assign(it, d, { updated: Date.now() });
+      if (it.status === 'blocked' && before.status !== 'blocked') it.prevStatus = before.status;
+      if (it.status !== 'blocked') it.blockReason = '';
+      id = it.id;
+      log(`${it.ref} updated by ${S.viewer}.`, 'EDIT');
+      if (before.status !== it.status) log(`${it.ref} moved to ${statusLabel(it.status)} by ${S.viewer}.`, 'STATUS');
+      if (it.owner !== before.owner && it.owner !== S.viewer) addAlert(it.owner, it, `${it.ref} "${it.title}" was reassigned to you by ${S.viewer}.`, 'ASSIGN');
+      if (it.nextOwner && it.nextOwner !== before.nextOwner && it.nextOwner !== S.viewer) addAlert(it.nextOwner, it, `You are the next owner of ${it.ref} "${it.title}" (set by ${S.viewer}).`, 'NEXT');
+      toast(`${it.ref} updated.`);
+    } else {
+      const now = Date.now();
+      const it = Object.assign({ id: uid(), created: now, updated: now, prevStatus: d.status === 'blocked' ? 'assigned' : null, blockReason: '' }, d);
+      S.items.push(it);
+      id = it.id;
+      log(`${it.ref} created by ${S.viewer}.`, 'CREATE');
+      if (it.owner !== S.viewer) addAlert(it.owner, it, `${it.ref} "${it.title}" was assigned to you by ${S.viewer}.`, 'ASSIGN');
+      toast(`${it.ref} created.`);
+    }
+    S.tab = 'board';
+    resetForm();
+    commit();
+    if (!visibleItems().some(i => i.id === id)) toast('Saved item is hidden by the current filters.');
+    flashCard(id);
+  });
+
+  // ---------- events ----------
+  $('#board').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    switch (btn.dataset.act) {
+      case 'start': startItem(id); break;
+      case 'handoff': completeHandoff(id); break;
+      case 'block': blockItem(id); break;
+      case 'unblock': unblockItem(id); break;
+      case 'setnext': setNext(id); break;
+      case 'edit': { const it = getItem(id); if (it) { fillForm(it); focusForm(); } break; }
+      case 'delete': deleteItem(id); break;
+    }
+  });
+
+  // drag & drop between columns
+  let dragId = null;
+  $('#board').addEventListener('dragstart', e => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    dragId = card.dataset.id;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', dragId); } catch (_) {}
+  });
+  $('#board').addEventListener('dragend', e => {
+    const card = e.target.closest('.card');
+    if (card) card.classList.remove('dragging');
+    document.querySelectorAll('.col.drop').forEach(c => c.classList.remove('drop'));
+    dragId = null;
+  });
+  $('#board').addEventListener('dragover', e => {
+    const col = e.target.closest('.col');
+    if (!col || !dragId) return;
+    e.preventDefault();
+    document.querySelectorAll('.col.drop').forEach(c => { if (c !== col) c.classList.remove('drop'); });
+    col.classList.add('drop');
+  });
+  $('#board').addEventListener('drop', e => {
+    const col = e.target.closest('.col');
+    if (!col || !dragId) return;
+    e.preventDefault();
+    col.classList.remove('drop');
+    const id = dragId; dragId = null;
+    moveTo(id, col.dataset.status);
+  });
+
+  $('#stats').addEventListener('click', e => {
+    const b = e.target.closest('[data-focus]');
+    if (!b) return;
+    const f = b.dataset.focus;
+    S.filters.focus = S.filters.focus === f ? 'all' : f;
+    commit();
+  });
+
+  $('#fViewer').addEventListener('change', e => {
+    S.viewer = e.target.value;
+    if (!editingId && !F('title').value.trim()) resetForm();
+    commit();
+    toast(`Now viewing as ${S.viewer}.`);
+    popPendingForViewer();
+  });
+  $('#fTeam').addEventListener('change', e => { S.filters.team = e.target.value; commit(); });
+  $('#fPriority').addEventListener('change', e => { S.filters.priority = e.target.value; commit(); });
+  $('#fFocus').addEventListener('change', e => { S.filters.focus = e.target.value; commit(); });
+  $('#btnReset').addEventListener('click', () => {
+    S.filters = { team: 'all', priority: 'all', focus: 'all' };
+    S.search = '';
+    $('#search').value = '';
+    commit();
+  });
+
+  $('#search').addEventListener('input', e => {
+    S.search = e.target.value;
+    if (S.tab !== 'board') S.tab = 'board';
+    save(); renderSidebar(); renderTabs(); renderBoard();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && !dlg.open) {
+      e.preventDefault(); $('#search').focus();
+    }
+  });
+
+  $('#tabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-tab]');
+    if (!b) return;
+    S.tab = b.dataset.tab;
+    commit();
+  });
+
+  $('#sideNav').addEventListener('click', e => {
+    const b = e.target.closest('[data-side]');
+    if (!b) return;
+    const k = b.dataset.side;
+    if (k === 'posts' || k === 'overview') { S.tab = k; }
+    else {
+      S.tab = 'board';
+      S.filters = { team: 'all', priority: 'all', focus: 'all' };
+      S.search = SIDE_SEARCH[k] || '';
+      $('#search').value = S.search;
+    }
+    commit();
+  });
+
+  $('#overview').addEventListener('click', e => {
+    const row = e.target.closest('[data-team]');
+    if (!row) return;
+    S.tab = 'board';
+    S.search = '';
+    S.filters = { team: row.dataset.team, priority: 'all', focus: 'all' };
+    commit();
+  });
+
+  $('#btnNew').addEventListener('click', () => { resetForm(); focusForm(); });
+  $('#btnCreate').addEventListener('click', () => { resetForm(); focusForm(); });
+
+  $('#btnMarkRead').addEventListener('click', () => {
+    const list = unreadFor(S.viewer);
+    if (!list.length) { toast(`No unread alerts for ${S.viewer}.`); return; }
+    list.forEach(a => { a.read = true; a.popped = true; });
+    log(`${S.viewer} marked ${list.length} alert${list.length === 1 ? '' : 's'} read.`, 'ALERT');
+    commit();
+    toast(`Marked ${list.length} alert${list.length === 1 ? '' : 's'} read.`);
+  });
+
+  $('#inbox').addEventListener('click', e => {
+    const o = e.target.closest('[data-alert-open]');
+    const r = e.target.closest('[data-alert-read]');
+    if (o) openAlert(o.dataset.alertOpen);
+    if (r) { const a = S.alerts.find(x => x.id === r.dataset.alertRead); if (a) { a.read = true; commit(); } }
+  });
+
+  $('#btnSample').addEventListener('click', () => {
+    const go = () => {
+      const viewer = S.viewer;
+      S = sampleState(PEOPLE.some(p => p.name === viewer) ? viewer : 'A. Chan');
+      resetForm();
+      commit();
+      toast('Sample board loaded.');
+      popPendingForViewer();
+    };
+    if (!S.items.length && !S.posts.length && !S.files.length && !S.notes.length) { go(); return; }
+    modal({
+      title: 'Load sample data?',
+      html: '<div>This replaces the current board, alerts, activity, posts, files and notes with the sample workspace.</div>',
+      ok: 'Load sample', okClass: 'btn-red', onOk: go,
+    });
+  });
+
+  $('#btnClear').addEventListener('click', () => {
+    modal({
+      title: 'Clear the board?',
+      html: '<div>This removes all handoff items, alerts and activity. Posts, files and notes are kept.</div>',
+      ok: 'Clear board', okClass: 'btn-red',
+      onOk: () => {
+        S.items = []; S.alerts = []; S.activity = [];
+        S.filters = { team: 'all', priority: 'all', focus: 'all' }; S.search = '';
+        resetForm();
+        log(`Board cleared by ${S.viewer}.`, 'CLEAR');
+        commit();
+        toast('Board cleared.');
+      },
+    });
+  });
+
+  // posts
+  $('#postForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const text = $('#postText').value.trim();
+    if (!text) return;
+    const ref = $('#postRef').value;
+    S.posts.push({ id: uid(), author: S.viewer, text, ref, time: Date.now() });
+    log(`${S.viewer} posted an update${ref ? ` on ${ref}` : ''}.`, 'POST');
+    $('#postText').value = '';
+    commit();
+  });
+  $('#postList').addEventListener('click', e => {
+    const d = e.target.closest('[data-post-del]');
+    const g = e.target.closest('[data-goto-ref]');
+    if (d) { S.posts = S.posts.filter(p => p.id !== d.dataset.postDel); commit(); }
+    if (g) gotoRef(g.dataset.gotoRef);
+  });
+
+  // files
+  const dz = $('#dropzone');
+  dz.addEventListener('click', () => $('#fileInput').click());
+  dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileInput').click(); } });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drop'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drop'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drop'); addFiles(e.dataTransfer.files); });
+  $('#fileInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+
+  function addFiles(fileList) {
+    const files = [...(fileList || [])];
+    if (!files.length) return;
+    const ref = $('#fileRef').value;
+    let pending = files.length;
+    const done = () => {
+      if (--pending === 0) {
+        log(`${S.viewer} added ${files.length} file${files.length === 1 ? '' : 's'}${ref ? ` to ${ref}` : ''}.`, 'FILE');
+        commit();
+        toast(`${files.length} file${files.length === 1 ? '' : 's'} added.`);
+      }
+    };
+    files.forEach(f => {
+      const rec = { id: uid(), name: f.name, size: f.size, type: f.type, by: S.viewer, ref, time: Date.now() };
+      S.files.push(rec);
+      if (f.size <= MAX_FILE_BYTES) {
+        const r = new FileReader();
+        r.onload = () => { rec.data = r.result; done(); };
+        r.onerror = done;
+        r.readAsDataURL(f);
+      } else done();
+    });
+  }
+  $('#fileList').addEventListener('click', e => {
+    const dl = e.target.closest('[data-file-dl]');
+    const del = e.target.closest('[data-file-del]');
+    if (dl) {
+      const f = S.files.find(x => x.id === dl.dataset.fileDl);
+      if (f && f.data) { const a = document.createElement('a'); a.href = f.data; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }
+    }
+    if (del) {
+      const f = S.files.find(x => x.id === del.dataset.fileDel);
+      S.files = S.files.filter(x => x.id !== del.dataset.fileDel);
+      if (f) log(`${S.viewer} removed file ${f.name}.`, 'FILE');
+      commit();
+    }
+  });
+
+  // notes
+  function resetNoteForm() {
+    editingNoteId = null;
+    $('#noteTitle').value = ''; $('#noteBody').value = '';
+    $('#noteMode').textContent = 'New note';
+    $('#noteCancel').hidden = true;
+    $('#noteSave').textContent = 'Save note';
+  }
+  $('#noteForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = $('#noteTitle').value.trim();
+    const body = $('#noteBody').value.trim();
+    if (!title) return;
+    const n = editingNoteId && S.notes.find(x => x.id === editingNoteId);
+    if (n) { Object.assign(n, { title, body, time: Date.now() }); }
+    else { S.notes.push({ id: uid(), author: S.viewer, title, body, time: Date.now() }); }
+    resetNoteForm();
+    commit();
+  });
+  $('#noteCancel').addEventListener('click', resetNoteForm);
+  $('#noteList').addEventListener('click', e => {
+    const ed = e.target.closest('[data-note-edit]');
+    const del = e.target.closest('[data-note-del]');
+    if (ed) {
+      const n = S.notes.find(x => x.id === ed.dataset.noteEdit);
+      if (!n) return;
+      editingNoteId = n.id;
+      $('#noteTitle').value = n.title; $('#noteBody').value = n.body || '';
+      $('#noteMode').textContent = `Editing “${n.title}”`;
+      $('#noteCancel').hidden = false;
+      $('#noteSave').textContent = 'Update note';
+      $('#noteTitle').focus();
+    }
+    if (del) {
+      S.notes = S.notes.filter(x => x.id !== del.dataset.noteDel);
+      if (editingNoteId === del.dataset.noteDel) resetNoteForm();
+      commit();
+    }
+  });
+
+  // ---------- boot ----------
+  S = loadState() || sampleState();
+  resetForm();
+  commit();
+  popPendingForViewer();
+})();
+</script>
+</body>
+</html>
