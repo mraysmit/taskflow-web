@@ -381,6 +381,7 @@
   .handover-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 14px; margin-bottom: 6px; }
   .hstate { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #eceef1; color: #3d4148; }
   .hstate.pending { background: #efe9fb; color: #3f2a7a; }
+  .hstate.queued { background: #e6f1f6; color: #1d4a5e; }
   .hstate.accepted { background: #e2f3e5; color: #1f6a2f; }
   .hstate.declined { background: #fbe1e3; color: #8e1720; }
   .note-sec { margin: 6px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
@@ -389,6 +390,24 @@
   .comment:last-child, .hist:last-child { border-bottom: 0; }
   .comment .who, .hist .when { color: var(--muted); font-size: 12.5px; }
   .view-suffix { color: var(--muted); font-weight: 600; }
+
+  /* Sign-in, roles, queues */
+  .login { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: linear-gradient(160deg, #16181d 0%, #262a33 100%); overflow: auto; }
+  .login-card { width: min(420px, 100%); background: var(--surface-2); border-radius: 18px; padding: 26px 26px 22px; box-shadow: 0 24px 70px rgba(0,0,0,.4); display: grid; gap: 14px; }
+  .login-brand { font-size: 26px; font-weight: 700; }
+  .login-card label > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .login-card .btn { width: 100%; }
+  .login-hint { font-size: 13px; line-height: 1.55; color: var(--muted); border-top: 1px solid #e1e4e8; padding-top: 12px; }
+  .login-hint code { background: #e9ebef; border-radius: 4px; padding: 1px 5px; color: var(--ink-2); }
+  .role-badge { display: inline-block; margin: 6px 6px 0 0; padding: 3px 9px; border-radius: 999px; background: #e4e4f7; color: #343a8a; font-size: 12px; font-weight: 700; }
+  .ro-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding: 10px 14px; border-radius: 12px; background: #fff7df; border: 1px solid #e6cf8f; font-size: 14.5px; }
+  .queue-banner { margin-top: 12px; padding: 9px 11px; border-radius: 10px; background: #e6f1f6; border: 1px solid #c3dce8; color: #1d4a5e; font-size: 13.5px; line-height: 1.45; }
+  .member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #dde0e4; }
+  .member-row:last-child { border-bottom: 0; }
+  .member-row .grow { flex: 1; min-width: 0; }
+  .member-row .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .viewer-actions .btn { height: 36px; font-size: 14px; padding: 0 12px; }
   .side-label { margin: 34px 12px 8px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6c727b; }
   .side-label + .side-nav { margin-top: 0; }
 
@@ -546,6 +565,7 @@
 
       <!-- Board -->
       <section id="view-board">
+        <div class="ro-banner" id="roBanner" hidden></div>
         <div class="stats" id="stats"></div>
         <div class="filters">
           <label><span class="flabel-top">View as</span><select class="select" id="fViewer"></select></label>
@@ -621,9 +641,14 @@
   <aside class="panel">
     <div class="panel-head"><h2 id="panelTitle">Operations Panel</h2><span class="unread-pill" id="panelUnread">0 unread</span></div>
 
-    <div class="pcard viewer-card">
+    <div class="pcard viewer-card" id="viewerCard">
       <div class="viewer-name" id="viewerName"></div>
-      <p>Switch “View as” to simulate what each team member sees.</p>
+      <div id="viewerInfo"></div>
+    </div>
+
+    <div class="pcard" id="teamCard" hidden>
+      <div class="pcard-head"><h3 id="teamCardTitle">My team</h3><span id="teamCardCount"></span></div>
+      <div style="padding: 4px 18px 10px" id="teamMembers"></div>
     </div>
 
     <div class="pcard">
@@ -664,6 +689,20 @@
   </aside>
 </div>
 
+<div class="login" id="login" hidden>
+  <form class="login-card" id="loginForm" novalidate>
+    <div>
+      <div class="login-brand" id="loginBrand">Design Hub</div>
+      <div class="muted" id="loginTag">Sign in to continue.</div>
+    </div>
+    <label><span>Username</span><input class="input" id="loginUser" autocomplete="username" autocapitalize="off" spellcheck="false"></label>
+    <label><span>Password</span><input class="input" type="password" id="loginPass" autocomplete="current-password"></label>
+    <div class="form-error" id="loginErr" role="alert"></div>
+    <button class="btn btn-red" type="submit">Sign in</button>
+    <div class="login-hint" id="loginHint"></div>
+  </form>
+</div>
+
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <input type="file" id="importInput" accept="application/json,.json" hidden aria-label="Import file">
 
@@ -685,7 +724,51 @@
   const STORE_KEY = 'designhub.v2';
   const LEGACY_KEY = 'designhub.handoff.v1';
   const MAX_FILE_BYTES = 750 * 1024;
-  const CONFIG_VERSION = 4;
+  const CONFIG_VERSION = 5;
+  const SCOPES = [{ v: 'own', l: 'Their own work' }, { v: 'team', l: 'Their team’s work' }, { v: 'all', l: 'Everything' }];
+  const VIEW_AS = [{ v: 'none', l: 'Nobody' }, { v: 'team', l: 'Their team' }, { v: 'all', l: 'Anyone' }];
+  const RANK = { own: 0, none: 0, team: 1, all: 2 };
+
+  // Compact synchronous SHA-256 (hex). Passwords are stored as salted hashes, never as plain text.
+  function sha256(input) {
+    const ascii = unescape(encodeURIComponent(String(input)));
+    const rr = (v, n) => (v >>> n) | (v << (32 - n));
+    const maxWord = 2 ** 32;
+    const words = [];
+    const bitLen = ascii.length * 8;
+    let hash = [];
+    const k = [];
+    const composite = {};
+    for (let c = 2, count = 0; count < 64; c++) {
+      if (composite[c]) continue;
+      for (let i = 0; i < 313; i += c) composite[i] = c;
+      hash[count] = (Math.pow(c, 0.5) * maxWord) | 0;
+      k[count++] = (Math.pow(c, 1 / 3) * maxWord) | 0;
+    }
+    let msg = ascii + '\x80';
+    while (msg.length % 64 - 56) msg += '\x00';
+    for (let i = 0; i < msg.length; i++) words[i >> 2] |= msg.charCodeAt(i) << ((3 - i) % 4) * 8;
+    words[words.length] = (bitLen / maxWord) | 0;
+    words[words.length] = bitLen;
+    for (let j = 0; j < words.length;) {
+      const w = words.slice(j, j += 16);
+      const old = hash;
+      hash = hash.slice(0, 8);
+      for (let i = 0; i < 64; i++) {
+        const w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
+        const t1 = hash[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & hash[5]) ^ (~e & hash[6])) + k[i]
+          + (w[i] = i < 16 ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+        const t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+        hash = [(t1 + t2) | 0].concat(hash);
+        hash[4] = (hash[4] + t1) | 0;
+      }
+      for (let i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+    }
+    let out = '';
+    for (let i = 0; i < 8; i++) for (let j = 3; j + 1; j--) { const b = (hash[i] >> (j * 8)) & 255; out += (b < 16 ? '0' : '') + b.toString(16); }
+    return out;
+  }
+  const hashPassword = (salt, password) => sha256(`${salt}:${password}`);
 
   // =====================================================================
   // Engine vocabulary. These are the building blocks; everything users see
@@ -714,6 +797,7 @@
     acceptOffer: { name: 'Accept the offered handoff',   gather: true, defaults: () => ({ land: 'assigned' }) },
     declineOffer: { name: 'Decline the offered handoff', defaults: () => ({}) },
     withdrawOffer: { name: 'Withdraw the offered handoff', defaults: () => ({}) },
+    pickUp:      { name: 'Pick up from the role queue',  defaults: () => ({ land: '' }) },
     setStatus:   { name: 'Move to status',               defaults: () => ({ to: '' }) },
     transfer:    { name: 'Hand over to the next owner',  defaults: () => ({}) },
     route:       { name: 'Route to the next team',       defaults: () => ({ useLead: true }) },
@@ -760,6 +844,8 @@
     flag:      { l: () => 'Status flag', ops: [['has', 'has flag', 'flag'], ['hasNot', 'does not have flag', 'flag']] },
     links:     { l: () => 'Linked items', ops: [['any', 'has linked items'], ['none', 'has no linked items'], ['openLinks', 'has open linked items'], ['allClosed', 'all linked items are closed']] },
     matches:   { l: () => 'Another filter', ops: [['is', 'matches', 'filter'], ['isNot', 'does not match', 'filter']] },
+    involves:  { l: () => 'People involved', ops: [['viewer', 'include the viewer'], ['viewerTeam', 'include someone in the viewer’s team']] },
+    queue:     { l: () => 'Role queue', ops: [['inMine', 'is in one of the viewer’s queues'], ['inAny', 'is in a queue'], ['none', 'is not in a queue'], ['is', 'is in the queue', 'role'], ['nextSet', 'next owner is a queue'], ['nextNone', 'next owner is not a queue']] },
     offer:     { l: () => 'Handoff offer', ops: [['pending', 'is waiting for acceptance'], ['none', 'has none pending'], ['toViewer', 'is waiting for the viewer to accept'], ['byViewer', 'was offered by the viewer']] },
   };
   const FIELD_OPS = {
@@ -825,8 +911,23 @@
     { id: 'a_withdraw', label: 'Withdraw handoff', color: '#2e3394', outline: true, width: 'full', show: { statuses: ['*'], filterId: 'f_offerByMe' },
       steps: [{ type: 'withdrawOffer', when: '' }] },
   ];
+  const QUEUE_ACTIONS = () => [
+    { id: 'a_pickup', label: 'Pick up', color: '#2f7a1e', outline: false, width: 'full', show: { statuses: ['*'], filterId: 'f_myQueue' },
+      steps: [{ type: 'pickUp', when: '', land: '' }] },
+  ];
+  const QUEUE_FILTERS = () => [
+    { id: 'f_myQueue', name: 'In my queues',  match: 'all', count: 'items', conds: [{ subject: 'queue', op: 'inMine', value: '' }] },
+    { id: 'f_inQueue', name: 'In any queue',  match: 'all', count: 'items', conds: [{ subject: 'queue', op: 'inAny', value: '' }] },
+  ];
+  const DEFAULT_ROLES = () => [
+    { id: 'r_member',    name: 'Team member',          description: 'Works their own items.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: false },
+    { id: 'r_teamadmin', name: 'Team admin',           description: 'Oversees the work of everyone in their team.', sees: 'team', viewAs: 'team', actAs: false, configure: false, queue: false },
+    { id: 'r_sysadmin',  name: 'System administrator', description: 'Configures the workspace and can work as anyone.', sees: 'all', viewAs: 'all', actAs: true, configure: true, queue: false },
+    { id: 'r_reviewer',  name: 'Controls reviewers',   description: 'Picks up control reviews from the queue.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: true },
+    { id: 'r_steward',   name: 'Data stewards',        description: 'Picks up data ownership questions from the queue.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: true },
+  ];
   const OFFER_FILTERS = () => [
-    { id: 'f_noOffer',   name: 'No pending handoff',          match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'none', value: '' }] },
+    { id: 'f_noOffer',   name: 'No pending handoff or queue', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'none', value: '' }, { subject: 'queue', op: 'none', value: '' }] },
     { id: 'f_offered',   name: 'Awaiting acceptance',         match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'pending', value: '' }] },
     { id: 'f_offerToMe', name: 'Awaiting my acceptance',      match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'toViewer', value: '' }] },
     { id: 'f_offerByMe', name: 'My handoffs awaiting others', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'byViewer', value: '' }] },
@@ -847,6 +948,7 @@
       refDigits: 3,
       initialStatusId: 'assigned',
       allowDrag: true,
+      loginHint: true,
       modules: { posts: true, files: true, notes: true, overview: true },
     },
     teams: [
@@ -856,15 +958,17 @@
       { id: 't4', name: 'Operations',        color: '#343a8a', bg: '#e4e4f7', leadId: 'p4', nextTeamId: 't5' },
       { id: 't5', name: 'Implementation',    color: '#343a8a', bg: '#e4e4f7', leadId: 'p7', nextTeamId: '' },
     ],
+    // `password` here is only a seed: normalisation replaces it with a salted hash.
     people: [
-      { id: 'p1', name: 'A. Chan',  teamId: 't1', role: '', active: true },
-      { id: 'p2', name: 'B. Lee',   teamId: 't2', role: '', active: true },
-      { id: 'p3', name: 'C. Wong',  teamId: 't3', role: '', active: true },
-      { id: 'p4', name: 'D. Patel', teamId: 't4', role: '', active: true },
-      { id: 'p5', name: 'E. Ng',    teamId: 't4', role: '', active: true },
-      { id: 'p6', name: 'F. Ho',    teamId: 't4', role: '', active: true },
-      { id: 'p7', name: 'G. Lim',   teamId: 't5', role: '', active: true },
+      { id: 'p1', name: 'A. Chan',  teamId: 't1', role: '', active: true, username: 'achan',  password: 'demo', roleIds: ['r_member', 'r_sysadmin'] },
+      { id: 'p2', name: 'B. Lee',   teamId: 't2', role: '', active: true, username: 'blee',   password: 'demo', roleIds: ['r_member', 'r_steward'] },
+      { id: 'p3', name: 'C. Wong',  teamId: 't3', role: '', active: true, username: 'cwong',  password: 'demo', roleIds: ['r_member', 'r_reviewer'] },
+      { id: 'p4', name: 'D. Patel', teamId: 't4', role: '', active: true, username: 'dpatel', password: 'demo', roleIds: ['r_member', 'r_teamadmin', 'r_reviewer'] },
+      { id: 'p5', name: 'E. Ng',    teamId: 't4', role: '', active: true, username: 'eng',    password: 'demo', roleIds: ['r_member'] },
+      { id: 'p6', name: 'F. Ho',    teamId: 't4', role: '', active: true, username: 'fho',    password: 'demo', roleIds: ['r_member'] },
+      { id: 'p7', name: 'G. Lim',   teamId: 't5', role: '', active: true, username: 'glim',   password: 'demo', roleIds: ['r_member'] },
     ],
+    roles: DEFAULT_ROLES(),
     priorities: [
       { id: 'pr1', name: 'High',   fg: '#9f1d26', bg: '#f5d6d9', dueDays: 1 },
       { id: 'pr2', name: 'Medium', fg: '#6a5100', bg: '#f6edc1', dueDays: 3 },
@@ -886,14 +990,16 @@
       { id: 'f_dueSoon',  name: 'Due soon',                match: 'all', count: 'items',  conds: [{ subject: 'due', op: 'withinDays', value: 2 }] },
       { id: 'f_blocked',  name: 'Blocked',                 match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'hold', value: '' }] },
       { id: 'f_closed',   name: 'Closed',                  match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'closed', value: '' }] },
-      { id: 'f_unrouted', name: 'Open with no next owner', match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }, { subject: 'nextOwner', op: 'empty', value: '' }] },
+      { id: 'f_unrouted', name: 'Open with no next owner', match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }, { subject: 'nextOwner', op: 'empty', value: '' }, { subject: 'queue', op: 'nextNone', value: '' }] },
       { id: 'f_alerts',   name: 'With unread alerts',      match: 'all', count: 'alerts', conds: [{ subject: 'alerts', op: 'hasUnread', value: '' }] },
-      { id: 'f_hasNext',  name: 'Has a next owner',        match: 'all', count: 'items',  conds: [{ subject: 'nextOwner', op: 'set', value: '' }] },
+      { id: 'f_hasNext',  name: 'Has a next owner',        match: 'any', count: 'items',  conds: [{ subject: 'nextOwner', op: 'set', value: '' }, { subject: 'queue', op: 'nextSet', value: '' }] },
       { id: 'f_gov',      name: 'Involves Data Governance', match: 'all', count: 'items', conds: [{ subject: 'anyTeam', op: 'is', value: 't2' }] },
       { id: 'f_impl',     name: 'Involves Implementation', match: 'all', count: 'items',  conds: [{ subject: 'anyTeam', op: 'is', value: 't5' }] },
       ...OFFER_FILTERS(),
+      ...QUEUE_FILTERS(),
     ],
     actions: [
+      ...QUEUE_ACTIONS(),
       ...OFFER_ACTIONS(),
       { id: 'a_start',   label: 'Start',              color: '#2e3394', outline: false, width: 'sm', show: { statuses: ['assigned', 'blocked'], filterId: 'f_noOffer' },    steps: [{ type: 'setStatus', when: '', to: 'progress' }] },
       { id: 'a_pause',   label: 'Pause',              color: '#2e3394', outline: false, width: 'sm', show: { statuses: ['progress'], filterId: 'f_noOffer' },               steps: [{ type: 'setStatus', when: '', to: 'assigned' }] },
@@ -968,7 +1074,7 @@
     removed: { people: {}, teams: {} },
     viewerId: 'p1',
     filters: { teamId: 'all', priorityId: 'all', focus: '' },
-    viewId: '', search: '', page: 'board',
+    viewId: '', search: '', page: 'board', session: null,
     config: normalizeConfig(DEFAULT_CONFIG),
   });
 
@@ -989,7 +1095,63 @@
   const team = id => byId(cfg().teams, id);
   const priority = id => byId(cfg().priorities, id);
   const status = id => byId(cfg().statuses, id);
-  const filterById = id => byId(cfg().filters, id);
+  const filterById = id => byId(cfg().filters, id) || (String(id).startsWith('auto_') ? autoFilters().find(f => f.id === id) : undefined);
+
+  // ---------- roles, sign-in and visibility ----------
+  const role = id => byId(cfg().roles, id);
+  const rolesOf = pid => ((person(pid) || {}).roleIds || []).map(role).filter(Boolean);
+  // Several roles combine: the widest scope and any granted permission win.
+  function permOf(pid, key) {
+    const rs = rolesOf(pid);
+    if (key === 'sees' || key === 'viewAs') return rs.reduce((m, r) => (RANK[r[key]] > RANK[m] ? r[key] : m), key === 'sees' ? 'own' : 'none');
+    return rs.some(r => r[key]);
+  }
+  const sessionId = () => (S.session || {}).userId || '';
+  const canConfigure = () => permOf(sessionId(), 'configure');
+  const viewerQueueIds = () => rolesOf(S.viewerId).filter(r => r.queue).map(r => r.id);
+  const queueName = id => (role(id) || {}).name || 'Removed queue';
+  const ownerLabel = it => (it.ownerId ? nameOf(it.ownerId) : it.queueId ? `Queue: ${queueName(it.queueId)}` : '');
+  const nextLabel = it => (it.nextOwnerId ? nameOf(it.nextOwnerId) : it.nextQueueId ? `Queue: ${queueName(it.nextQueueId)}` : '');
+  // Whoever queued an item keeps sight of it until it's picked up.
+  const involvedIds = it => [it.ownerId, it.nextOwnerId, it.offer && it.offer.toId, it.offer && it.offer.fromId, it.createdBy,
+    ...(it.queueId ? (it.handovers || []).filter(h => h.state === 'queued').map(h => h.fromId) : [])].filter(Boolean);
+  const involvesViewer = it => involvedIds(it).includes(S.viewerId) || [it.queueId, it.nextQueueId].some(q => q && viewerQueueIds().includes(q));
+  function involvesViewerTeam(it) {
+    const t = viewerTeamId();
+    return !!t && (it.teamId === t || it.nextTeamId === t || involvedIds(it).some(id => personTeam(id) === t));
+  }
+  // What the current viewer is allowed to see on the board, per their roles.
+  function canSee(it) {
+    const scope = permOf(S.viewerId, 'sees');
+    return scope === 'all' || involvesViewer(it) || (scope === 'team' && involvesViewerTeam(it));
+  }
+  const scopedItems = () => S.items.filter(canSee);
+  // Who the signed-in person may switch "View as" to.
+  function viewableIds() {
+    const me = sessionId();
+    const scope = permOf(me, 'viewAs');
+    if (scope === 'all') return activePeople().map(p => p.id);
+    const t = personTeam(me);
+    if (scope === 'team') return activePeople().filter(p => p.id === me || (t && p.teamId === t)).map(p => p.id);
+    return [me];
+  }
+  const readOnly = () => !!S.session && S.viewerId !== sessionId() && !permOf(sessionId(), 'actAs');
+  function guardWrite() {
+    if (!readOnly()) return true;
+    toast(`You’re viewing as ${viewerName()} (read-only). Switch back to yourself to make changes.`);
+    return false;
+  }
+  // Views that appear automatically from the viewer's roles: their team, and each role queue they work.
+  function autoFilters() {
+    const out = [];
+    const t = viewerTeamId();
+    if (t && (permOf(S.viewerId, 'sees') !== 'own' || permOf(S.viewerId, 'viewAs') !== 'none')) {
+      out.push({ id: 'auto_team', name: `My team: ${teamNameOf(t)}`, match: 'all', count: 'items', conds: [{ subject: 'involves', op: 'viewerTeam', value: '' }, { subject: 'state', op: 'open', value: '' }] });
+    }
+    rolesOf(S.viewerId).filter(r => r.queue).forEach(r => out.push({ id: 'auto_q_' + r.id, name: `Queue: ${r.name}`, match: 'all', count: 'items', conds: [{ subject: 'queue', op: 'is', value: r.id }] }));
+    return out;
+  }
+  const allViews = () => [...cfg().views, ...autoFilters().map(f => ({ id: 'v_' + f.id, label: f.name, filterId: f.id, count: 'match', sidebar: true, auto: true }))];
   const nameOf = id => !id ? '' : (person(id) || {}).name || S.removed.people[id] || 'Former member';
   const teamNameOf = id => !id ? '' : (team(id) || {}).name || S.removed.teams[id] || 'Former team';
   const statusName = id => (status(id) || {}).name || 'Unknown status';
@@ -1052,7 +1214,7 @@
       statusId: it.statusId, status: st.name || '', closed: !!st.closed, hold: !!st.hold,
       flags: (st.flags || []).map(id => (cfg().extensions.flags.find(f => f.id === id) || {}).name).filter(Boolean),
       priorityId: it.priorityId, priority: (priority(it.priorityId) || {}).name || '',
-      ownerId: it.ownerId, owner: nameOf(it.ownerId), nextOwnerId: it.nextOwnerId, nextOwner: nameOf(it.nextOwnerId),
+      ownerId: it.ownerId, owner: ownerLabel(it), nextOwnerId: it.nextOwnerId, nextOwner: nextLabel(it), queueId: it.queueId, nextQueueId: it.nextQueueId,
       teamId: it.teamId, team: teamNameOf(it.teamId), nextTeamId: it.nextTeamId, nextTeam: teamNameOf(it.nextTeamId),
       fields: Object.freeze(fields),
       links: (it.links || []).map(l => { const o = getItem(l.itemId); return { ref: o ? o.ref : '', type: l.type, closed: o ? !isOpen(o) : true }; }),
@@ -1145,6 +1307,17 @@
       case 'alerts': { const h = S.alerts.some(a => a.toId === S.viewerId && !a.read && a.itemId === it.id); return cd.op === 'hasUnread' ? h : !h; }
       case 'text': { const q = String(v || '').toLowerCase(); return !q || `${it.title} ${it.desc}`.toLowerCase().includes(q); }
       case 'flag': { const h = (st.flags || []).includes(v); return cd.op === 'has' ? h : !h; }
+      case 'involves': return cd.op === 'viewer' ? involvesViewer(it) : involvesViewerTeam(it);
+      case 'queue':
+        switch (cd.op) {
+          case 'inMine': return !!it.queueId && viewerQueueIds().includes(it.queueId);
+          case 'inAny': return !!it.queueId;
+          case 'none': return !it.queueId;
+          case 'is': return !!v && it.queueId === v;
+          case 'nextSet': return !!it.nextQueueId;
+          case 'nextNone': return !it.nextQueueId;
+        }
+        return true;
       case 'offer': {
         const o = it.offer;
         if (cd.op === 'pending') return !!o;
@@ -1171,7 +1344,7 @@
   }
   const filterTest = (f, it) => !f.conds.length || (f.match === 'any' ? f.conds.some(c => evalCond(c, it)) : f.conds.every(c => evalCond(c, it)));
   const filterMatches = (fid, it) => { const f = filterById(fid); return f ? filterTest(f, it) : true; };
-  function filterCount(fid, items = S.items) {
+  function filterCount(fid, items = scopedItems()) {
     const f = filterById(fid);
     if (!f) return items.length;
     const matched = items.filter(it => filterTest(f, it));
@@ -1201,7 +1374,10 @@
     if (open.length && !open.some(s => s.id === c.general.initialStatusId)) c.general.initialStatusId = open[0].id;
     c.teams.forEach(t => { if (!pid.has(t.leadId)) t.leadId = ''; if (!tid.has(t.nextTeamId) || t.nextTeamId === t.id) t.nextTeamId = ''; });
     c.people.forEach(p => { if (!tid.has(p.teamId)) p.teamId = ''; });
-    const flagIds = new Set(c.extensions.flags.map(f => f.id));
+    const rid = new Set(c.roles.map(r => r.id));
+    const qrid = new Set(c.roles.filter(r => r.queue).map(r => r.id));
+    c.people.forEach(p => { p.roleIds = (p.roleIds || []).filter(x => rid.has(x)); });
+    const flagIds =new Set(c.extensions.flags.map(f => f.id));
     c.statuses.forEach(s => { s.flags = (s.flags || []).filter(x => flagIds.has(x)); });
     const ftIds = new Set(c.extensions.fieldTypes.map(t => t.id));
     c.fields.custom.forEach(f => { if (String(f.type).startsWith('x:') && !ftIds.has(f.type.slice(2))) f.type = 'text'; });
@@ -1216,6 +1392,7 @@
       else if (k === 'team') { if (!tid.has(cd.value)) cd.value = ''; }
       else if (k === 'option') { if (!fieldOptions(def.field, c).includes(cd.value)) cd.value = ''; }
       else if (k === 'flag') { if (!flagIds.has(cd.value)) cd.value = ''; }
+      else if (k === 'role') { if (!qrid.has(cd.value)) cd.value = ''; }
       else if (k === 'filter') { if (!fid.has(cd.value) || cd.value === f.id) cd.value = ''; }
       else if (!k) cd.value = '';
       else if (Array.isArray(cd.value)) cd.value = kindDefault(k);
@@ -1368,6 +1545,42 @@
       // Old default views carried team shortcuts; keep them reachable as non-sidebar views.
       ['f_gov', 'f_impl'].forEach(fid => { const v = views.find(x => x.filterId === fid); if (v) out.views.push({ id: v.id, label: v.label, filterId: fid, count: 'match', sidebar: false }); });
     }
+    out.version = 4;
+    return out;
+  }
+
+  // Version 4 had no sign-in, roles or role queues.
+  function upgradeV4(c) {
+    const out = clone(c);
+    out.roles = Array.isArray(c.roles) && c.roles.length ? c.roles : DEFAULT_ROLES();
+    const taken = new Set();
+    out.people = (Array.isArray(c.people) ? c.people : []).map(p => {
+      const def = DEFAULT_CONFIG.people.find(d => d.id === p.id && d.name === p.name);
+      const base = String(p.username || (def && def.username) || String(p.name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '') || 'user');
+      let u = base;
+      for (let n = 2; taken.has(u); n++) u = base + n;
+      taken.add(u);
+      const roleIds = Array.isArray(p.roleIds) && p.roleIds.length ? p.roleIds : (def ? clone(def.roleIds) : ['r_member']);
+      return Object.assign({}, p, { username: u, roleIds }, p.passwordHash ? {} : { password: 'demo' });
+    });
+    if (!out.people.some(p => p.roleIds.includes('r_sysadmin'))) {
+      const first = out.people.find(p => p.active !== false) || out.people[0];
+      if (first) first.roleIds = uniq([...first.roleIds, 'r_sysadmin']);
+    }
+    out.filters = Array.isArray(c.filters) ? c.filters : [];
+    QUEUE_FILTERS().forEach(f => { if (!out.filters.some(x => x.id === f.id)) out.filters.push(f); });
+    // Queue-aware versions of the default filters, only where they're still the defaults.
+    const upgradeFilter = (id, oldConds) => {
+      const f = out.filters.find(x => x.id === id);
+      const nf = DEFAULT_CONFIG.filters.find(x => x.id === id);
+      if (f && nf && JSON.stringify(f.conds) === JSON.stringify(oldConds)) Object.assign(f, { match: nf.match, conds: clone(nf.conds), name: nf.name });
+    };
+    upgradeFilter('f_hasNext', [{ subject: 'nextOwner', op: 'set', value: '' }]);
+    upgradeFilter('f_noOffer', [{ subject: 'offer', op: 'none', value: '' }]);
+    upgradeFilter('f_unrouted', [{ subject: 'state', op: 'open', value: '' }, { subject: 'nextOwner', op: 'empty', value: '' }]);
+    out.actions = Array.isArray(c.actions) ? c.actions : [];
+    QUEUE_ACTIONS().forEach(a => { if (!out.actions.some(x => x.id === a.id)) out.actions.unshift(a); });
+    out.general = Object.assign({ loginHint: true }, c.general);
     out.version = CONFIG_VERSION;
     return out;
   }
@@ -1377,6 +1590,7 @@
     const legacy = c.version === 2 || (Array.isArray(c.statuses) && c.statuses.some(s => s && has(s, 'category'))) || Array.isArray(c.focus) || (Array.isArray(c.actions) && c.actions.some(a => a && has(a, 'kind')));
     if (legacy) c = upgradeV2(c);
     if (c.version === 3 || (c.focus && typeof c.focus === 'object') || (Array.isArray(c.views) && c.views.some(v => v && v.kind))) c = upgradeV3(c);
+    if (c.version === 4 || (Object.keys(c).length && !Array.isArray(c.roles))) c = upgradeV4(c);
     const d = clone(DEFAULT_CONFIG);
     const list = (k, fix) => (Array.isArray(c[k]) ? c[k] : d[k]).filter(x => x && typeof x === 'object').map(fix);
     const str = v => String(v ?? '').trim();
@@ -1385,7 +1599,22 @@
     out.general.modules = Object.assign(clone(DEFAULT_CONFIG.general.modules), (c.general && c.general.modules) || {});
     out.general.allowDrag = out.general.allowDrag !== false;
     out.teams = list('teams', t => ({ id: str(t.id) || uid('t'), name: str(t.name), color: t.color || '#343a8a', bg: t.bg || tint(t.color || '#343a8a', 0.86), leadId: t.leadId || '', nextTeamId: t.nextTeamId || '' }));
-    out.people = list('people', p => ({ id: str(p.id) || uid('p'), name: str(p.name), teamId: p.teamId || '', role: str(p.role), email: str(p.email), active: p.active !== false }));
+    out.people = list('people', p => {
+      const o = {
+        id: str(p.id) || uid('p'), name: str(p.name), teamId: p.teamId || '', role: str(p.role), email: str(p.email), active: p.active !== false,
+        username: str(p.username).toLowerCase(), roleIds: Array.isArray(p.roleIds) ? uniq(p.roleIds.map(String)) : ['r_member'],
+        salt: p.salt || '', passwordHash: p.passwordHash || '',
+      };
+      // A plain password (seed data or a newly typed one) is replaced by a salted hash.
+      const plain = p.newPassword || p.password;
+      if (plain) { o.salt = uid('salt'); o.passwordHash = hashPassword(o.salt, plain); }
+      return o;
+    });
+    out.roles = list('roles', r => ({
+      id: str(r.id) || uid('r'), name: str(r.name), description: str(r.description),
+      sees: SCOPES.some(s => s.v === r.sees) ? r.sees : 'own', viewAs: VIEW_AS.some(s => s.v === r.viewAs) ? r.viewAs : 'none',
+      actAs: !!r.actAs, configure: !!r.configure, queue: !!r.queue,
+    }));
     out.priorities = list('priorities', p => ({ id: str(p.id) || uid('pr'), name: str(p.name), fg: p.fg || '#3d4148', bg: p.bg || tint(p.fg || '#3d4148'), dueDays: Number.isFinite(+p.dueDays) ? +p.dueDays : 3 }));
     out.statuses = list('statuses', s => ({ id: str(s.id) || uid('s'), name: str(s.name), color: s.color || '#6b7280', closed: !!s.closed, hold: !!s.hold && !s.closed, flags: Array.isArray(s.flags) ? s.flags.map(String) : [] }));
     const ex = c.extensions && typeof c.extensions === 'object' ? c.extensions : {};
@@ -1447,6 +1676,9 @@
     it.handovers = Array.isArray(it.handovers) ? it.handovers : [];
     it.comments = Array.isArray(it.comments) ? it.comments : [];
     it.history = Array.isArray(it.history) ? it.history : [];
+    it.queueId = it.queueId || '';
+    it.nextQueueId = it.nextQueueId || '';
+    it.createdBy = it.createdBy || '';
     return it;
   }
 
@@ -1458,6 +1690,7 @@
     if (s.filters.focus === 'all' || typeof s.filters.focus !== 'string') s.filters.focus = '';
     s.removed = { people: Object.assign({}, data.removed && data.removed.people), teams: Object.assign({}, data.removed && data.removed.teams) };
     s.config = normalizeConfig(data.config);
+    s.session = data.session && data.session.userId ? { userId: String(data.session.userId), time: data.session.time || Date.now() } : null;
     s.items.forEach(itemDefaults);
     if (s.page === 'config') s.page = 'board';
     return s;
@@ -1513,6 +1746,9 @@
     s.items.forEach(itemDefaults);
     s.activity = Array.isArray(old.activity) ? old.activity : [];
     s.viewerId = personId(old.viewer) || 'p1';
+    // Version 1 had no sign-in: let the version 4 upgrade create usernames, demo passwords and roles.
+    delete c.roles;
+    c.version = 4;
     s.config = normalizeConfig(c);
     return s;
   }
@@ -1538,8 +1774,11 @@
   }
   function commit() { save(); render(); }
 
+  const loggedIn = () => !!S.session && isActive(S.session.userId);
+  // The viewer is the signed-in person, or someone their roles allow them to view as.
   function fixViewer() {
-    if (!isActive(S.viewerId)) S.viewerId = (activePeople()[0] || cfg().people[0]).id;
+    if (!loggedIn()) return;
+    if (!viewableIds().includes(S.viewerId)) S.viewerId = sessionId();
   }
   function cleanFilters() {
     const f = S.filters;
@@ -1547,10 +1786,11 @@
     if (f.priorityId !== 'all' && !priority(f.priorityId)) f.priorityId = 'all';
     if (f.focus && !filterById(f.focus)) f.focus = '';
     // The highlighted view must still describe the focus actually applied.
-    const v = cfg().views.find(x => x.id === S.viewId);
+    const v = allViews().find(x => x.id === S.viewId);
     if (S.viewId && (!v || (v.filterId || '') !== f.focus)) S.viewId = '';
     const mods = cfg().general.modules;
     if (['posts', 'files', 'notes', 'overview'].includes(S.page) && !mods[S.page]) S.page = 'board';
+    if (S.page === 'config' && !canConfigure()) { S.page = 'board'; cfgDraft = null; }
   }
 
   // ---------- sample data ----------
@@ -1561,6 +1801,7 @@
       ['teams', 'people', 'priorities', 'statuses', 'filters'].forEach(k => DEFAULT_CONFIG[k].forEach(x => { if (!s.config[k].some(y => y.id === x.id)) s.config[k].push(clone(x)); }));
       s.config = normalizeConfig(s.config);
       s.viewerId = prev.viewerId;
+      s.session = prev.session;
     }
     const t = todayISO();
     const now = Date.now();
@@ -1619,7 +1860,7 @@
   function visibleItems() {
     const f = S.filters;
     const q = S.search.trim().toLowerCase();
-    return S.items.filter(it => {
+    return scopedItems().filter(it => {
       if (f.teamId !== 'all' && it.teamId !== f.teamId) return false;
       if (f.priorityId !== 'all' && it.priorityId !== f.priorityId) return false;
       if (f.focus && !filterMatches(f.focus, it)) return false;
@@ -1629,7 +1870,7 @@
   }
   function viewCount(v) {
     if (v.count === 'none') return null;
-    const base = v.filterId ? S.items.filter(it => filterMatches(v.filterId, it)) : S.items;
+    const base = v.filterId ? scopedItems().filter(it => filterMatches(v.filterId, it)) : scopedItems();
     return v.count === 'match' ? base.length : filterCount(v.count, base);
   }
 
@@ -1648,6 +1889,7 @@
     } else go();
   }
   function openConfig(section) {
+    if (!canConfigure()) { toast('Configuration needs a role with “Can configure the workspace”.'); return; }
     if (section) cfgSection = section;
     if (S.page === 'config') { renderConfig(); return; }
     cfgDraft = clone(S.config);
@@ -1665,10 +1907,12 @@
   function applyView(v) {
     setPage('board', () => { resetFilters(); S.viewId = v.id; S.filters.focus = v.filterId || ''; });
   }
-  const viewForFocus = fid => cfg().views.find(v => (v.filterId || '') === (fid || ''));
+  const viewForFocus = fid => allViews().find(v => (v.filterId || '') === (fid || ''));
 
   // ---------- rendering ----------
   function render() {
+    renderLogin();
+    if (!loggedIn()) return;
     fixViewer();
     cleanFilters();
     renderChrome();
@@ -1696,12 +1940,13 @@
     $('#brandTitle').textContent = g.appName;
     $('#brandSub').textContent = g.tagline;
     const info = PAGE_INFO[S.page];
-    const view = S.page === 'board' && cfg().views.find(v => v.id === activeViewId());
+    const view = S.page === 'board' && allViews().find(v => v.id === activeViewId());
     const focusName = S.page === 'board' && S.filters.focus ? (view ? view.label : (filterById(S.filters.focus) || {}).name) : '';
     $('#boardTitle').innerHTML = info ? esc(info.title) : `${esc(g.boardTitle)}${focusName ? ` <span class="view-suffix">· ${esc(focusName)}</span>` : ''}`;
     $('#boardIntro').innerHTML = info ? esc(info.intro) : richText(g.boardIntro);
     $('#panelTitle').textContent = g.panelTitle;
     document.title = `${g.appName} · ${info ? info.title : g.boardTitle}`;
+    $('#btnSample').hidden = $('#btnClear').hidden = !canConfigure();
     const tabs = [['posts', 'Posts'], ['files', 'Files'], ['board', 'Board'], ['notes', 'Notes'], ['overview', 'Team overview']].filter(([k]) => k === 'board' || g.modules[k]);
     $('#tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab${S.page === k ? ' active' : ''}" type="button" role="tab" aria-selected="${S.page === k}" data-tab="${k}">${l}</button>`).join('');
     $('#hero').hidden = S.page === 'config';
@@ -1717,19 +1962,59 @@
   }
 
   function renderSidebar() {
-    const views = cfg().views.filter(v => v.sidebar);
+    const views = allViews().filter(v => v.sidebar);
     const activeId = activeViewId();
     $('#sideNav').innerHTML = views.map(v => {
       const n = viewCount(v);
       return `<button class="side-item${v.id === activeId ? ' active' : ''}" type="button" data-view="${esc(v.id)}"><span>${esc(v.label)}</span>${n === null ? '' : `<span class="n">${n}</span>`}</button>`;
     }).join('');
     $('#sideConfig').classList.toggle('active', S.page === 'config');
-    $('#sideFoot').innerHTML = `Viewing as <b>${esc(viewerName())}</b><br>${esc(teamNameOf(viewerTeamId()) || 'No team')}`;
+    $('#sideConfig').closest('nav').hidden = !canConfigure();
+    const me = sessionId();
+    $('#sideFoot').innerHTML = `Signed in as <b>${esc(nameOf(me))}</b><br>${esc(teamNameOf(personTeam(me)) || 'No team')}${S.viewerId !== me ? `<br>Viewing as <b>${esc(viewerName())}</b>` : ''}`;
   }
 
   function renderLists() {
     $('#dlTeams').innerHTML = cfg().teams.map(t => `<option value="${esc(t.name)}">`).join('');
-    $('#dlPeople').innerHTML = activePeople().map(p => `<option value="${esc(p.name)}">`).join('');
+    // Role queues can be typed wherever a person can, as "Queue: <role>".
+    $('#dlPeople').innerHTML = activePeople().map(p => `<option value="${esc(p.name)}">`).join('') +
+      cfg().roles.filter(r => r.queue).map(r => `<option value="${esc('Queue: ' + r.name)}">`).join('');
+  }
+
+  // ---------- sign-in ----------
+  function renderLogin() {
+    const show = !loggedIn();
+    $('#login').hidden = !show;
+    $('.app').inert = show;
+    if (!show) return;
+    const g = cfg().general;
+    $('#loginBrand').textContent = g.appName;
+    $('#loginTag').textContent = 'Sign in to continue.';
+    const demo = g.loginHint ? cfg().people.filter(p => p.active && p.passwordHash && hashPassword(p.salt, 'demo') === p.passwordHash) : [];
+    const note = 'Accounts are stored in this browser, so sign-in keeps people’s views apart on a shared device but is not real security.';
+    $('#loginHint').innerHTML = demo.length
+      ? `<b>Demo accounts</b> (password <code>demo</code>):<br>${demo.map(p => `<code>${esc(p.username)}</code> ${esc(p.name)} · ${esc(rolesOf(p.id).filter(r => r.id !== 'r_member').map(r => r.name).join(', ') || 'Team member')}`).join('<br>')}<br><br>${note}`
+      : note;
+    if (!$('#loginUser').value) setTimeout(() => $('#loginUser').focus(), 0);
+  }
+  function signIn(username, password) {
+    const u = String(username || '').trim().toLowerCase();
+    const who = cfg().people.find(p => p.username === u);
+    if (!who || !who.active || !who.passwordHash || hashPassword(who.salt, password) !== who.passwordHash) return null;
+    S.session = { userId: who.id, time: Date.now() };
+    S.viewerId = who.id;
+    S.page = 'board';
+    resetFilters();
+    log(`${who.name} signed in.`, 'SIGN-IN');
+    return who;
+  }
+  function signOut() {
+    const name = nameOf(sessionId());
+    cfgDraft = null;
+    cfgRemap = emptyRemap();
+    S.session = null;
+    log(`${name} signed out.`, 'SIGN-IN');
+    commit();
   }
 
   function renderStats() {
@@ -1745,21 +2030,26 @@
     const f = S.filters;
     $('#lblFilterTeam').textContent = label('team');
     $('#lblFilterPriority').textContent = label('priority');
-    $('#fViewer').innerHTML = activePeople().map(p => opt(p.id, p.name, p.id === S.viewerId)).join('');
+    const ids = viewableIds();
+    $('#fViewer').innerHTML = ids.map(id => opt(id, nameOf(id) + (id === sessionId() ? ' (me)' : ''), id === S.viewerId)).join('');
+    $('#fViewer').closest('label').hidden = ids.length < 2;
+    const ro = $('#roBanner');
+    ro.hidden = S.viewerId === sessionId();
+    ro.innerHTML = ro.hidden ? '' : `<span>Viewing as <b>${esc(viewerName())}</b>${readOnly() ? ' — read-only: you can look but not change anything' : ' — actions you take are recorded as them'}.</span><button class="btn-sm b-plain" type="button" data-back-to-me>Back to my view</button>`;
     $('#fTeam').innerHTML = opt('all', 'All teams', f.teamId === 'all') + cfg().teams.map(t => opt(t.id, t.name, t.id === f.teamId)).join('');
     $('#fPriority').innerHTML = opt('all', 'All priorities', f.priorityId === 'all') + cfg().priorities.map(p => opt(p.id, p.name, p.id === f.priorityId)).join('');
     // Focus lists the same board views as the sidebar; a stat card can add a one-off filter.
     const active = activeViewId();
     const extra = f.focus && !active ? opt('f:' + f.focus, (filterById(f.focus) || {}).name, true) : '';
-    $('#fFocus').innerHTML = cfg().views.map(v => opt(v.id, v.label, v.id === active)).join('') + extra;
+    $('#fFocus').innerHTML = allViews().map(v => opt(v.id, v.label, v.id === active)).join('') + extra;
     if ($('#search') !== document.activeElement) $('#search').value = S.search;
   }
 
   function cardField(it, fid) {
     const L = cfg().fields.labels;
     switch (fid) {
-      case 'owner': return { l: L.owner, v: nameOf(it.ownerId) };
-      case 'nextOwner': return { l: L.nextOwner, v: nameOf(it.nextOwnerId) };
+      case 'owner': return { l: L.owner, v: ownerLabel(it) };
+      case 'nextOwner': return { l: L.nextOwner, v: nextLabel(it) };
       case 'team': return { l: L.team, v: teamNameOf(it.teamId) };
       case 'nextTeam': return { l: L.nextTeam, v: teamNameOf(it.nextTeamId) };
       case 'due': return { l: L.due, v: it.due, cls: isOverdue(it) ? 'overdue' : '' };
@@ -1777,6 +2067,7 @@
 
   const actionVisible = (a, it) => (a.show.statuses.includes('*') || a.show.statuses.includes(it.statusId)) && (!a.show.filterId || filterMatches(a.show.filterId, it));
   function actionsHTML(it) {
+    if (readOnly()) return '';
     return cfg().actions.filter(a => actionVisible(a, it)).map(a => {
       const style = a.outline ? '' : ` style="background:${esc(a.color)};border-color:${esc(shade(a.color))};color:#fff"`;
       return `<button class="btn-sm span-${a.width}${a.outline ? ' b-plain' : ''}" type="button" data-action="${esc(a.id)}" data-id="${esc(it.id)}"${style}>${esc(a.label)}</button>`;
@@ -1795,7 +2086,7 @@
     const p = priority(it.priorityId);
     const tags = (c.showPriority && p ? `<span class="tag" style="${prioStyle(it.priorityId)}">${esc(p.name)}</span>` : '') +
       (c.showTeam && it.teamId ? `<span class="tag" style="${teamStyle(team(it.teamId))}">${esc(teamNameOf(it.teamId))}</span>` : '');
-    return `<article class="card" draggable="${cfg().general.allowDrag ? 'true' : 'false'}" data-id="${it.id}" id="card-${it.id}">
+    return `<article class="card" draggable="${cfg().general.allowDrag && !readOnly() ? 'true' : 'false'}" data-id="${it.id}" id="card-${it.id}">
       ${c.showRef ? `<div class="card-ref">${esc(it.ref)}</div>` : ''}
       <button class="card-title-btn" type="button" data-open-item="${it.id}" title="Open details, handovers, comments and history"><h4 class="card-title">${esc(it.title)}</h4></button>
       ${tags ? `<div class="tags">${tags}</div>` : ''}
@@ -1803,6 +2094,7 @@
       ${c.showDesc && it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ''}
       ${isHoldStatus(it.statusId) && it.blockReason ? `<div class="block-reason"><b>Reason:</b> ${esc(it.blockReason)}</div>` : ''}
       ${it.offer ? `<div class="offer-banner">Awaiting acceptance by <b>${esc(nameOf(it.offer.toId))}</b> · offered by ${esc(nameOf(it.offer.fromId))}</div>` : ''}
+      ${it.queueId ? `<div class="queue-banner">In the <b>${esc(queueName(it.queueId))}</b> queue, waiting to be picked up.</div>` : ''}
       ${linksHTML(it)}
       ${it.comments.length || it.handovers.length ? `<div class="meta-row">${it.handovers.length ? `<button class="meta-chip" type="button" data-open-item="${it.id}">⇄ ${plural(it.handovers.length, 'handover')}</button>` : ''}${it.comments.length ? `<button class="meta-chip" type="button" data-open-item="${it.id}">💬 ${plural(it.comments.length, 'comment')}</button>` : ''}</div>` : ''}
       <div class="actions">${actionsHTML(it)}</div>
@@ -1857,7 +2149,15 @@
 
   function renderPanel() {
     const unread = unreadFor(S.viewerId);
+    const me = sessionId();
+    const viewing = S.viewerId !== me;
     $('#viewerName').textContent = viewerName();
+    $('#viewerInfo').innerHTML = `<div>${rolesOf(S.viewerId).map(r => `<span class="role-badge">${esc(r.name)}</span>`).join('') || '<span class="role-badge">No role</span>'}</div>
+      <p>${viewing
+        ? `You’re viewing as ${esc(viewerName())}${readOnly() ? ' (read-only)' : ''}. Signed in as <b>${esc(nameOf(me))}</b>.`
+        : viewableIds().length > 1 ? 'Switch “View as” to see what each team member sees.' : `${esc(teamNameOf(personTeam(me)) || 'No team')}`}</p>
+      <div class="viewer-actions">${viewing ? '<button class="btn" type="button" data-back-to-me>Back to my view</button>' : ''}<button class="btn" type="button" data-logout>Log out</button></div>`;
+    renderTeamCard();
     for (const el of [$('#panelUnread'), $('#inboxUnread')]) {
       el.textContent = `${unread.length} unread`;
       el.classList.toggle('has', unread.length > 0);
@@ -1866,16 +2166,19 @@
       ? unread.map(a => {
         const it = getItem(a.itemId);
         const offerOpen = a.kind === 'offer' && it && it.offer && it.offer.id === a.offerId;
-        const acc = offerOpen && offerAction(it, 'acceptOffer');
-        const dec = offerOpen && offerAction(it, 'declineOffer');
+        const ro = readOnly();
+        const acc = !ro && offerOpen && offerAction(it, 'acceptOffer');
+        const dec = !ro && offerOpen && offerAction(it, 'declineOffer');
+        const pick = !ro && a.kind === 'queue' && it && it.queueId && offerAction(it, 'pickUp');
         return `<div class="alert">
           <div class="alert-msg">${esc(alertText(a))}</div>
           <div class="alert-meta">${esc(alertLabel(a))} · from ${esc(nameOf(a.fromId))} · ${fmtTime(a.time)}</div>
           <div class="alert-actions">
             ${acc ? `<button class="btn-sm" style="background:${esc(acc.color)};border-color:${esc(shade(acc.color))}" type="button" data-inbox-action="${esc(acc.id)}" data-id="${esc(it.id)}">Review & accept</button>` : ''}
+            ${pick ? `<button class="btn-sm" style="background:${esc(pick.color)};border-color:${esc(shade(pick.color))}" type="button" data-inbox-action="${esc(pick.id)}" data-id="${esc(it.id)}">${esc(pick.label)}</button>` : ''}
             ${dec ? `<button class="btn-sm b-plain" type="button" data-inbox-action="${esc(dec.id)}" data-id="${esc(it.id)}">${esc(dec.label)}</button>` : ''}
-            <button class="btn-sm ${acc ? 'b-plain' : 'b-indigo'}" type="button" data-alert-open="${a.id}">Open item</button>
-            ${acc ? '' : `<button class="btn-sm b-plain" type="button" data-alert-read="${a.id}">Mark read</button>`}
+            <button class="btn-sm ${acc || pick ? 'b-plain' : 'b-indigo'}" type="button" data-alert-open="${a.id}">Open item</button>
+            ${acc || pick || ro ? '' : `<button class="btn-sm b-plain" type="button" data-alert-read="${a.id}">Mark read</button>`}
           </div></div>`;
       }).join('')
       : `<div class="empty-box">No unread alerts for the current viewer.</div>`;
@@ -1884,6 +2187,27 @@
       : `<div class="act"><div class="act-meta">No activity yet.</div></div>`;
     const ed = editingId && getItem(editingId);
     $('#formMode').textContent = ed ? `Editing ${ed.ref}` : 'New';
+  }
+
+  // For people who can view others: their team (team admins) or everyone (anyone-scope), with workload counts.
+  function renderTeamCard() {
+    const me = sessionId();
+    const scope = permOf(me, 'viewAs');
+    const card = $('#teamCard');
+    card.hidden = scope === 'none';
+    if (card.hidden) return;
+    const ids = viewableIds();
+    $('#teamCardTitle').textContent = scope === 'team' ? `My team: ${teamNameOf(personTeam(me)) || 'No team'}` : 'People';
+    $('#teamCardCount').textContent = plural(ids.length, 'person');
+    $('#teamMembers').innerHTML = ids.map(id => {
+      const owned = S.items.filter(i => i.ownerId === id && isOpen(i)).length;
+      const next = S.items.filter(i => i.nextOwnerId === id && isOpen(i)).length;
+      const waiting = S.items.filter(i => i.offer && i.offer.toId === id).length;
+      const queued = S.items.filter(i => i.queueId && rolesOf(id).some(r => r.queue && r.id === i.queueId)).length;
+      return `<div class="member-row"><div class="grow"><b>${esc(nameOf(id))}</b>${id === me ? ' <span class="muted">(me)</span>' : ''}
+          <div class="sub">${owned} open · ${next} next · ${waiting} to accept${queued ? ` · ${queued} in queue` : ''}</div></div>
+          <button class="btn-sm ${id === S.viewerId ? 'b-indigo' : 'b-plain'}" type="button" data-view-as="${esc(id)}"${id === S.viewerId ? ' disabled' : ''}>${id === S.viewerId ? 'Viewing' : 'View'}</button></div>`;
+    }).join('');
   }
 
   function itemOptions(selected) {
@@ -1933,7 +2257,7 @@
     const sts = cfg().statuses;
     const num = v => `<td class="num">${v}</td>`;
     const rows = cfg().teams.map(t => {
-      const its = S.items.filter(i => i.teamId === t.id);
+      const its = scopedItems().filter(i => i.teamId === t.id);
       return `<tr data-team="${esc(t.id)}"><td><b>${esc(t.name)}</b></td>${num(its.filter(isOpen).length)}${sts.map(s => num(its.filter(i => i.statusId === s.id).length)).join('')}${num(its.filter(isOverdue).length)}${num(S.items.filter(i => isOpen(i) && i.nextTeamId === t.id).length)}</tr>`;
     }).join('');
     $('#overview').innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr>
@@ -2023,7 +2347,7 @@
   // o.enc escapes each value (for URLs or JSON); o.raw keeps line breaks (for email bodies).
   function fillTemplate(tpl, it, ctx = {}, snap = it, o = {}) {
     const map = {
-      ref: it.ref, title: it.title, actor: viewerName(), owner: nameOf(it.ownerId) || '—', nextOwner: nameOf(it.nextOwnerId) || '—',
+      ref: it.ref, title: it.title, actor: viewerName(), owner: ownerLabel(it) || '—', nextOwner: nextLabel(it) || '—',
       prevOwner: nameOf(snap.ownerId) || '—', team: teamNameOf(it.teamId) || '—', nextTeam: teamNameOf(it.nextTeamId) || '—',
       status: statusName(it.statusId), priority: (priority(it.priorityId) || {}).name || '', due: it.due || 'no date', reason: ctx.reason || '',
       created: ctx.created || '', offerTo: nameOf((it.offer || {}).toId) || '—',
@@ -2076,6 +2400,25 @@
     if (rec) Object.assign(rec, { state, response: text || '', settledBy: S.viewerId, settledAt: Date.now() });
     S.alerts.forEach(a => { if (a.offerId === o.id) a.read = true; });
     it.offer = null;
+  }
+
+  function notifyQueue(roleId, it, text) {
+    let n = 0;
+    cfg().people.filter(p => p.active && p.roleIds.includes(roleId)).forEach(p => { if (sendAlert(p.id, it, { kind: 'queue', label: 'QUEUE', text })) n++; });
+    return n;
+  }
+  // Puts an item into its next role queue; it has no owner until someone with the role picks it up.
+  function queueItem(it, ctx, parts) {
+    const q = it.nextQueueId;
+    it.handovers.unshift({ id: uid('ho'), toQueueId: q, toId: '', toTeamId: it.nextTeamId, fromId: it.ownerId, byId: S.viewerId, time: Date.now(), note: ctx.note || [], state: 'queued' });
+    it.ownerId = '';
+    it.queueId = q;
+    it.teamId = it.nextTeamId || it.teamId;
+    it.nextQueueId = '';
+    it.nextOwnerId = '';
+    it.nextTeamId = '';
+    parts.push(`sent to the ${queueName(q)} queue`);
+    ctx.sent = (ctx.sent || 0) + notifyQueue(q, it, `${it.ref} "${it.title}" was sent to the ${queueName(q)} queue by ${viewerName()}. Pick it up to take ownership.`);
   }
 
   // Shared by the "Create a linked item" step and the script API.
@@ -2191,7 +2534,7 @@
   function runAction(actionId, itemId) {
     const a = cfg().actions.find(x => x.id === actionId);
     const it = getItem(itemId);
-    if (!a || !it) return;
+    if (!a || !it || !guardWrite()) return;
     const snap = clone(it);
     const steps = expandSteps(a.steps, snap);
     if (!steps.length) { toast(`${a.label}: nothing to do for ${it.ref}.`); return; }
@@ -2203,7 +2546,9 @@
       if (s.type === 'delete') parts.push(`<div>This permanently removes <b>${esc(it.title)}</b> and its alerts.</div>`);
       if (s.type === 'reason') parts.push(`<label><span>${esc(s.prompt || 'Reason')}${s.required ? ' *' : ''}</span><textarea class="textarea" data-reason="${i}" data-required="${s.required ? 1 : ''}"></textarea></label>`);
       if (s.type === 'handoverNote') {
-        parts.push(`<div class="muted">Handing over to <b>${esc(nameOf(it.nextOwnerId))}</b>${it.nextTeamId ? ` (${esc(teamNameOf(it.nextTeamId))})` : ''}. They will read this before accepting.</div>`);
+        parts.push(it.nextOwnerId
+          ? `<div class="muted">Handing over to <b>${esc(nameOf(it.nextOwnerId))}</b>${it.nextTeamId ? ` (${esc(teamNameOf(it.nextTeamId))})` : ''}. They will read this before accepting.</div>`
+          : `<div class="muted">Sending to the <b>${esc(queueName(it.nextQueueId))}</b> queue. Whoever picks it up will see this note.</div>`);
         noteSections(s).forEach((sec, k) => parts.push(`<label><span>${esc(sec.label)}${sec.required ? ' *' : ''}</span><textarea class="textarea" data-note="${k}" data-label="${esc(sec.label)}" data-required="${sec.required ? 1 : ''}" style="min-height:70px"></textarea></label>`));
       }
       if (s.type === 'acceptOffer' && it.offer) {
@@ -2213,7 +2558,8 @@
       }
       if (s.type === 'pickNext') {
         const people = activePeople().filter(p => p.id !== it.ownerId);
-        parts.push(`<label><span>${esc(label('nextOwner'))}</span><select class="select" id="m_owner">${opt('', '— None —', !it.nextOwnerId)}${people.map(p => opt(p.id, p.name, p.id === it.nextOwnerId)).join('')}</select></label>
+        const queues = cfg().roles.filter(r => r.queue);
+        parts.push(`<label><span>${esc(label('nextOwner'))}</span><select class="select" id="m_owner">${opt('', '— None —', !it.nextOwnerId && !it.nextQueueId)}${people.map(p => opt(p.id, p.name, p.id === it.nextOwnerId)).join('')}${queues.length ? `<optgroup label="Role queues">${queues.map(r => opt('q:' + r.id, `Queue: ${r.name}`, r.id === it.nextQueueId)).join('')}</optgroup>` : ''}</select></label>
           <label><span>${esc(label('nextTeam'))}</span><select class="select" id="m_team">${opt('', '— None —', !it.nextTeamId)}${cfg().teams.map(t => opt(t.id, t.name, t.id === it.nextTeamId)).join('')}</select></label>`);
       }
     });
@@ -2224,7 +2570,7 @@
       ok: a.label || 'Confirm',
       onOpen: body => {
         const sel = $('#m_owner', body);
-        if (sel) sel.addEventListener('change', () => { $('#m_team', body).value = sel.value ? personTeam(sel.value) : ''; });
+        if (sel) sel.addEventListener('change', () => { if (!sel.value.startsWith('q:')) $('#m_team', body).value = sel.value ? personTeam(sel.value) : ''; });
         const first = $('textarea, select', body);
         if (first) first.focus();
       },
@@ -2237,7 +2583,11 @@
         if (noteMissing) { $('#m_err', body).textContent = `Please fill in “${noteMissing.dataset.label}”.`; noteMissing.focus(); return false; }
         const ctx = { reason: reasons.map(r => r.value.trim()).filter(Boolean).join(' ') };
         if (noteEls.length) ctx.note = noteEls.map(n => ({ label: n.dataset.label, text: n.value.trim() }));
-        if ($('#m_owner', body)) ctx.next = { ownerId: $('#m_owner', body).value, teamId: $('#m_team', body).value || personTeam($('#m_owner', body).value) };
+        if ($('#m_owner', body)) {
+          const v = $('#m_owner', body).value;
+          const q = v.startsWith('q:') ? v.slice(2) : '';
+          ctx.next = { ownerId: q ? '' : v, queueId: q, teamId: $('#m_team', body).value || (q ? '' : personTeam(v)) };
+        }
         applySteps(a, it, snap, steps, ctx);
       },
     });
@@ -2256,6 +2606,7 @@
           break;
         }
         case 'transfer': {
+          if (!it.nextOwnerId && it.nextQueueId) { queueItem(it, ctx, parts); type = 'HANDOFF'; break; }
           if (!it.nextOwnerId) break;
           const from = it.ownerId;
           it.ownerId = it.nextOwnerId;
@@ -2276,10 +2627,11 @@
         }
         case 'pickNext': {
           if (!ctx.next) break;
-          if (ctx.next.ownerId === it.nextOwnerId && ctx.next.teamId === it.nextTeamId) break;
+          if (ctx.next.ownerId === it.nextOwnerId && ctx.next.queueId === it.nextQueueId && ctx.next.teamId === it.nextTeamId) break;
           it.nextOwnerId = ctx.next.ownerId;
+          it.nextQueueId = ctx.next.queueId || '';
           it.nextTeamId = ctx.next.teamId;
-          parts.push(it.nextOwnerId ? `next owner set to ${nameOf(it.nextOwnerId)}${it.nextTeamId ? ` (${teamNameOf(it.nextTeamId)})` : ''}` : 'next owner cleared');
+          parts.push(it.nextOwnerId || it.nextQueueId ? `next owner set to ${nextLabel(it)}${it.nextTeamId ? ` (${teamNameOf(it.nextTeamId)})` : ''}` : 'next owner cleared');
           break;
         }
         case 'setOwner': {
@@ -2321,6 +2673,8 @@
         case 'createItem': createLinkedItem(it, s, ctx, snap, parts); break;
         case 'handoverNote': break;
         case 'offer': {
+          // Handing to a role queue needs no acceptance: picking the item up is the acceptance.
+          if (!it.nextOwnerId && it.nextQueueId && !it.offer) { queueItem(it, ctx, parts); type = 'HANDOFF'; break; }
           if (!it.nextOwnerId || it.offer) break;
           const o = { id: uid('ho'), toId: it.nextOwnerId, toTeamId: it.nextTeamId || personTeam(it.nextOwnerId), fromId: it.ownerId, byId: S.viewerId, time: Date.now(), note: ctx.note || [] };
           it.offer = o;
@@ -2341,6 +2695,24 @@
           moveStatus(it, s.land);
           settleOffer(it, 'accepted', ctx.reason);
           parts.push(`handed off from ${nameOf(from) || '—'} to ${nameOf(it.ownerId)} (accepted)`);
+          type = 'HANDOFF';
+          break;
+        }
+        case 'pickUp': {
+          if (!it.queueId) break;
+          if (!viewerQueueIds().includes(it.queueId)) { toast(`Only people with the ${queueName(it.queueId)} role can pick this up.`); break; }
+          const q = it.queueId;
+          it.ownerId = S.viewerId;
+          it.teamId = personTeam(S.viewerId) || it.teamId;
+          it.queueId = '';
+          if (s.land) moveStatus(it, s.land);
+          const rec = it.handovers.find(h => h.state === 'queued' && h.toQueueId === q);
+          if (rec) {
+            Object.assign(rec, { state: 'accepted', toId: S.viewerId, settledBy: S.viewerId, settledAt: Date.now() });
+            if (rec.fromId && sendAlert(rec.fromId, it, { kind: 'custom', label: 'PICKED UP', text: `${viewerName()} picked up ${it.ref} "${it.title}" from the ${queueName(q)} queue.` })) ctx.sent = (ctx.sent || 0) + 1;
+          }
+          S.alerts.forEach(x => { if (x.kind === 'queue' && x.itemId === it.id) x.read = true; });
+          parts.push(`picked up from the ${queueName(q)} queue`);
           type = 'HANDOFF';
           break;
         }
@@ -2423,13 +2795,13 @@
   function openAlert(alertId) {
     const a = S.alerts.find(x => x.id === alertId);
     if (!a) return;
-    a.read = true;
+    if (!readOnly()) a.read = true;
     const it = getItem(a.itemId);
     setPage('board', () => { if (it && !visibleItems().some(i => i.id === it.id)) resetFilters(); });
     if (it) flashCard(it.id); else toast('That item no longer exists.');
   }
   // ---------- item details: handovers, comments, history ----------
-  const HSTATE = { pending: 'Awaiting acceptance', accepted: 'Accepted', declined: 'Declined', withdrawn: 'Withdrawn' };
+  const HSTATE = { pending: 'Awaiting acceptance', queued: 'In queue', accepted: 'Accepted', declined: 'Declined', withdrawn: 'Withdrawn' };
   function itemDetailsHTML(it) {
     const f = (l, v, cls = '') => `<div class="field"><div class="field-l">${esc(l)}</div><div class="field-v ${cls}">${esc(v || '—')}</div></div>`;
     const meta = [
@@ -2441,7 +2813,7 @@
     ].join('');
     const responseLabel = h => (h.state === 'accepted' ? `Read-back from ${nameOf(h.settledBy)}` : h.state === 'declined' ? 'Reason for declining' : 'Note');
     const handovers = it.handovers.length ? it.handovers.map(h => `<div class="handover">
-        <div class="handover-top"><b>${esc(nameOf(h.fromId))} → ${esc(nameOf(h.toId))}</b><span class="hstate ${esc(h.state)}">${esc(HSTATE[h.state] || h.state)}</span><span class="muted">${fmtTime(h.time)}</span></div>
+        <div class="handover-top"><b>${esc(nameOf(h.fromId) || "—")} → ${esc(h.toQueueId ? `Queue: ${queueName(h.toQueueId)}${h.toId ? ` · ${nameOf(h.toId)}` : ""}` : nameOf(h.toId))}</b><span class="hstate ${esc(h.state)}">${esc(HSTATE[h.state] || h.state)}</span><span class="muted">${fmtTime(h.time)}</span></div>
         ${handoverNoteHTML(h.note)}
         ${h.response ? `<div class="note-sec"><b>${esc(responseLabel(h))}</b>${esc(h.response)}</div>` : ''}
         ${h.settledAt ? `<div class="muted" style="margin-top:6px">${esc(HSTATE[h.state] || h.state)} by ${esc(nameOf(h.settledBy))} · ${fmtTime(h.settledAt)}</div>` : ''}
@@ -2468,6 +2840,7 @@
     if (!it) return;
     const wire = body => {
       $('#d_addComment', body).addEventListener('click', () => {
+        if (!guardWrite()) return;
         const text = $('#d_comment', body).value.trim();
         if (!text) { $('#d_comment', body).focus(); return; }
         it.comments.push({ id: uid('cm'), authorId: S.viewerId, text, time: Date.now() });
@@ -2624,9 +2997,9 @@
     F('ref').value = it.ref;
     renderFormOptions({ priorityId: it.priorityId, statusId: it.statusId });
     F('team').value = teamNameOf(it.teamId);
-    F('owner').value = nameOf(it.ownerId);
+    F('owner').value = ownerLabel(it);
     F('nextTeam').value = teamNameOf(it.nextTeamId);
-    F('nextOwner').value = nameOf(it.nextOwnerId);
+    F('nextOwner').value = nextLabel(it);
     F('due').value = it.due || '';
     F('desc').value = it.desc || '';
     renderCustomFields(it.fields || {}, true);
@@ -2650,15 +3023,33 @@
   });
   $('#formCancel').addEventListener('click', () => resetForm());
 
+  // "Queue: Controls reviewers" → that role; null when the text isn't a queue; false when no such queue.
+  const queueFor = name => {
+    const m = /^queue:\s*(.+)$/i.exec(String(name || '').trim());
+    if (!m) return null;
+    return cfg().roles.find(r => r.queue && r.name.toLowerCase() === m[1].trim().toLowerCase()) || false;
+  };
+  function genUsername(name) {
+    const base = String(name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+    let u = base;
+    for (let n = 2; cfg().people.some(p => p.username === u) || (cfgDraft && cfgDraft.people.some(p => p.username === u)); n++) u = base + n;
+    return u;
+  }
+
   $('#form').addEventListener('submit', e => {
     e.preventDefault();
+    if (!guardWrite()) return;
     const err = (msg, el) => { $('#formError').textContent = msg; if (el) el.focus(); };
     const title = F('title').value.trim();
     const ownerName = F('owner').value.trim();
     const nextOwnerName = F('nextOwner').value.trim();
     if (!title) return err(`${label('title')} is required.`, F('title'));
-    if (!ownerName) return err(`${label('owner')} is required.`, F('owner'));
+    if (!ownerName) return err(`${label('owner')} is required. Enter a person or a role queue.`, F('owner'));
     if (nextOwnerName && nextOwnerName.toLowerCase() === ownerName.toLowerCase()) return err(`${label('nextOwner')} must be different from ${label('owner').toLowerCase()}.`, F('nextOwner'));
+    const ownerQueue = queueFor(ownerName);
+    const nextQueue = queueFor(nextOwnerName);
+    if (ownerQueue === false) return err(`There is no role queue called “${ownerName.replace(/^queue:\s*/i, '')}”.`, F('owner'));
+    if (nextQueue === false) return err(`There is no role queue called “${nextOwnerName.replace(/^queue:\s*/i, '')}”.`, F('nextOwner'));
     for (const n of [ownerName, nextOwnerName]) {
       const p = findByName(cfg().people, n);
       if (p && !p.active) return err(`${p.name} is inactive. Reactivate them in Configuration › People.`);
@@ -2692,7 +3083,8 @@
       if (!name) return '';
       let p = findByName(cfg().people, name);
       if (!p) {
-        p = { id: uid('p'), name, teamId, role: '', active: true };
+        // New people get a username and the basic role; they can sign in once an admin sets a password.
+        p = { id: uid('p'), name, teamId, role: '', email: '', active: true, username: genUsername(name), roleIds: ['r_member'].filter(r => role(r)), salt: '', passwordHash: '' };
         cfg().people.push(p);
         if (cfgDraft) cfgDraft.people.push(clone(p));
         added.push(`“${name}”`);
@@ -2700,12 +3092,16 @@
       return p.id;
     };
     let teamId = teamFor(F('team').value.trim());
-    const ownerId = personFor(ownerName, teamId);
+    const ownerId = ownerQueue ? '' : personFor(ownerName, teamId);
     let nextTeamId = teamFor(F('nextTeam').value.trim());
-    const nextOwnerId = personFor(nextOwnerName, nextTeamId);
+    const nextOwnerId = nextQueue ? '' : personFor(nextOwnerName, nextTeamId);
     if (!teamId) teamId = personTeam(ownerId);
     if (nextOwnerId && !nextTeamId) nextTeamId = personTeam(nextOwnerId);
-    const d = { title, ref, priorityId: F('priority').value, teamId, ownerId, nextTeamId, nextOwnerId, due: F('due').value, desc: F('desc').value.trim() };
+    const d = {
+      title, ref, priorityId: F('priority').value, teamId, ownerId, nextTeamId, nextOwnerId, due: F('due').value, desc: F('desc').value.trim(),
+      queueId: ownerQueue ? ownerQueue.id : '', nextQueueId: nextQueue ? nextQueue.id : '',
+    };
+    const queueAlert = it => `${it.ref} "${it.title}" was placed in the ${queueName(it.queueId)} queue by ${viewerName()}. Pick it up to take ownership.`;
     const newStatus = F('status').value;
 
     let id;
@@ -2718,16 +3114,18 @@
       log(`${it.ref} updated by ${viewerName()}.`, 'EDIT', it);
       if (before.statusId !== it.statusId) log(`${it.ref} moved to ${statusName(it.statusId)} by ${viewerName()}.`, 'STATUS', it);
       if (it.ownerId !== before.ownerId) notifyKind('assigned', it.ownerId, it);
+      if (it.queueId && it.queueId !== before.queueId) notifyQueue(it.queueId, it, queueAlert(it));
       if (it.nextOwnerId && it.nextOwnerId !== before.nextOwnerId) notifyKind('next', it.nextOwnerId, it);
       toast(`${it.ref} updated.`);
     } else {
       const now = Date.now();
-      const it = itemDefaults(Object.assign({ id: uid('i'), created: now, updated: now, statusId: cfg().general.initialStatusId, prevStatusId: '', blockReason: '' }, d, { fields: custom }));
+      const it = itemDefaults(Object.assign({ id: uid('i'), created: now, updated: now, statusId: cfg().general.initialStatusId, prevStatusId: '', blockReason: '', createdBy: S.viewerId }, d, { fields: custom }));
       moveStatus(it, newStatus);
       S.items.push(it);
       id = it.id;
       log(`${it.ref} created by ${viewerName()}.`, 'CREATE', it);
       notifyKind('assigned', it.ownerId, it);
+      if (it.queueId) notifyQueue(it.queueId, it, queueAlert(it));
       if (it.nextOwnerId) notifyKind('next', it.nextOwnerId, it);
       toast(`${it.ref} created.`);
     }
@@ -2748,6 +3146,7 @@
     { id: 'general', label: 'General' },
     { id: 'teams', label: 'Teams & routing', count: d => d.teams.length },
     { id: 'people', label: 'People', count: d => d.people.length },
+    { id: 'roles', label: 'Roles', count: d => d.roles.length },
     { id: 'priorities', label: 'Priorities', count: d => d.priorities.length },
     { id: 'statuses', label: 'Statuses & columns', count: d => d.statuses.length },
     { id: 'filters', label: 'Filters & rules', count: d => d.filters.length },
@@ -2888,6 +3287,7 @@
       case 'person': value = cell('Value', sel(`${base}.value`, peopleOpts(d, '— choose —'), cd.value, { rerender: true })); break;
       case 'team': value = cell('Value', sel(`${base}.value`, teamOpts(d, '— choose —'), cd.value, { rerender: true })); break;
       case 'option': value = cell('Value', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...fieldOptions(def.field, d).map(o => ({ v: o, l: o }))], cd.value, { rerender: true })); break;
+      case 'role': value = cell('Queue', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...d.roles.filter(r => r.queue).map(r => ({ v: r.id, l: r.name || '(unnamed)' }))], cd.value, { rerender: true }), 'w-md'); break;
       case 'flag': value = d.extensions.flags.length
         ? cell('Flag', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...d.extensions.flags.map(f => ({ v: f.id, l: f.name || '(unnamed)' }))], cd.value, { rerender: true }), 'w-md')
         : '<div class="cell grow muted">Define status flags under Extensions first.</div>'; break;
@@ -2984,6 +3384,7 @@
         <div class="gen-grid">
           ${cell('Prefix', inp('general.refPrefix', d.general.refPrefix))}
           ${cell('Digits', inp('general.refDigits', d.general.refDigits, { type: 'number', num: true, attrs: 'min="1" max="8"' }))}
+          <div class="cell full">${chk('general.loginHint', d.general.loginHint, 'Show demo accounts on the sign-in screen (only accounts still using the password “demo”)')}</div>
           <div class="cell full muted">Next new item: <b data-live="refPreview">${esc(nextRef(d))}</b></div>
         </div>`) +
       section('Pages', 'The tabs at the top of the workspace. Turn pages on or off; the Board is always available.', `
@@ -3004,17 +3405,39 @@
         ${addBtn('teams', '+ Add team')}`),
 
     people: d => section('People',
-      'Everyone who can own or receive work. Inactive people keep their history but can’t be chosen in “View as” or as an owner.', `
-        ${d.people.map((p, i) => `<div class="crow">
+      'Everyone who can sign in, own or receive work. Their <b>roles</b> (see Roles) decide what they can see and do. Inactive people keep their history but can’t sign in or be chosen as an owner. <br><b>Note:</b> accounts are stored in this browser, so sign-in keeps people’s views apart but is not real security.', `
+        ${d.people.map((p, i) => `<div class="crow block">
           ${cell('Name', inp(`people.${i}.name`, p.name, { rerender: true }))}
           ${cell('Team', sel(`people.${i}.teamId`, teamOpts(d, '— No team —'), p.teamId), 'w-md')}
-          ${cell('Role', inp(`people.${i}.role`, p.role, { ph: 'Optional' }), 'w-md')}
-          ${cell('Email', inp(`people.${i}.email`, p.email, { type: 'email', ph: 'For “Send an email” steps' }), 'w-md')}
+          ${cell('Username', inp(`people.${i}.username`, p.username, { ph: 'e.g. achan', attrs: 'autocapitalize="off" spellcheck="false"' }), 'w-md')}
+          ${cell(p.passwordHash ? 'New password' : 'Password', inp(`people.${i}.newPassword`, p.newPassword || '', { type: 'password', ph: p.passwordHash ? 'Leave blank to keep' : 'Not set: can’t sign in', attrs: 'autocomplete="new-password"' }), 'w-md')}
           ${chkCell(chk(`people.${i}.active`, p.active, 'Active'))}
           ${usesTag('people', p.id)}
           ${tools('people', i, d.people.length)}
+          ${cell('Job title', inp(`people.${i}.role`, p.role, { ph: 'Optional' }), 'w-md')}
+          ${cell('Email', inp(`people.${i}.email`, p.email, { type: 'email', ph: 'For “Send an email” steps' }))}
+          <div class="cell full"><span class="mini-label">Roles</span>${toggleChips(`people.${i}.roleIds`, p.roleIds || [], d.roles.map(r => ({ v: r.id, l: r.name || '(unnamed)' })))}</div>
         </div>`).join('')}
         ${addBtn('people', '+ Add person')}`),
+
+    roles: d => section('Roles',
+      'A role bundles permissions. People can hold several roles; the widest permission wins. A role with a <b>work queue</b> can be assigned work like a person (“Queue: …”): everyone holding the role sees it in an automatic “Queue” view and one of them picks it up. Roles that see or view their team get an automatic “My team” view.', `
+        ${d.roles.map((r, i) => {
+          const holders = d.people.filter(p => (p.roleIds || []).includes(r.id)).length;
+          const queued = S.items.filter(it => it.queueId === r.id || it.nextQueueId === r.id).length;
+          return `<div class="crow block">
+            ${cell('Role name', inp(`roles.${i}.name`, r.name, { rerender: true }))}
+            ${cell('Description', inp(`roles.${i}.description`, r.description, { ph: 'Optional' }))}
+            ${tools('roles', i, d.roles.length)}
+            ${cell('Sees on the board', sel(`roles.${i}.sees`, SCOPES, r.sees), 'w-md')}
+            ${cell('Can “View as”', sel(`roles.${i}.viewAs`, VIEW_AS, r.viewAs, { rerender: true }), 'w-md')}
+            ${chkCell(chk(`roles.${i}.actAs`, r.actAs, 'Can act while viewing as someone', { disabled: r.viewAs === 'none' }))}
+            ${chkCell(chk(`roles.${i}.configure`, r.configure, 'Can configure the workspace'))}
+            ${chkCell(chk(`roles.${i}.queue`, r.queue, 'Has a work queue'))}
+            <div class="cell full muted">${plural(holders, 'person')}${r.queue ? ` · ${plural(queued, 'item')} in or heading to its queue` : ''}${r.viewAs !== 'none' && !r.actAs ? ' · viewing others is read-only' : ''}</div>
+          </div>`;
+        }).join('')}
+        ${addBtn('roles', '+ Add role')}`),
 
     priorities: d => section('Priorities',
       'Order sets the sort order on the board (top = most urgent). <b>Default due</b> pre-fills the due date when a priority is picked for a new item.', `
@@ -3377,7 +3800,8 @@ ctx.person(name)      ctx.team(name)</pre>
   const rowKey = list => list.replace(/\.\d+\./g, '.*.');
   const NEW_ROW = {
     teams: () => ({ id: uid('t'), name: '', color: '#343a8a', bg: '#e4e4f7', leadId: '', nextTeamId: '' }),
-    people: () => ({ id: uid('p'), name: '', teamId: (cfgDraft.teams[0] || {}).id || '', role: '', active: true }),
+    people: () => ({ id: uid('p'), name: '', teamId: (cfgDraft.teams[0] || {}).id || '', role: '', email: '', active: true, username: '', roleIds: cfgDraft.roles.some(r => r.id === 'r_member') ? ['r_member'] : [], salt: '', passwordHash: '' }),
+    roles: () => ({ id: uid('r'), name: '', description: '', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: false }),
     priorities: () => ({ id: uid('pr'), name: '', fg: '#4a4f57', bg: tint('#4a4f57'), dueDays: 3 }),
     statuses: () => ({ id: uid('s'), name: '', color: '#6b7280', closed: false, hold: false }),
     filters: () => ({ id: uid('f'), name: '', match: 'all', count: 'items', conds: [{ subject: 'state', op: 'open', value: '' }] }),
@@ -3532,6 +3956,21 @@ ctx.person(name)      ctx.team(name)</pre>
     };
     uniqNames(d.teams, 'name', 'teams', 'Team');
     uniqNames(d.people, 'name', 'people', 'Person');
+    uniqNames(d.roles, 'name', 'roles', 'Role');
+    // Sign-in: unique usernames, and someone must still be able to sign in and configure.
+    const seenU = new Set();
+    d.people.forEach(p => {
+      p.username = String(p.username || '').trim().toLowerCase();
+      if (!p.username) add('people', `${p.name || 'A person'} needs a username.`);
+      else if (!/^[a-z0-9._-]+$/.test(p.username)) add('people', `Username “${p.username}” can only use letters, numbers, dots, dashes and underscores.`);
+      else if (seenU.has(p.username)) add('people', `Username “${p.username}” is used twice.`);
+      seenU.add(p.username);
+      if (p.newPassword && String(p.newPassword).length < 4) add('people', `${p.name}: passwords need at least 4 characters.`);
+    });
+    const canSignIn = p => p.active && (p.passwordHash || p.newPassword);
+    const admins = d.people.filter(p => canSignIn(p) && (p.roleIds || []).some(id => (d.roles.find(r => r.id === id) || {}).configure));
+    if (!admins.length) add('roles', 'At least one active person with a password must hold a role that can configure the workspace, or nobody could change these settings again.');
+    if (!d.roles.length) add('roles', 'Add at least one role.');
     uniqNames(d.priorities, 'name', 'priorities', 'Priority');
     uniqNames(d.statuses, 'name', 'statuses', 'Status');
     uniqNames(d.filters, 'name', 'filters', 'Filter');
@@ -3653,7 +4092,11 @@ ctx.person(name)      ctx.team(name)</pre>
     S.config.teams.forEach(t => { if (!tIds.has(t.id)) S.removed.teams[t.id] = t.name; });
     const personFields = d.fields.custom.filter(f => f.type === 'person');
     const teamFields = d.fields.custom.filter(f => f.type === 'team');
+    // Items sitting in a queue whose role was removed or no longer has a queue become unassigned.
+    const queues = new Set(d.roles.filter(r => r.queue).map(r => r.id));
     S.items.forEach(it => {
+      if (it.queueId && !queues.has(it.queueId)) it.queueId = '';
+      if (it.nextQueueId && !queues.has(it.nextQueueId)) it.nextQueueId = '';
       it.ownerId = mp(R.people, it.ownerId);
       it.nextOwnerId = mp(R.people, it.nextOwnerId);
       it.teamId = mp(R.teams, it.teamId);
@@ -3853,7 +4296,7 @@ ctx.person(name)      ctx.team(name)</pre>
     col.classList.remove('drop');
     const it = getItem(dragId);
     dragId = null;
-    if (!it || !moveStatus(it, col.dataset.status)) return;
+    if (!it || readOnly() || !moveStatus(it, col.dataset.status)) return;
     it.updated = Date.now();
     log(`${it.ref} moved to ${statusName(it.statusId)} by ${viewerName()}.`, 'STATUS', it);
     commit();
@@ -3868,17 +4311,39 @@ ctx.person(name)      ctx.team(name)</pre>
     S.viewId = v ? v.id : '';
     commit();
   });
-  $('#fViewer').addEventListener('change', e => {
-    S.viewerId = e.target.value;
+  function viewAs(id) {
+    if (!viewableIds().includes(id)) return;
+    S.viewerId = id;
+    // Switching views changes which auto views exist, so start from that person's whole board.
+    resetFilters();
     if (!editingId && !F('title').value.trim()) resetForm();
     commit();
-    toast(`Now viewing as ${viewerName()}.`);
+    toast(id === sessionId() ? 'Back to your own view.' : `Now viewing as ${viewerName()}${readOnly() ? ' (read-only)' : ''}.`);
+    if (!readOnly()) popPendingForViewer();
+  }
+  $('#fViewer').addEventListener('change', e => viewAs(e.target.value));
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-back-to-me]')) viewAs(sessionId());
+    const va = e.target.closest('[data-view-as]');
+    if (va && !va.disabled) viewAs(va.dataset.viewAs);
+    if (e.target.closest('[data-logout]')) signOut();
+  });
+  $('#loginForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const who = signIn($('#loginUser').value, $('#loginPass').value);
+    if (!who) { $('#loginErr').textContent = 'That username and password don’t match an active account.'; $('#loginPass').select(); return; }
+    $('#loginErr').textContent = '';
+    $('#loginPass').value = '';
+    $('#loginUser').value = '';
+    resetForm();
+    commit();
+    toast(`Signed in as ${who.name}.`);
     popPendingForViewer();
   });
   $('#fTeam').addEventListener('change', e => { S.filters.teamId = e.target.value; commit(); });
   $('#fPriority').addEventListener('change', e => { S.filters.priorityId = e.target.value; commit(); });
   $('#fFocus').addEventListener('change', e => {
-    const v = cfg().views.find(x => x.id === e.target.value);
+    const v = allViews().find(x => x.id === e.target.value);
     if (!v) return;
     S.viewId = v.id;
     S.filters.focus = v.filterId || '';
@@ -3903,7 +4368,7 @@ ctx.person(name)      ctx.team(name)</pre>
   $('#sideNav').addEventListener('click', e => {
     const b = e.target.closest('[data-view]');
     if (!b) return;
-    const v = cfg().views.find(x => x.id === b.dataset.view);
+    const v = allViews().find(x => x.id === b.dataset.view);
     if (v) applyView(v);
   });
   $('#sideConfig').addEventListener('click', () => openConfig());
@@ -3915,6 +4380,7 @@ ctx.person(name)      ctx.team(name)</pre>
   $('#btnNew').addEventListener('click', () => { resetForm(); focusForm(); });
   $('#btnCreate').addEventListener('click', () => { resetForm(); focusForm(); });
   $('#btnMarkRead').addEventListener('click', () => {
+    if (!guardWrite()) return;
     const list = unreadFor(S.viewerId);
     if (!list.length) { toast(`No unread alerts for ${viewerName()}.`); return; }
     list.forEach(a => { a.read = true; a.popped = true; });
@@ -3968,6 +4434,7 @@ ctx.person(name)      ctx.team(name)</pre>
   // ---------- posts / files / notes ----------
   $('#postForm').addEventListener('submit', e => {
     e.preventDefault();
+    if (!guardWrite()) return;
     const text = $('#postText').value.trim();
     if (!text) return;
     const itemId = $('#postRef').value;
@@ -3990,6 +4457,7 @@ ctx.person(name)      ctx.team(name)</pre>
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drop'); addFiles(e.dataTransfer.files); });
   $('#fileInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
   function addFiles(fileList) {
+    if (!guardWrite()) return;
     const files = [...(fileList || [])];
     if (!files.length) return;
     const itemId = $('#fileRef').value;
@@ -4034,6 +4502,7 @@ ctx.person(name)      ctx.team(name)</pre>
   }
   $('#noteForm').addEventListener('submit', e => {
     e.preventDefault();
+    if (!guardWrite()) return;
     const title = $('#noteTitle').value.trim();
     const body = $('#noteBody').value.trim();
     if (!title) return;
@@ -4069,7 +4538,7 @@ ctx.person(name)      ctx.team(name)</pre>
   fixViewer();
   resetForm();
   commit();
-  popPendingForViewer();
+  if (loggedIn()) popPendingForViewer();
 })();
 </script>
 </body>
