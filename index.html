@@ -63,6 +63,7 @@
   .side-item .n { font-size: 13px; font-weight: 600; color: #8b919a; }
   .side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 13px; line-height: 1.5; color: #8b919a; border-top: 1px solid #262930; }
   .side-foot b { color: #d9dce0; }
+  .side-demo { margin-top: 12px; }
 
   /* ---------- Main ---------- */
   .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #d3d7dc; }
@@ -406,6 +407,36 @@
   .member-row:last-child { border-bottom: 0; }
   .member-row .grow { flex: 1; min-width: 0; }
   .member-row .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  /* Demo player: drives the real UI with a visible pointer */
+  .demo-panel { position: fixed; left: 12px; bottom: 12px; width: 370px; max-width: calc(100vw - 24px); max-height: 72vh; z-index: 130; display: flex; flex-direction: column; background: #fff; border: 1px solid #cfd3d9; border-radius: 14px; box-shadow: 0 18px 50px rgba(10,12,16,.35); font-size: 14px; color: var(--ink); }
+  .demo-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #16181d; color: #fff; border-radius: 14px 14px 0 0; cursor: pointer; }
+  .demo-head b { flex: 1; }
+  .demo-head button { border: 0; background: transparent; color: #fff; cursor: pointer; font-size: 15px; padding: 2px 6px; }
+  .demo-panel.min .demo-body { display: none; }
+  .demo-panel.min .demo-head { border-radius: 14px; }
+  .demo-body { padding: 10px 12px 12px; overflow: auto; display: grid; gap: 10px; }
+  .demo-list { display: grid; gap: 2px; max-height: 214px; overflow: auto; padding-right: 4px; }
+  .demo-pick { display: flex; gap: 10px; align-items: center; font-size: 13px; color: #4a4f57; }
+  .demo-pick button { border: 0; background: none; padding: 0; color: #2e3394; font: inherit; font-weight: 700; cursor: pointer; }
+  .demo-list label { display: flex; gap: 8px; align-items: center; padding: 3px 0; cursor: pointer; }
+  .demo-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .demo-controls .btn { height: 34px; font-size: 14px; padding: 0 12px; }
+  .demo-controls select { height: 34px; border: 1px solid #cfd3d9; border-radius: 9px; padding: 0 8px; background: #fafafb; }
+  .demo-caption { background: #fff7df; border: 1px solid #e6cf8f; border-radius: 10px; padding: 8px 10px; line-height: 1.45; }
+  .demo-results { font-size: 13px; line-height: 1.55; }
+  .demo-results .sc { margin-top: 8px; font-weight: 700; }
+  .demo-results .pass { color: #1f6a2f; }
+  .demo-results .fail { color: #9b111b; }
+  .demo-results .sum { margin-top: 8px; padding-top: 8px; border-top: 1px solid #e1e4e8; font-weight: 700; }
+  .demo-pointer { position: fixed; left: -100px; top: -100px; z-index: 2147483647; width: 24px; height: 24px; pointer-events: none; transition: left .45s ease, top .45s ease; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+  .demo-pointer.clicking::after { content: ''; position: absolute; left: -11px; top: -11px; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #b5141e; animation: demoRipple .45s ease-out; }
+  @keyframes demoRipple { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+  .demo-bubble { position: absolute; left: 26px; top: 20px; width: max-content; max-width: 280px; padding: 6px 9px; border-radius: 8px; background: #16181d; color: #fff; font-size: 12.5px; line-height: 1.4; }
+  .demo-pointer.flip .demo-bubble { left: auto; right: 26px; }
+  .demo-bubble:empty { display: none; }
+  .demo-target { outline: 3px solid #b5141e !important; outline-offset: 2px; }
+  .demo-shield { position: fixed; inset: 0; z-index: 125; cursor: progress; }
+  .login-demo { background: transparent; border: 0; color: #343a8a; font-weight: 700; cursor: pointer; padding: 4px 0; text-align: left; font-size: 14px; }
   .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .viewer-actions .btn { height: 36px; font-size: 14px; padding: 0 12px; }
   .side-label { margin: 34px 12px 8px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6c727b; }
@@ -425,15 +456,24 @@
     background: var(--surface-2); border: 1px solid #d9dce1; border-radius: 16px;
     margin-bottom: 16px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
   }
-  .viewer-card { padding: 16px 18px 16px; }
-  .viewer-name { font-size: 22px; font-weight: 700; }
+  .viewer-body { padding: 12px 18px 16px; }
+  .pcard-head h3.viewer-name { font-size: 22px; }
   .viewer-card p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; color: #2f343b; }
   .pcard-head {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 15px 18px; border-bottom: 1px solid #e1e4e8;
+    padding: 15px 18px; border-bottom: 1px solid #e1e4e8; border-radius: 16px 16px 0 0;
   }
   .pcard-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
   .pcard-head span { font-size: 14px; font-weight: 700; }
+  .head-right { display: inline-flex; align-items: center; gap: 10px; }
+  /* Accordion behaviour */
+  .pcard[data-acc] > .pcard-head { cursor: pointer; user-select: none; transition: background .12s; }
+  .pcard[data-acc] > .pcard-head:hover { background: #eef0f3; }
+  .pcard[data-acc] > .pcard-head:focus-visible { outline: 2px solid #5257c9; outline-offset: -2px; }
+  .chev { display: inline-block; color: var(--muted); font-size: 13px; transition: transform .15s; }
+  .pcard.collapsed > .pcard-head { border-bottom: 0; border-radius: 16px; }
+  .pcard.collapsed > .pcard-head .chev { transform: rotate(-90deg); }
+  .pcard.collapsed > :not(.pcard-head) { display: none !important; }
   .inbox { padding: 14px 14px 16px; min-height: 290px; }
   .empty-box {
     border: 1px dashed #c9cdd3; background: #eff1f4; border-radius: 12px;
@@ -447,7 +487,8 @@
   .alert-meta { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
   .alert-actions { display: flex; gap: 8px; margin-top: 10px; }
 
-  .form-scroll { max-height: 300px; overflow: auto; padding: 14px 18px 18px; }
+  /* The form uses most of the window height so all fields are visible without scrolling the form itself. */
+  .form-scroll { max-height: calc(100vh - 150px); min-height: 420px; overflow: auto; padding: 14px 18px 18px; }
   .form-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px 14px; }
   .form-grid label, .form-grid .cf-item { min-width: 0; }
   .form-grid .full { grid-column: 1 / -1; }
@@ -459,7 +500,8 @@
   .form-actions .btn { flex: 1; height: 44px; font-size: 16px; }
   .form-error { color: var(--red); font-size: 13.5px; font-weight: 700; }
 
-  .activity { padding: 4px 18px 14px; }
+  /* Capped so the feed doesn't push the handoff form far down the panel. */
+  .activity { padding: 4px 18px 14px; max-height: 320px; overflow: auto; }
   .act { padding: 13px 0; border-bottom: 1px dashed #dde0e4; }
   .act:last-child { border-bottom: 0; }
   .act-msg { font-size: 15.5px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
@@ -467,18 +509,33 @@
   .act-meta .type { text-transform: uppercase; letter-spacing: .02em; }
 
   /* ---------- Toasts / dialog ---------- */
-  .toasts { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; }
+  .toasts {
+    position: fixed; left: 20px; right: 20px; bottom: 20px; z-index: 60; display: flex; flex-direction: column; gap: 10px;
+    align-items: flex-end; pointer-events: none; --nd: 300ms; --dy: 28px;
+  }
+  /* Below the top bar, so "New handoff" and search stay usable while a pop-up is showing. */
+  .toasts.pos-top { top: 80px; bottom: auto; --dy: -28px; }
+  .toasts.al-left { align-items: flex-start; }
+  .toasts.al-center { align-items: center; }
   .toast {
     pointer-events: auto; width: 340px; max-width: calc(100vw - 32px);
     background: #1b1e24; color: #f2f3f5; border-radius: 12px; padding: 12px 14px;
     font-size: 14.5px; line-height: 1.45; box-shadow: 0 10px 30px rgba(10,12,16,.28);
-    animation: toastIn .2s ease-out;
+    animation: toastSlideIn var(--nd) ease-out both;
   }
+  .toasts.an-bounce .toast { animation: toastSlideIn var(--nd) cubic-bezier(.34,1.7,.5,1) both; }
+  .toasts.an-fade .toast { animation: toastFadeIn var(--nd) ease-out both; }
+  .toasts.an-none .toast { animation: none; }
+  .toasts .toast.out { animation: toastSlideOut var(--nd) ease-in forwards; pointer-events: none; }
+  .toasts.an-fade .toast.out { animation: toastFadeOut var(--nd) ease-in forwards; }
+  .toasts.an-none .toast.out { animation: none; opacity: 0; }
   .toast.pop { background: #fff; color: var(--ink); border: 1px solid #e3d3d5; border-left: 5px solid var(--red); padding: 14px 14px 12px; }
   .toast.pop .t-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
   .toast.pop .t-actions { display: flex; gap: 8px; margin-top: 10px; }
-  .toast.out { opacity: 0; transform: translateY(6px); transition: .25s; }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes toastSlideIn { from { opacity: 0; transform: translateY(var(--dy)); } to { opacity: 1; transform: none; } }
+  @keyframes toastSlideOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(var(--dy)); } }
+  @keyframes toastFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes toastFadeOut { from { opacity: 1; } to { opacity: 0; } }
 
   dialog {
     border: 0; padding: 0; border-radius: 16px; width: min(480px, calc(100vw - 32px));
@@ -538,6 +595,7 @@
       <button class="side-item" id="sideConfig" type="button"><span>Configuration</span><span class="n" aria-hidden="true">⚙</span></button>
     </nav>
     <div class="side-foot" id="sideFoot"></div>
+    <button class="side-item side-demo" type="button" data-open-demo><span>Run demo</span><span class="n" aria-hidden="true">▶</span></button>
   </aside>
 
   <!-- Main -->
@@ -641,23 +699,29 @@
   <aside class="panel">
     <div class="panel-head"><h2 id="panelTitle">Operations Panel</h2><span class="unread-pill" id="panelUnread">0 unread</span></div>
 
-    <div class="pcard viewer-card" id="viewerCard">
-      <div class="viewer-name" id="viewerName"></div>
-      <div id="viewerInfo"></div>
+    <!-- Each section is an accordion panel: click its header to open or close it. -->
+    <div class="pcard viewer-card" id="viewerCard" data-acc="viewer">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="viewerInfo"><h3 class="viewer-name" id="viewerName"></h3><span class="head-right"><span class="chev" aria-hidden="true">▾</span></span></div>
+      <div class="viewer-body" id="viewerInfo"></div>
     </div>
 
-    <div class="pcard" id="teamCard" hidden>
-      <div class="pcard-head"><h3 id="teamCardTitle">My team</h3><span id="teamCardCount"></span></div>
+    <div class="pcard" id="teamCard" data-acc="team" hidden>
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="teamMembers"><h3 id="teamCardTitle">My team</h3><span class="head-right"><span id="teamCardCount"></span><span class="chev" aria-hidden="true">▾</span></span></div>
       <div style="padding: 4px 18px 10px" id="teamMembers"></div>
     </div>
 
-    <div class="pcard">
-      <div class="pcard-head"><h3>Action Inbox</h3><span class="unread-pill" id="inboxUnread">0 unread</span></div>
+    <div class="pcard" data-acc="inbox">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="inbox"><h3>Action Inbox</h3><span class="head-right"><span class="unread-pill" id="inboxUnread">0 unread</span><span class="chev" aria-hidden="true">▾</span></span></div>
       <div class="inbox" id="inbox"></div>
     </div>
 
-    <div class="pcard" id="formCard">
-      <div class="pcard-head"><h3>Create or Edit Handoff</h3><span id="formMode">New</span></div>
+    <div class="pcard" data-acc="activity">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="activity"><h3>Recent Activity</h3><span class="head-right"><span>Latest events</span><span class="chev" aria-hidden="true">▾</span></span></div>
+      <div class="activity" id="activity"></div>
+    </div>
+
+    <div class="pcard" id="formCard" data-acc="form">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="form"><h3>Create or Edit Handoff</h3><span class="head-right"><span id="formMode">New</span><span class="chev" aria-hidden="true">▾</span></span></div>
       <form class="form-scroll" id="form" novalidate>
         <div class="form-grid">
           <label class="full"><span id="lbl_title">Task title</span><input class="input" id="f_title" placeholder="Custody model data ownership review"></label>
@@ -681,11 +745,6 @@
       <datalist id="dlTeams"></datalist>
       <datalist id="dlPeople"></datalist>
     </div>
-
-    <div class="pcard">
-      <div class="pcard-head"><h3>Recent Activity</h3><span>Latest events</span></div>
-      <div class="activity" id="activity"></div>
-    </div>
   </aside>
 </div>
 
@@ -699,6 +758,7 @@
     <label><span>Password</span><input class="input" type="password" id="loginPass" autocomplete="current-password"></label>
     <div class="form-error" id="loginErr" role="alert"></div>
     <button class="btn btn-red" type="submit">Sign in</button>
+    <button class="login-demo" type="button" data-open-demo>▶ Watch an automated demo</button>
     <div class="login-hint" id="loginHint"></div>
   </form>
 </div>
@@ -1035,7 +1095,11 @@
       { id: 'bv_overdue', label: 'Overdue',                filterId: 'f_overdue',   count: 'match',  sidebar: false },
       { id: 'bv_alerts',  label: 'With unread alerts',     filterId: 'f_alerts',    count: 'match',  sidebar: false },
     ],
-    notifications: { assigned: true, next: true, comments: true, popups: true, popupSeconds: 9 },
+    notifications: {
+      assigned: true, next: true, comments: true, popups: true, popupSeconds: 9, toastSeconds: 4,
+      position: 'top', align: 'right', animation: 'slide', animMs: 300, reduceMotion: true,
+      sound: true, soundFor: 'alerts', tone: 'bell', volume: 50,
+    },
     extensions: { scriptsEnabled: false, flags: [], fieldTypes: [], conditions: [], steps: [] },
   };
 
@@ -2198,7 +2262,7 @@
     if (card.hidden) return;
     const ids = viewableIds();
     $('#teamCardTitle').textContent = scope === 'team' ? `My team: ${teamNameOf(personTeam(me)) || 'No team'}` : 'People';
-    $('#teamCardCount').textContent = plural(ids.length, 'person');
+    $('#teamCardCount').textContent = ids.length === 1 ? '1 person' : `${ids.length} people`;
     $('#teamMembers').innerHTML = ids.map(id => {
       const owned = S.items.filter(i => i.ownerId === id && isOpen(i)).length;
       const next = S.items.filter(i => i.nextOwnerId === id && isOpen(i)).length;
@@ -2266,30 +2330,100 @@
   }
 
   // ---------- toasts & dialog ----------
-  function toast(msg) {
+  // n = notification settings; previews pass the unsaved draft instead of the saved configuration.
+  const noteCfg = () => cfg().notifications;
+  const reducedMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function noteAnim(n) {
+    const a = ['slide', 'bounce', 'fade', 'none'].includes(n.animation) ? n.animation : 'slide';
+    return a !== 'none' && n.reduceMotion && reducedMotion() ? 'fade' : a;
+  }
+  const noteMs = n => noteAnim(n) === 'none' ? 0 : Math.max(50, Math.min(2000, +n.animMs || 300));
+  function placeToast(el, n) {
+    const box = $('#toasts');
+    box.className = `toasts pos-${n.position === 'top' ? 'top' : 'bottom'} al-${['left', 'center'].includes(n.align) ? n.align : 'right'} an-${noteAnim(n)}`;
+    box.style.setProperty('--nd', noteMs(n) + 'ms');
+    // Newest sits nearest the edge it comes from: top of the stack when dropping down, bottom when rising up.
+    if (n.position === 'top') box.prepend(el); else box.appendChild(el);
+  }
+  function toast(msg, n = noteCfg()) {
     const el = document.createElement('div');
     el.className = 'toast';
     el.textContent = msg;
-    $('#toasts').appendChild(el);
-    setTimeout(() => dismiss(el), 3800);
+    placeToast(el, n);
+    if (n.sound && n.soundFor === 'all') chime(n);
+    setTimeout(() => dismiss(el, n), Math.max(1, +n.toastSeconds || 4) * 1000);
   }
-  function dismiss(el) { if (!el.isConnected) return; el.classList.add('out'); setTimeout(() => el.remove(), 260); }
+  function dismiss(el, n = noteCfg()) {
+    if (!el.isConnected || el.classList.contains('out')) return;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), noteMs(n));
+  }
 
-  function popAlert(a) {
+  function popCard(title, text, onOpen, n) {
     const el = document.createElement('div');
     el.className = 'toast pop';
-    el.innerHTML = `<div class="t-title">🔔 New alert for ${esc(nameOf(a.toId))}</div><div>${esc(alertText(a))}</div>
-      <div class="t-actions"><button class="btn-sm b-indigo" type="button">Open item</button><button class="btn-sm b-plain" type="button">Dismiss</button></div>`;
-    const [openBtn, closeBtn] = el.querySelectorAll('button');
-    openBtn.onclick = () => { dismiss(el); openAlert(a.id); };
-    closeBtn.onclick = () => dismiss(el);
-    $('#toasts').appendChild(el);
-    setTimeout(() => dismiss(el), (+cfg().notifications.popupSeconds || 9) * 1000);
+    el.innerHTML = `<div class="t-title">🔔 ${esc(title)}</div><div>${esc(text)}</div>
+      <div class="t-actions">${onOpen ? '<button class="btn-sm b-indigo" type="button" data-t-open>Open item</button>' : ''}<button class="btn-sm b-plain" type="button" data-t-close>Dismiss</button></div>`;
+    if (onOpen) $('[data-t-open]', el).onclick = () => { dismiss(el, n); onOpen(); };
+    $('[data-t-close]', el).onclick = () => dismiss(el, n);
+    placeToast(el, n);
+    setTimeout(() => dismiss(el, n), (+n.popupSeconds || 9) * 1000);
   }
+  const popAlert = (a, n = noteCfg()) => popCard(`New alert for ${nameOf(a.toId)}`, alertText(a), () => openAlert(a.id), n);
+
+  // Sounds are synthesised with Web Audio, so no audio files are needed. Each partial is [frequency ratio, loudness, seconds to fade].
+  const TONES = {
+    bell:  [{ at: 0, hz: 830, parts: [[1, 1, 1.8], [2, .55, 1.2], [2.76, .4, .9], [5.4, .22, .5], [8.93, .1, .3]] }],
+    chime: [{ at: 0, hz: 1318.5, parts: [[1, 1, 1.1], [2, .2, .5]] }, { at: .22, hz: 1046.5, parts: [[1, 1, 1.4], [2, .2, .6]] }],
+    ding:  [{ at: 0, hz: 1568, parts: [[1, 1, .7], [3, .12, .25]] }],
+  };
+  let audioCtx = null;
+  function audio() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { audioCtx = audioCtx || new AC(); } catch (e) { return null; }
+    return audioCtx;
+  }
+  function playTone(ac, n) {
+    const vol = Math.max(0, Math.min(100, +n.volume || 0)) / 100;
+    if (!vol) return;
+    const notes = TONES[n.tone] || TONES.bell;
+    const out = ac.createGain();
+    out.gain.value = vol * .3;
+    out.connect(ac.destination);
+    const t0 = ac.currentTime + .02;
+    notes.forEach(note => note.parts.forEach(([ratio, amp, fade]) => {
+      const osc = ac.createOscillator(), g = ac.createGain(), s = t0 + note.at;
+      osc.type = 'sine';
+      osc.frequency.value = note.hz * ratio;
+      g.gain.setValueAtTime(.0001, s);
+      g.gain.exponentialRampToValueAtTime(amp, s + .006);
+      g.gain.exponentialRampToValueAtTime(.0001, s + fade);
+      osc.connect(g); g.connect(out);
+      osc.start(s); osc.stop(s + fade + .05);
+    }));
+  }
+  // Browsers only allow sound after the person has clicked or typed on the page; before that the bell is skipped rather than queued.
+  // Notifications arriving together (an alert plus a "Signed in" message) share one sound; previews always play.
+  let lastChime = 0;
+  function chime(n = noteCfg(), force = false) {
+    const ac = audio();
+    if (!ac) return;
+    if (!force && Date.now() - lastChime < 500) return;
+    lastChime = Date.now();
+    if (ac.state === 'running') return playTone(ac, n);
+    const active = navigator.userActivation ? navigator.userActivation.hasBeenActive : true;
+    if (active) ac.resume().then(() => playTone(ac, n), () => {});
+  }
+  ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => {
+    if (noteCfg().sound && audio() && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  }, { capture: true, passive: true }));
+
   function popPendingForViewer() {
     const pending = unreadFor(S.viewerId).filter(a => !a.popped);
     if (!pending.length) return;
-    if (cfg().notifications.popups) {
+    if (noteCfg().popups) {
+      if (noteCfg().sound) chime();
       pending.slice(0, 3).forEach((a, i) => setTimeout(() => popAlert(a), 120 * i));
       if (pending.length > 3) setTimeout(() => toast(`+${pending.length - 3} more unread alerts in the Action Inbox.`), 400);
     }
@@ -3007,8 +3141,41 @@
     $('#formSave').textContent = 'Update handoff';
     $('#formMode').textContent = `Editing ${it.ref}`;
   }
+  // ---------- panel accordion ----------
+  // Which sections are closed is a per-browser convenience, kept apart from workspace data.
+  const PANEL_KEY = 'designhub.panel';
+  let panelClosed = {};
+  try { panelClosed = JSON.parse(localStorage.getItem(PANEL_KEY) || '{}') || {}; } catch (e) { panelClosed = {}; }
+  function applyPanelState() {
+    $$('.pcard[data-acc]').forEach(c => {
+      const closed = !!panelClosed[c.dataset.acc];
+      c.classList.toggle('collapsed', closed);
+      $('.pcard-head', c).setAttribute('aria-expanded', String(!closed));
+    });
+  }
+  function setPanelOpen(key, open) {
+    panelClosed[key] = !open;
+    try { localStorage.setItem(PANEL_KEY, JSON.stringify(panelClosed)); } catch (e) { /* storage unavailable */ }
+    applyPanelState();
+  }
+  $('.panel').addEventListener('click', e => {
+    const head = e.target.closest('.pcard[data-acc] > .pcard-head');
+    if (!head || e.target.closest('button, a, input, select, textarea')) return;
+    const key = head.parentElement.dataset.acc;
+    setPanelOpen(key, !!panelClosed[key]);
+  });
+  $('.panel').addEventListener('keydown', e => {
+    const head = e.target.closest('.pcard[data-acc] > .pcard-head');
+    if (!head || e.target !== head || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    const key = head.parentElement.dataset.acc;
+    setPanelOpen(key, !!panelClosed[key]);
+  });
+  applyPanelState();
+
   function focusForm() {
     const card = $('#formCard');
+    setPanelOpen('form', true);
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('#form').scrollTop = 0;
     card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
@@ -3379,12 +3546,12 @@
           ${cell('Right panel title', inp('general.panelTitle', d.general.panelTitle))}
           <div class="cell full"><span class="mini-label">Board introduction — wrap text in **double asterisks** for bold</span>
             <textarea class="textarea" ${bind('general.boardIntro')} aria-label="Board introduction">${esc(d.general.boardIntro)}</textarea></div>
+          <div class="cell full">${chk('general.loginHint', d.general.loginHint, 'Show demo accounts on the sign-in screen (only accounts still using the password “demo”)')}</div>
         </div>`) +
       section('Item references', 'Each new item gets the next number after the highest existing one with this prefix.', `
         <div class="gen-grid">
           ${cell('Prefix', inp('general.refPrefix', d.general.refPrefix))}
           ${cell('Digits', inp('general.refDigits', d.general.refDigits, { type: 'number', num: true, attrs: 'min="1" max="8"' }))}
-          <div class="cell full">${chk('general.loginHint', d.general.loginHint, 'Show demo accounts on the sign-in screen (only accounts still using the password “demo”)')}</div>
           <div class="cell full muted">Next new item: <b data-live="refPreview">${esc(nextRef(d))}</b></div>
         </div>`) +
       section('Pages', 'The tabs at the top of the workspace. Turn pages on or off; the Board is always available.', `
@@ -3583,10 +3750,32 @@
           <div>${chk('notifications.next', d.notifications.next, 'Next-owner alerts')}<span class="toggle-desc">A person, when the form makes them the next owner.</span></div>
           <div>${chk('notifications.comments', d.notifications.comments, 'Comment alerts')}<span class="toggle-desc">The owner, the next owner and anyone being offered the item, when someone else comments on it.</span></div>
         </div>`) +
-      section('Pop-ups', 'Pop-up notifications appear when you switch “View as” to someone with new alerts.', `
+      section('Pop-ups', 'Pop-up notifications appear when you sign in, or switch “View as” to someone, with new alerts. Short messages confirm what you just did, for example “Saved”.', `
         <div class="gen-grid">
-          <div class="cell full">${chk('notifications.popups', d.notifications.popups, 'Show pop-up notifications')}</div>
+          <div class="cell full">${chk('notifications.popups', d.notifications.popups, 'Show pop-up notifications for new alerts')}</div>
           ${cell('Pop-up stays for (seconds)', inp('notifications.popupSeconds', d.notifications.popupSeconds, { type: 'number', num: true, attrs: 'min="2" max="120"' }))}
+          ${cell('Messages stay for (seconds)', inp('notifications.toastSeconds', d.notifications.toastSeconds, { type: 'number', num: true, attrs: 'min="1" max="60"' }))}
+        </div>`) +
+      section('Position & animation', 'Where notifications appear and how they move in and out.', `
+        <div class="gen-grid">
+          ${cell('Appear from', sel('notifications.position', [{ v: 'top', l: 'Top: drop down' }, { v: 'bottom', l: 'Bottom: rise up' }], d.notifications.position))}
+          ${cell('Alignment', sel('notifications.align', [{ v: 'right', l: 'Right' }, { v: 'center', l: 'Centre' }, { v: 'left', l: 'Left' }], d.notifications.align))}
+          ${cell('Animation', sel('notifications.animation', [{ v: 'slide', l: 'Slide' }, { v: 'bounce', l: 'Slide with bounce' }, { v: 'fade', l: 'Fade' }, { v: 'none', l: 'None' }], d.notifications.animation))}
+          ${cell('Animation speed (milliseconds)', inp('notifications.animMs', d.notifications.animMs, { type: 'number', num: true, attrs: 'min="50" max="2000" step="50"' }))}
+          <div class="cell full">${chk('notifications.reduceMotion', d.notifications.reduceMotion, 'Use a plain fade when the device asks for reduced motion')}</div>
+        </div>`) +
+      section('Sound', 'A sound made in the browser, so there are no sound files. Browsers only play sound after you have clicked or typed on the page.', `
+        <div class="gen-grid">
+          <div class="cell full">${chk('notifications.sound', d.notifications.sound, 'Play a sound')}</div>
+          ${cell('Sound', sel('notifications.tone', [{ v: 'bell', l: 'Bell' }, { v: 'chime', l: 'Chime (two notes)' }, { v: 'ding', l: 'Ding' }], d.notifications.tone))}
+          ${cell('Play it for', sel('notifications.soundFor', [{ v: 'alerts', l: 'New alerts only' }, { v: 'all', l: 'Every notification' }], d.notifications.soundFor))}
+          ${cell('Volume (0–100)', inp('notifications.volume', d.notifications.volume, { type: 'number', num: true, attrs: 'min="0" max="100" step="5"' }))}
+        </div>`) +
+      section('Try it', 'Previews use the settings on this screen, including changes you have not saved yet.', `
+        <div class="data-actions">
+          <button class="btn" type="button" data-cfg-cmd="preview-pop">Preview alert pop-up</button>
+          <button class="btn" type="button" data-cfg-cmd="preview-toast">Preview message</button>
+          <button class="btn" type="button" data-cfg-cmd="preview-sound">Play sound</button>
         </div>`),
 
     extensions: d => {
@@ -4035,7 +4224,11 @@ ctx.person(name)      ctx.team(name)</pre>
     d.stats.forEach((s, i) => { if (!String(s.label || '').trim()) add('dashboard', `Stat card #${i + 1} needs a label.`); if (!d.filters.some(f => f.id === s.filterId)) add('dashboard', `Stat card #${i + 1} needs a filter.`); });
     d.views.forEach((v, i) => { if (!String(v.label || '').trim()) add('views', `Board view #${i + 1} needs a label.`); });
     if (!d.views.length) add('views', 'Add at least one board view.');
-    if (!(+d.notifications.popupSeconds >= 2 && +d.notifications.popupSeconds <= 120)) add('notifications', 'Pop-up duration must be between 2 and 120 seconds.');
+    const nt = d.notifications;
+    if (!(+nt.popupSeconds >= 2 && +nt.popupSeconds <= 120)) add('notifications', 'Pop-up duration must be between 2 and 120 seconds.');
+    if (!(+nt.toastSeconds >= 1 && +nt.toastSeconds <= 60)) add('notifications', 'Message duration must be between 1 and 60 seconds.');
+    if (!(+nt.animMs >= 50 && +nt.animMs <= 2000)) add('notifications', 'Animation speed must be between 50 and 2000 milliseconds.');
+    if (!(+nt.volume >= 0 && +nt.volume <= 100)) add('notifications', 'Volume must be between 0 and 100.');
     return e;
   }
 
@@ -4155,6 +4348,25 @@ ctx.person(name)      ctx.team(name)</pre>
         download('design-hub-config.json', { app: 'design-hub', kind: 'config', version: CONFIG_VERSION, config: S.config });
         toast(cfgDirty() ? 'Exported the saved configuration (unsaved changes not included).' : 'Configuration exported.'); break;
       case 'import-config': importMode = 'config'; $('#importInput').click(); break;
+      case 'preview-pop': {
+        const n = cfgDraft.notifications;
+        if (n.sound) chime(n, true);
+        popCard('Preview alert', `This is how new alerts will look: they ${n.position === 'top' ? 'drop down from the top' : 'rise up from the bottom'}, then close after ${+n.popupSeconds || 9} seconds.`, null, n);
+        break;
+      }
+      case 'preview-toast': {
+        const n = cfgDraft.notifications;
+        if (n.sound && n.soundFor === 'all') chime(n, true);
+        toast('Preview message: confirmations like “Saved” look like this.', Object.assign({}, n, { sound: false }));
+        break;
+      }
+      case 'preview-sound': {
+        const n = cfgDraft.notifications;
+        if (!audio()) toast('This browser cannot play sounds.', n);
+        else if (!+n.volume) toast('Volume is 0, so there is nothing to hear.', n);
+        else chime(n, true);
+        break;
+      }
       case 'defaults':
         cfgDraft = normalizeConfig(DEFAULT_CONFIG); cfgErrors = [];
         renderConfig(); toast('Default configuration loaded. Review it, then Save.'); break;
@@ -4533,12 +4745,558 @@ ctx.person(name)      ctx.team(name)</pre>
     }
   });
 
+  // =====================================================================
+  // ---------- Demo player ----------
+  // Drives the real UI in plain JavaScript: a visible pointer moves to each control, clicks or types,
+  // and checks are recorded as it goes. Your own data is set aside first and restored afterwards.
+  // =====================================================================
+  const DEMO_BACKUP_KEY = 'designhub.demo-backup';
+  const DEMO_STOP = new Error('Demo stopped');
+  const demo = { running: false, paused: false, stop: false, speed: 1, results: [], saved: null, savedPanel: null };
+  let demoPanel = null;
+  let demoPointer = null;
+  let demoShield = null;
+
+  async function dWait(ms) {
+    let left = ms * demo.speed;
+    do {
+      if (demo.stop) throw DEMO_STOP;
+      await new Promise(r => setTimeout(r, Math.min(40, Math.max(0, left)) || 0));
+      if (!demo.paused) left -= 40;
+    } while (left > 0 || demo.paused);
+  }
+  const isShown = e => !!e && e.isConnected && e.getClientRects().length > 0;
+  // Waits for an element (selector or finder function) to exist and be visible.
+  async function dFind(target, what) {
+    const t0 = Date.now();
+    for (;;) {
+      if (demo.stop) throw DEMO_STOP;
+      const e = typeof target === 'function' ? target() : $(target);
+      if (isShown(e)) return e;
+      if (Date.now() - t0 > 5000) throw new Error(`Couldn’t find ${what || target}`);
+      await new Promise(r => setTimeout(r, 60));
+    }
+  }
+  function dCaption(text) {
+    $('#demoCaption').textContent = text;
+    $('.demo-bubble', demoPointer).textContent = text;
+  }
+  async function dPoint(e) {
+    e.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    await dWait(60);
+    // Inside an open dialog the pointer must live in the dialog's top layer to stay visible.
+    const host = dlg.open ? dlg : document.body;
+    if (demoPointer.parentNode !== host) host.appendChild(demoPointer);
+    const r = e.getBoundingClientRect();
+    const x = r.left + Math.min(r.width / 2, 36);
+    const y = r.top + Math.min(r.height / 2, 20);
+    const dur = Math.max(60, 450 * demo.speed);
+    demoPointer.style.transition = `left ${dur}ms ease, top ${dur}ms ease`;
+    demoPointer.classList.toggle('flip', x > window.innerWidth - 320);
+    demoPointer.style.left = x + 'px';
+    demoPointer.style.top = y + 'px';
+    await dWait(dur / Math.max(demo.speed, 0.01) + 40);
+    e.classList.add('demo-target');
+    setTimeout(() => e.classList.remove('demo-target'), Math.max(250, 900 * demo.speed));
+  }
+  async function dClick(target, what) {
+    const e = await dFind(target, what);
+    await dPoint(e);
+    demoPointer.classList.remove('clicking'); void demoPointer.offsetWidth; demoPointer.classList.add('clicking');
+    e.click();
+    await dWait(380);
+  }
+  async function dType(target, text, what) {
+    const e = await dFind(target, what);
+    await dPoint(e);
+    e.focus();
+    e.value = '';
+    for (const ch of String(text)) {
+      e.value += ch;
+      e.dispatchEvent(new Event('input', { bubbles: true }));
+      await dWait(40);
+    }
+    e.dispatchEvent(new Event('change', { bubbles: true }));
+    await dWait(200);
+  }
+  async function dChoose(target, value, what) {
+    const e = await dFind(target, what);
+    await dPoint(e);
+    e.value = value;
+    e.dispatchEvent(new Event('input', { bubbles: true }));
+    e.dispatchEvent(new Event('change', { bubbles: true }));
+    await dWait(380);
+  }
+  async function dSay(text) { dCaption(text); await dWait(900); }
+  function dCheck(label, test) {
+    let pass = false;
+    let note = '';
+    try { pass = !!test(); } catch (e) { note = e.message; }
+    demo.results[demo.results.length - 1].checks.push({ label, pass, note });
+    renderDemoResults();
+  }
+  // Finders for things that have no fixed id.
+  const dCard = ref => $$('#board .card').find(c => (c.querySelector('.card-ref') || {}).textContent === ref);
+  const dCardBtn = (ref, text) => () => { const c = dCard(ref); return c && [...c.querySelectorAll('[data-action]')].find(b => b.textContent === text); };
+  const dSide = text => () => $$('#sideNav .side-item').find(b => b.firstElementChild.textContent === text);
+  const dInbox = text => () => $$('#inbox button').find(b => b.textContent.trim() === text);
+  const dField = (ref, lbl) => { const c = dCard(ref); const f = c && [...c.querySelectorAll('.field')].find(x => x.querySelector('.field-l').textContent === lbl); return f ? f.querySelector('.field-v').textContent : ''; };
+  const dItem = ref => S.items.find(i => i.ref === ref);
+  const dColOf = ref => { const c = dCard(ref); return c ? c.closest('.col').dataset.status : ''; };
+  // The newest row's control in a Configuration list, e.g. dLast('people', 'name').
+  const dLast = (list, key) => () => $$(`#view-config [data-bind^="${list}."][data-bind$=".${key}"]`).filter(e => e.dataset.bind.split('.').length === list.split('.').length + 2).pop();
+  // Chip checkboxes are clicked through their visible label.
+  const dChip = sel => () => { const i = $(sel); return i && i.closest('label'); };
+  async function dSignIn(username) {
+    if (loggedIn()) {
+      setPanelOpen('viewer', true);
+      await dClick('[data-logout]', 'Log out');
+    }
+    await dType('#loginUser', username, 'username');
+    await dType('#loginPass', 'demo', 'password');
+    await dClick('#loginForm [type=submit]', 'Sign in');
+    await dWait(300);
+  }
+
+  const DEMOS = [
+    { id: 'signin', title: 'Sign-in and what each role sees', run: async () => {
+      await dSay('Everyone signs in first. A wrong password is refused.');
+      await dType('#loginUser', 'achan');
+      await dType('#loginPass', 'nope');
+      await dClick('#loginForm [type=submit]', 'Sign in');
+      dCheck('Wrong password is rejected', () => !$('#login').hidden && $('#loginErr').textContent);
+      await dSay('Signing in as A. Chan, a system administrator: they see all the work.');
+      await dType('#loginPass', 'demo');
+      await dClick('#loginForm [type=submit]', 'Sign in');
+      await dWait(300);
+      dCheck('Administrator sees all 4 items', () => $$('#board .card').length === 4);
+      await dSay('E. Ng is a team member, so they only see their own work.');
+      await dSignIn('eng');
+      dCheck('Team member sees only their item', () => $$('#board .card').length === 1 && !!dCard('OMD-003'));
+      dCheck('Team member has no Configuration', () => $('#sideConfig').closest('nav').hidden);
+    } },
+    { id: 'lifecycle', title: 'Move work through its stages', run: async () => {
+      await dSignIn('achan');
+      await dSay('Card buttons move work between columns. A. Chan starts OMD-001…');
+      await dClick(dCardBtn('OMD-001', 'Start'), 'Start on OMD-001');
+      dCheck('Start moves it to In Progress', () => dColOf('OMD-001') === 'progress');
+      await dSay('…pauses it…');
+      await dClick(dCardBtn('OMD-001', 'Pause'), 'Pause on OMD-001');
+      dCheck('Pause puts it back in Assigned', () => dColOf('OMD-001') === 'assigned');
+      await dSay('…and blocks it. Blocking asks for a reason, which shows on the card.');
+      await dClick(dCardBtn('OMD-001', 'Block'), 'Block on OMD-001');
+      await dType('[data-reason]', 'Waiting for the reconciliation owner list.');
+      await dClick('#dlgOk', 'confirm');
+      dCheck('Blocked, with the reason on the card', () => dColOf('OMD-001') === 'blocked' && dCard('OMD-001').querySelector('.block-reason').textContent.includes('reconciliation owner'));
+      await dSay('Unblock returns it to the column it came from.');
+      await dClick(dCardBtn('OMD-001', 'Unblock'), 'Unblock on OMD-001');
+      dCheck('Unblock returns it to Assigned', () => dColOf('OMD-001') === 'assigned' && !dCard('OMD-001').querySelector('.block-reason'));
+      dCheck('Every move is in the item’s history', () => dItem('OMD-001').history.filter(h => h.type !== 'CREATE').length >= 4);
+    } },
+    { id: 'handoff', title: 'Hand off, read the note, accept', run: async () => {
+      await dSignIn('achan');
+      await dSay('A. Chan hands OMD-001 to B. Lee with a handover note.');
+      await dClick(dCardBtn('OMD-001', 'Complete & handoff'), 'Complete & handoff on OMD-001');
+      await dType('[data-note="0"]', 'Scope agreed; ownership boundaries drafted.');
+      await dType('[data-note="2"]', 'Watch for duplicate owners in reconciliations.');
+      await dClick('#dlgOk', 'confirm');
+      dCheck('A. Chan stays owner until it is accepted', () => dField('OMD-001', label('owner')) === 'A. Chan' && dCard('OMD-001').querySelector('.offer-banner'));
+      await dSay('B. Lee signs in and finds the request in the Action Inbox.');
+      await dSignIn('blee');
+      setPanelOpen('inbox', true);
+      dCheck('B. Lee has a handoff request', () => $('#inboxUnread').textContent === '1 unread');
+      await dClick(dInbox('Review & accept'), 'Review & accept');
+      dCheck('The dialog shows the handover note', () => $('#dlgBody').textContent.includes('Scope agreed'));
+      await dType('[data-reason]', 'Understood: scope agreed, will watch the recs.');
+      await dClick('#dlgOk', 'Accept');
+      dCheck('B. Lee is now the owner', () => dField('OMD-001', label('owner')) === 'B. Lee');
+      dCheck('Routing proposed Controls / C. Wong next', () => dField('OMD-001', label('nextTeam')) === 'Controls' && dField('OMD-001', label('nextOwner')) === 'C. Wong');
+      await dSay('The item’s details keep the handover note, read-back and history.');
+      await dClick(() => dCard('OMD-001') && dCard('OMD-001').querySelector('[data-open-item]'), 'item title');
+      dCheck('Details show the accepted handover', () => $('#dlgBody').textContent.includes('Accepted') && $('#dlgBody').textContent.includes('Understood'));
+      await dType('#d_comment', 'Thanks, picking this up today.');
+      await dClick('#d_addComment', 'Add comment');
+      dCheck('Comment added', () => $$('#dlgBody .comment').length === 1);
+      await dClick('#dlgOk', 'Close');
+    } },
+    { id: 'comments', title: 'Comments reach the people involved', run: async () => {
+      await dSignIn('achan');
+      await dSay('A. Chan asks a question on OMD-002, which C. Wong owns.');
+      await dClick(() => dCard('OMD-002') && dCard('OMD-002').querySelector('[data-open-item]'), 'OMD-002 title');
+      await dType('#d_comment', 'Are the exception thresholds final?');
+      await dClick('#d_addComment', 'Add comment');
+      await dClick('#dlgOk', 'Close');
+      dCheck('Comment count shows on the card', () => dCard('OMD-002').textContent.includes('1 comment'));
+      await dSay('C. Wong and D. Patel, the next owner, are both alerted.');
+      await dSignIn('cwong');
+      setPanelOpen('inbox', true);
+      dCheck('Owner sees the comment alert', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('commented on OMD-002')));
+      await dClick('#btnMarkRead', 'Mark alerts read');
+      dCheck('Mark alerts read clears the inbox', () => $('#inboxUnread').textContent === '0 unread');
+      await dSignIn('dpatel');
+      setPanelOpen('inbox', true);
+      dCheck('Next owner was alerted too', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('commented on OMD-002')));
+    } },
+    { id: 'decline', title: 'Decline a handoff with a reason', run: async () => {
+      await dSignIn('achan');
+      await dSay('OMD-002 is offered to D. Patel…');
+      await dClick(dCardBtn('OMD-002', 'Complete & handoff'), 'Complete & handoff on OMD-002');
+      await dType('[data-note="0"]', 'Exceptions listed in the evidence pack.');
+      await dClick('#dlgOk', 'confirm');
+      await dSay('…who declines it and must say why.');
+      await dSignIn('dpatel');
+      setPanelOpen('inbox', true);
+      await dClick(dInbox('Decline'), 'Decline');
+      await dType('[data-reason]', 'This belongs with Controls first.');
+      await dClick('#dlgOk', 'Decline');
+      dCheck('Offer cleared, C. Wong keeps it', () => !dCard('OMD-002').querySelector('.offer-banner') && dField('OMD-002', label('owner')) === 'C. Wong');
+      await dSay('C. Wong, the owner, is told the reason.');
+      await dSignIn('cwong');
+      setPanelOpen('inbox', true);
+      dCheck('Owner sees the decline reason', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('belongs with Controls')));
+    } },
+    { id: 'withdraw', title: 'Change your mind: withdraw a handoff', run: async () => {
+      await dSignIn('achan');
+      await dSay('A. Chan offers OMD-001 to B. Lee…');
+      await dClick(dCardBtn('OMD-001', 'Complete & handoff'), 'Complete & handoff on OMD-001');
+      await dType('[data-note="0"]', 'Draft pack attached.');
+      await dClick('#dlgOk', 'confirm');
+      dCheck('Offer pending, with a Withdraw button', () => dCard('OMD-001').querySelector('.offer-banner') && dCardBtn('OMD-001', 'Withdraw handoff')());
+      await dSay('…then realises the pack is incomplete and withdraws it before B. Lee accepts.');
+      await dClick(dCardBtn('OMD-001', 'Withdraw handoff'), 'Withdraw handoff');
+      dCheck('Offer cleared; A. Chan can hand off again', () => !dCard('OMD-001').querySelector('.offer-banner') && dCardBtn('OMD-001', 'Complete & handoff')());
+      dCheck('Handover record marked Withdrawn', () => dItem('OMD-001').handovers.some(h => h.state === 'withdrawn'));
+      await dSay('B. Lee’s request disappears from their inbox.');
+      await dSignIn('blee');
+      setPanelOpen('inbox', true);
+      dCheck('No stale request for B. Lee', () => $('#inboxUnread').textContent === '0 unread');
+    } },
+    { id: 'queue', title: 'Hand off to a role queue and pick it up', run: async () => {
+      await dSignIn('achan');
+      await dSay('OMD-003 goes to the Controls reviewers queue instead of a person.');
+      await dClick(dCardBtn('OMD-003', 'Set next'), 'Set next on OMD-003');
+      await dChoose('#m_owner', 'q:r_reviewer', 'next owner');
+      await dClick('#dlgOk', 'Save');
+      await dClick(dCardBtn('OMD-003', 'Complete & handoff'), 'Complete & handoff on OMD-003');
+      await dType('[data-note="0"]', 'Needs a control review before closing.');
+      await dClick('#dlgOk', 'confirm');
+      dCheck('Item waits in the queue with no owner', () => dCard('OMD-003').querySelector('.queue-banner') && dField('OMD-003', label('owner')).startsWith('Queue:'));
+      await dSay('C. Wong holds the reviewer role, so it appears in their queue view.');
+      await dSignIn('cwong');
+      dCheck('Queue view counts it', () => (dSide('Queue: Controls reviewers')() || {}).textContent.includes('1'));
+      setPanelOpen('inbox', true);
+      await dClick(dInbox('Pick up'), 'Pick up');
+      dCheck('C. Wong picked it up and owns it', () => dField('OMD-003', label('owner')) === 'C. Wong');
+    } },
+    { id: 'teamadmin', title: 'Team admin oversight (read-only)', run: async () => {
+      await dSignIn('dpatel');
+      await dSay('D. Patel is a team admin: an automatic “My team” view appears.');
+      await dClick(dSide('My team: Operations'), 'My team view');
+      dCheck('Team view shows the team’s open work', () => $$('#board .card').length === 2);
+      setPanelOpen('team', true);
+      await dSay('They can look at any member’s board, read-only.');
+      await dClick(() => $$('#teamMembers [data-view-as]').find(b => b.closest('.member-row').textContent.includes('E. Ng')), 'View E. Ng');
+      dCheck('Read-only banner and no buttons', () => !$('#roBanner').hidden && !$$('#board [data-action]').length);
+      await dClick('#roBanner [data-back-to-me]', 'Back to my view');
+      dCheck('Back to their own view', () => $('#roBanner').hidden);
+    } },
+    { id: 'views', title: 'Board views, stats and search', run: async () => {
+      await dSignIn('achan');
+      await dSay('Sidebar views, stat cards and the Focus dropdown all filter the same board.');
+      await dClick(dSide('Assigned to me'), 'Assigned to me');
+      dCheck('Only A. Chan’s work', () => $$('#board .card').length === 1 && $('#boardTitle').textContent.includes('Assigned to me'));
+      await dClick(() => $$('.stat').find(s => s.textContent.includes('Blocked')), 'Blocked stat');
+      dCheck('Blocked items only', () => $$('#board .card').length === 1 && !!dCard('OMD-003'));
+      await dClick('#btnReset', 'Reset filters');
+      await dType('#search', 'maker');
+      dCheck('Search finds OMD-002', () => $$('#board .card').length === 1 && !!dCard('OMD-002'));
+      await dClick('#btnReset', 'Reset filters');
+      dCheck('Everything back', () => $$('#board .card').length === 4);
+    } },
+    { id: 'create', title: 'Create an item for someone else', run: async () => {
+      await dSignIn('achan');
+      setPanelOpen('form', true);
+      await dSay('New items are created in the panel on the right.');
+      await dClick('#btnNew', 'New handoff');
+      await dType('#f_title', 'Confirm data lineage for custody feeds');
+      await dType('#f_owner', 'G. Lim');
+      await dChoose('#f_priority', 'pr1', 'priority');
+      await dClick('#formSave', 'Save handoff');
+      dCheck('Item created and owned by G. Lim', () => S.items.some(i => i.title.startsWith('Confirm data lineage') && i.ownerId === 'p7'));
+      await dSignIn('glim');
+      setPanelOpen('inbox', true);
+      dCheck('G. Lim was alerted', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('assigned to you')));
+    } },
+    { id: 'edit', title: 'Edit one item and delete another', run: async () => {
+      await dSignIn('achan');
+      setPanelOpen('form', true);
+      await dSay('Edit loads an item into the form. OMD-003 becomes High priority.');
+      await dClick(dCardBtn('OMD-003', 'Edit'), 'Edit on OMD-003');
+      dCheck('Form is editing OMD-003', () => $('#formMode').textContent === 'Editing OMD-003');
+      await dChoose('#f_priority', 'pr1', 'priority');
+      await dType('#f_desc', 'Escalated: duplicate owners found in two reconciliations.');
+      await dClick('#formSave', 'Save');
+      dCheck('Priority and description saved', () => dItem('OMD-003').priorityId === 'pr1' && dItem('OMD-003').desc.startsWith('Escalated'));
+      await dSay('Delete always asks first.');
+      await dClick(dCardBtn('OMD-004', 'Delete'), 'Delete on OMD-004');
+      dCheck('Delete asks for confirmation', () => dlg.open);
+      await dClick('#dlgOk', 'Delete');
+      dCheck('OMD-004 is gone', () => !dCard('OMD-004') && !dItem('OMD-004'));
+    } },
+    { id: 'pages', title: 'Notes and the team overview', run: async () => {
+      await dSignIn('achan');
+      await dSay('Besides the board there are pages for notes and a team overview.');
+      await dClick('#tabs [data-tab="notes"]', 'Notes tab');
+      await dType('#noteTitle', 'Handoff checklist');
+      await dType('#noteBody', 'Summary, open actions, risks. Ask for a read-back.');
+      await dClick('#noteSave', 'Save note');
+      dCheck('Note saved and listed', () => $('#noteList').textContent.includes('Handoff checklist') && S.notes.some(n => n.title === 'Handoff checklist'));
+      await dClick('#tabs [data-tab="overview"]', 'Team overview tab');
+      dCheck('Overview shows a row per team', () => $$('#overview tbody tr').length >= 3);
+      await dClick('#tabs [data-tab="board"]', 'Board tab');
+      dCheck('Back on the board', () => !$('#view-board').hidden);
+    } },
+    { id: 'config', title: 'Change the workflow in Configuration', run: async () => {
+      await dSignIn('achan');
+      await dSay('Administrators change the workflow without code: here, a new Review column.');
+      await dClick('#sideConfig', 'Configuration');
+      await dClick('[data-cfg-nav="statuses"]', 'Statuses');
+      await dClick('#view-config [data-op="add"][data-list="statuses"]', 'Add status');
+      await dType(() => $$('#view-config [data-bind^="statuses."][data-bind$=".name"]').pop(), 'Review');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      await dClick(dSide('All work'), 'All work');
+      dCheck('The board has a Review column', () => $$('.col h3').some(h => h.textContent === 'Review'));
+    } },
+    { id: 'field', title: 'Add a custom field and show it on cards', run: async () => {
+      await dSignIn('achan');
+      await dSay('A new “Risk rating” drop-down field, shown on every card.');
+      await dClick('#sideConfig', 'Configuration');
+      await dClick('[data-cfg-nav="fields"]', 'Fields & card layout');
+      await dClick('#view-config [data-op="add"][data-list="fields.custom"]', 'Add custom field');
+      await dType(dLast('fields.custom', 'label'), 'Risk rating');
+      await dChoose(dLast('fields.custom', 'type'), 'select', 'field type');
+      await dType(dLast('fields.custom', 'options'), 'Low, Medium, High');
+      await dClick('#view-config [data-op="add"][data-list="card.fields"]', 'Add card field');
+      const cf = cfgDraft.fields.custom[cfgDraft.fields.custom.length - 1];
+      await dChoose(() => $$('#view-config [data-bind^="card.fields."]').pop(), 'cf:' + cf.id, 'card field');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      await dClick(dSide('All work'), 'All work');
+      setPanelOpen('form', true);
+      await dSay('The form now has the field. OMD-001 is rated High.');
+      await dClick(dCardBtn('OMD-001', 'Edit'), 'Edit on OMD-001');
+      await dChoose('#customFields select', 'High', 'Risk rating');
+      await dClick('#formSave', 'Save');
+      dCheck('Card shows Risk rating: High', () => dField('OMD-001', 'Risk rating') === 'High');
+      dCheck('Other cards show it as not set', () => dField('OMD-002', 'Risk rating') === '—');
+    } },
+    { id: 'rule', title: 'Build a rule and a sidebar view', run: async () => {
+      await dSignIn('achan');
+      await dSay('Rules are built from conditions: open AND priority is High.');
+      await dClick('#sideConfig', 'Configuration');
+      await dClick('[data-cfg-nav="filters"]', 'Filters & rules');
+      await dClick('#view-config [data-op="add"][data-list="filters"]', 'Add filter');
+      const fi = cfgDraft.filters.length - 1;
+      await dType(`#view-config [data-bind="filters.${fi}.name"]`, 'Urgent open work');
+      await dClick(`#view-config [data-op="add"][data-list="filters.${fi}.conds"]`, 'Add condition');
+      await dChoose(`#view-config [data-bind="filters.${fi}.conds.1.subject"]`, 'priority', 'condition field');
+      await dClick(dChip(`#view-config [data-toggle="filters.${fi}.conds.1.value"][value="pr1"]`), 'High');
+      dCheck('Live count of matching items', () => !!$('.match-pill'));
+      await dSay('A board view turns the rule into a sidebar entry with a count.');
+      await dClick('[data-cfg-nav="views"]', 'Board views');
+      await dClick('#view-config [data-op="add"][data-list="views"]', 'Add view');
+      await dType(dLast('views', 'label'), 'Urgent');
+      await dChoose(dLast('views', 'filterId'), cfgDraft.filters[fi].id, 'view filter');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      await dClick(dSide('Urgent'), 'Urgent view');
+      const want = S.items.filter(i => i.priorityId === 'pr1' && !cfg().statuses.find(s => s.id === i.statusId).closed).map(i => i.ref).sort().join();
+      dCheck('The view shows only open High-priority work', () => $$('#board .card .card-ref').map(r => r.textContent).sort().join() === want && want !== '');
+    } },
+    { id: 'person', title: 'Add a teammate and sign in as them', run: async () => {
+      await dSignIn('achan');
+      await dSay('A. Chan adds H. Park to Controls, with a username and password.');
+      await dClick('#sideConfig', 'Configuration');
+      await dClick('[data-cfg-nav="people"]', 'People');
+      await dClick('#view-config [data-op="add"][data-list="people"]', 'Add person');
+      await dType(dLast('people', 'name'), 'H. Park');
+      await dChoose(dLast('people', 'teamId'), 't3', 'team');
+      await dType(dLast('people', 'username'), 'hpark');
+      await dType(dLast('people', 'newPassword'), 'demo');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      const hp = () => cfg().people.find(p => p.name === 'H. Park');
+      dCheck('Saved with a hashed password and the member role', () => hp() && hp().passwordHash && hp().roleIds.includes('r_member'));
+      await dSay('Hand them some work: H. Park becomes next owner of OMD-002.');
+      await dClick(dSide('All work'), 'All work');
+      await dClick(dCardBtn('OMD-002', 'Set next'), 'Set next on OMD-002');
+      await dChoose('#m_owner', hp().id, 'next owner');
+      await dClick('#dlgOk', 'Save');
+      await dSay('H. Park signs in for the first time.');
+      await dSignIn('hpark');
+      dCheck('Signed in as H. Park', () => S.session.userId === hp().id && $('#sideFoot').textContent.includes('H. Park'));
+      dCheck('“Coming to me next” shows OMD-002', () => (dSide('Coming to me next')() || {}).textContent.includes('1'));
+      setPanelOpen('inbox', true);
+      dCheck('They were alerted', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('OMD-002')));
+    } },
+    { id: 'notify', title: 'Restyle notifications: position, animation, sound', run: async () => {
+      await dSignIn('achan');
+      await dSay('Notifications can drop from the top or rise from the bottom, animate, and ring.');
+      await dClick('#sideConfig', 'Configuration');
+      await dClick('[data-cfg-nav="notifications"]', 'Notifications');
+      await dChoose('[data-bind="notifications.align"]', 'center', 'alignment');
+      await dChoose('[data-bind="notifications.animation"]', 'bounce', 'animation');
+      await dChoose('[data-bind="notifications.tone"]', 'chime', 'sound');
+      await dClick('[data-cfg-cmd="preview-pop"]', 'Preview alert pop-up');
+      dCheck('Preview drops in, centred, with a bounce', () => $('.toast.pop') && $('#toasts').classList.contains('pos-top') && $('#toasts').classList.contains('al-center') && $('#toasts').classList.contains('an-bounce'));
+      await dWait(1200);
+      await dChoose('[data-bind="notifications.position"]', 'bottom', 'position');
+      await dClick('[data-cfg-cmd="preview-toast"]', 'Preview message');
+      dCheck('Switching to bottom makes them rise up instead', () => $('#toasts').classList.contains('pos-bottom'));
+      await dWait(1200);
+      await dChoose('[data-bind="notifications.position"]', 'top', 'position');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      dCheck('Style saved', () => cfg().notifications.animation === 'bounce' && cfg().notifications.tone === 'chime' && cfg().notifications.align === 'center');
+      await dSay('Now a real alert: B. Lee signs in to a handoff request.');
+      await dClick(dSide('All work'), 'All work');
+      await dClick(dCardBtn('OMD-001', 'Complete & handoff'), 'Complete & handoff on OMD-001');
+      await dType('[data-note="0"]', 'Ready for you.');
+      await dClick('#dlgOk', 'confirm');
+      $$('.toast').forEach(t => t.remove());
+      await dSignIn('blee');
+      dCheck('B. Lee’s alert pops up in the new style', () => $('.toast.pop [data-t-open]') && $('#toasts').classList.contains('an-bounce'));
+      await dWait(1500);
+    } },
+  ];
+
+  function renderDemoResults() {
+    const total = demo.results.reduce((n, r) => n + r.checks.length, 0);
+    const passed = demo.results.reduce((n, r) => n + r.checks.filter(c => c.pass).length, 0);
+    $('#demoResults').innerHTML = demo.results.map(r => `<div class="sc">${esc(r.title)}${r.error ? ' <span class="fail">— stopped</span>' : ''}</div>
+      ${r.checks.map(c => `<div class="${c.pass ? 'pass' : 'fail'}">${c.pass ? '✓' : '✗'} ${esc(c.label)}${c.note ? ` (${esc(c.note)})` : ''}</div>`).join('')}
+      ${r.error ? `<div class="fail">✗ ${esc(r.error)}</div>` : ''}`).join('') +
+      (demo.results.length && !demo.running ? (() => {
+        const stopped = demo.results.filter(r => r.error).length;
+        const good = passed === total && !stopped;
+        return `<div class="sum ${good ? 'pass' : 'fail'}">${passed} of ${total} checks passed${stopped ? `; ${plural(stopped, 'scenario')} didn’t finish` : ''}. Your own data has been restored.</div>`;
+      })() : '');
+  }
+
+  function openDemoPanel() {
+    if (!demoPanel) {
+      demoPanel = document.createElement('div');
+      demoPanel.className = 'demo-panel';
+      demoPanel.innerHTML = `<div class="demo-head"><b>▶ Automated demo</b><button type="button" data-demo="min" title="Minimise">–</button><button type="button" data-demo="close" title="Close">✕</button></div>
+        <div class="demo-body">
+          <div class="demo-pick"><span style="flex:1">${DEMOS.length} scenarios</span><button type="button" data-demo="all">All</button><button type="button" data-demo="none">None</button></div>
+          <div class="demo-list">${DEMOS.map(d => `<label><input type="checkbox" value="${d.id}" checked> ${esc(d.title)}</label>`).join('')}</div>
+          <div class="demo-controls">
+            <select id="demoSpeed" aria-label="Speed"><option value="1.6">Slow</option><option value="1" selected>Normal</option><option value="0.4">Fast</option><option value="0.03">Instant (test run)</option></select>
+            <button class="btn btn-red" type="button" data-demo="run">Run</button>
+            <button class="btn" type="button" data-demo="pause" disabled>Pause</button>
+            <button class="btn" type="button" data-demo="stop" disabled>Stop</button>
+          </div>
+          <div class="demo-caption" id="demoCaption">Choose scenarios and press Run. Your data is set aside, a fresh sample board is used, and your data is restored afterwards.</div>
+          <div class="demo-results" id="demoResults"></div>
+        </div>`;
+      document.body.appendChild(demoPanel);
+      demoPointer = document.createElement('div');
+      demoPointer.className = 'demo-pointer';
+      demoPointer.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 2l7 19 2.6-7.4L20 11z" fill="#fff" stroke="#16181d" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="demo-bubble"></div>';
+      demoPanel.addEventListener('click', e => {
+        const b = e.target.closest('[data-demo]');
+        if (!b) { if (e.target.closest('.demo-head')) demoPanel.classList.toggle('min'); return; }
+        const a = b.dataset.demo;
+        if (a === 'run') runDemos();
+        if (a === 'pause') { demo.paused = !demo.paused; b.textContent = demo.paused ? 'Resume' : 'Pause'; }
+        if (a === 'stop') { demo.stop = true; demo.paused = false; }
+        if (a === 'min') demoPanel.classList.toggle('min');
+        if ((a === 'all' || a === 'none') && !demo.running) $$('.demo-list input', demoPanel).forEach(i => { i.checked = a === 'all'; });
+        if (a === 'close' && !demo.running) { demoPanel.remove(); demoPanel = null; }
+      });
+      $('#demoSpeed', demoPanel).addEventListener('change', e => { demo.speed = +e.target.value; });
+    }
+    demoPanel.classList.remove('min');
+  }
+
+  function demoSetData() {
+    if (dlg.open) dlg.close();
+    $$('.toast').forEach(t => t.remove());
+    S = sampleState();
+    cfgDraft = null; cfgRemap = emptyRemap(); cfgErrors = [];
+    editingId = null; lastCustomSig = null;
+    resetFilters();
+    resetForm();
+    commit();
+  }
+  function demoRestore() {
+    if (dlg.open) dlg.close();
+    S = demo.saved;
+    panelClosed = demo.savedPanel;
+    try { localStorage.setItem(PANEL_KEY, JSON.stringify(panelClosed)); localStorage.removeItem(DEMO_BACKUP_KEY); } catch (e) { /* ignore */ }
+    cfgDraft = null; cfgRemap = emptyRemap(); cfgErrors = [];
+    editingId = null; lastCustomSig = null;
+    applyPanelState();
+    resetForm();
+    commit();
+  }
+
+  async function runDemos() {
+    if (demo.running) return;
+    const chosen = $$('.demo-list input:checked', demoPanel).map(i => DEMOS.find(d => d.id === i.value));
+    if (!chosen.length) { dCaption('Tick at least one scenario.'); return; }
+    // Set the real workspace aside; a backup copy survives even if the tab is closed mid-run.
+    demo.saved = clone(S);
+    demo.savedPanel = clone(panelClosed);
+    try { localStorage.setItem(DEMO_BACKUP_KEY, JSON.stringify({ state: demo.saved, panel: demo.savedPanel, time: Date.now() })); } catch (e) { /* ignore */ }
+    Object.assign(demo, { running: true, paused: false, stop: false, results: [], speed: +$('#demoSpeed', demoPanel).value });
+    demoShield = document.createElement('div');
+    demoShield.className = 'demo-shield';
+    document.body.appendChild(demoShield);
+    document.body.appendChild(demoPointer);
+    $$('[data-demo="pause"], [data-demo="stop"]', demoPanel).forEach(b => { b.disabled = false; });
+    $('[data-demo="run"]', demoPanel).disabled = true;
+    for (const d of chosen) {
+      demo.results.push({ title: d.title, checks: [], error: '' });
+      renderDemoResults();
+      try {
+        demoSetData();
+        dCaption(d.title);
+        await dWait(400);
+        await d.run();
+      } catch (e) {
+        demo.results[demo.results.length - 1].error = e === DEMO_STOP ? 'Stopped by you' : `Step failed: ${e.message}`;
+        if (e === DEMO_STOP) break;
+      }
+    }
+    demo.running = false;
+    demoRestore();
+    demoShield.remove();
+    demoPointer.remove();
+    demoPointer.style.left = '-100px';
+    $('[data-demo="run"]', demoPanel).disabled = false;
+    $$('[data-demo="pause"], [data-demo="stop"]', demoPanel).forEach(b => { b.disabled = true; b.textContent = b.dataset.demo === 'pause' ? 'Pause' : 'Stop'; });
+    dCaption('Finished. Your own data is back.');
+    renderDemoResults();
+  }
+  document.addEventListener('click', e => { if (e.target.closest('[data-open-demo]')) openDemoPanel(); });
+
+  // A demo interrupted by closing the tab leaves a backup: put the real data back before loading.
+  try {
+    const b = JSON.parse(localStorage.getItem(DEMO_BACKUP_KEY) || 'null');
+    if (b && b.state) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(b.state));
+      if (b.panel) localStorage.setItem(PANEL_KEY, JSON.stringify(b.panel));
+      localStorage.removeItem(DEMO_BACKUP_KEY);
+      panelClosed = b.panel || {};
+      applyPanelState();
+    }
+  } catch (e) { /* ignore */ }
+
   // ---------- boot ----------
   S = loadState() || sampleState();
   fixViewer();
   resetForm();
   commit();
   if (loggedIn()) popPendingForViewer();
+  if (location.hash === '#demo') openDemoPanel();
 })();
 </script>
 </body>
