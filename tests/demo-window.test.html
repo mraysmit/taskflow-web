@@ -1,0 +1,87 @@
+<!-- The automated demo window: resizing from its edges and corner, by keyboard, minimising, resetting and remembering its size. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const panel = () => q('.demo-panel');
+  const box = () => panel().getBoundingClientRect();
+  const drag = async (sel, dx, dy) => {
+    const g = q(sel), r = g.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const ev = (type, cx, cy) => g.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, button: 0, buttons: 1, clientX: cx, clientY: cy, isPrimary: true }));
+    ev('pointerdown', x, y); await wait(10);
+    ev('pointermove', x + dx / 2, y + dy / 2); ev('pointermove', x + dx, y + dy); await wait(10);
+    ev('pointerup', x + dx, y + dy); await wait(10);
+  };
+  const key = (k, shift) => q('.demo-grip.tr').dispatchEvent(new KeyboardEvent('keydown', { key: k, shiftKey: !!shift, bubbles: true }));
+  try {
+    await wait(200);
+    localStorage.removeItem('designhub.demo-size');
+    q('#loginUser').value = 'achan'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300);
+    q('[data-open-demo]').click(); await wait(50);
+    const b0 = box();
+    ok('Opens at the default size, bottom left', Math.round(b0.width) === 370 && Math.round(b0.left) === 12 && Math.round(window.innerHeight - b0.bottom) === 12);
+    ok('Has top, right and corner resize handles', !!q('.demo-grip.t') && !!q('.demo-grip.r') && !!q('.demo-grip.tr'));
+
+    await drag('.demo-grip.r', 150, 0);
+    let b = box();
+    ok('Dragging the right edge widens it', Math.round(b.width) === 520 && Math.round(b.left) === 12);
+    await drag('.demo-grip.t', 0, -150);
+    const h1 = box().height;
+    await drag('.demo-grip.t', 0, -100);
+    b = box();
+    ok('Dragging the top edge up makes it taller; the bottom stays put', Math.round(b.height - h1) === 100 && Math.round(window.innerHeight - b.bottom) === 12);
+    await drag('.demo-grip.tr', -100, 50);
+    const b2 = box();
+    ok('The corner changes both at once', Math.round(b2.width) === 420 && Math.round(b2.height) === Math.round(b.height - 50));
+    ok('The scenario list grows with the window', parseFloat(getComputedStyle(q('.demo-list')).maxHeight) === Math.max(110, Math.round(b2.height * 0.4)));
+
+    await drag('.demo-grip.r', -2000, 0);
+    ok('Can’t be made too narrow', Math.round(box().width) === 300);
+    await drag('.demo-grip.tr', 5000, -5000);
+    b = box();
+    ok('Can’t grow beyond the screen', Math.round(b.width) === window.innerWidth - 24 && Math.round(b.height) === window.innerHeight - 24 && b.top >= 11);
+
+    await drag('.demo-grip.tr', -(b.width - 400), b.height - 500);
+    key('ArrowRight'); key('ArrowUp', true);
+    b = box();
+    ok('Arrow keys resize (Shift for bigger steps)', Math.round(b.width) === 420 && Math.round(b.height) === 560);
+    const saved = JSON.parse(localStorage.getItem('designhub.demo-size'));
+    ok('The size is remembered', Math.round(saved.w) === 420 && Math.round(saved.h) === 560);
+
+    q('[data-demo="min"]').click(); await wait(20);
+    ok('Minimising collapses it to the title bar', box().height < 60 && getComputedStyle(q('.demo-grip.tr')).display === 'none');
+    window.dispatchEvent(new Event('resize')); await wait(20);
+    q('[data-demo="min"]').click(); await wait(20);
+    ok('Restoring brings back the chosen size', Math.round(box().height) === 560 && Math.round(box().width) === 420);
+
+    q('[data-demo="close"]').click(); await wait(20);
+    q('[data-open-demo]').click(); await wait(50);
+    ok('Reopening keeps the chosen size', Math.round(box().width) === 420 && Math.round(box().height) === 560);
+
+    q('.demo-grip.tr').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await wait(20);
+    ok('Double-click resets to the default size', Math.round(box().width) === 370 && !localStorage.getItem('designhub.demo-size'));
+    await drag('.demo-grip.r', 80, 0);
+    key('Enter');
+    ok('Enter on the corner also resets', Math.round(box().width) === 370);
+
+    await drag('.demo-grip.r', 100, 0);
+    q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
+    [...document.querySelectorAll('.demo-list input')].forEach(i => { i.checked = i.value === 'signin'; });
+    q('[data-demo="run"]').click(); await wait(300);
+    while (q('[data-demo="run"]').disabled) await wait(100);
+    ok('A demo still runs in a resized window', q('#demoResults').textContent.includes('checks passed') && Math.round(box().width) === 470);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

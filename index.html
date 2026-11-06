@@ -64,6 +64,19 @@
   .side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 13px; line-height: 1.5; color: #8b919a; border-top: 1px solid #262930; }
   .side-foot b { color: #d9dce0; }
   .side-demo { margin-top: 12px; }
+  /* Data file status: quiet when saved, amber when it needs a click, red when saving is stuck. */
+  .side-file { margin-top: auto; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #2c3038; background: #1d2026; color: #aeb4bd; border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 12.5px; line-height: 1.4; cursor: pointer; overflow-wrap: anywhere; }
+  .side-file b { color: #e6e8eb; font-weight: 600; }
+  .side-file.warn { background: #3a2f12; border-color: #7a5d17; color: #f5dc9a; }
+  .side-file.bad { background: #3d1518; border-color: #8e2a31; color: #ffc9cd; }
+  .side-file.warn b, .side-file.bad b { color: #fff; }
+  .side-file:not([hidden]) + .side-foot { margin-top: 0; }
+  .login-file { font-size: 13.5px; line-height: 1.5; background: #f4f5f7; border: 1px solid #e1e4e8; border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+  .login-file .btn { height: 36px; font-size: 14px; justify-self: start; }
+  .link-btn { border: 0; background: none; padding: 0; color: #2e3394; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+  .file-status { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; background: #f4f5f7; border: 1px solid #e1e4e8; margin-bottom: 14px; font-size: 14.5px; line-height: 1.5; }
+  .file-status.warn { background: #fff7df; border-color: #e6cf8f; }
+  .file-status.bad { background: #fdecee; border-color: #efb9be; }
 
   /* ---------- Main ---------- */
   .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #d3d7dc; }
@@ -402,6 +415,16 @@
   .login-hint code { background: #e9ebef; border-radius: 4px; padding: 1px 5px; color: var(--ink-2); }
   .role-badge { display: inline-block; margin: 6px 6px 0 0; padding: 3px 9px; border-radius: 999px; background: #e4e4f7; color: #343a8a; font-size: 12px; font-weight: 700; }
   .ro-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding: 10px 14px; border-radius: 12px; background: #fff7df; border: 1px solid #e6cf8f; font-size: 14.5px; }
+  .verify-banner { margin-top: 12px; padding: 9px 11px; border-radius: 10px; background: #f1ebfb; border: 1px solid #d9caf2; color: #43277a; font-size: 13.5px; line-height: 1.45; display: grid; gap: 6px; }
+  .verify-banner b { color: #2f1760; }
+  .vstages { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 13px; }
+  .vstages .arrow { color: #8b7fae; }
+  .vstage { padding: 2px 8px; border-radius: 999px; background: #fff; border: 1px solid #d9caf2; color: #4a3a73; white-space: nowrap; }
+  .vstage.approved { background: #e2f3e5; border-color: #b9dcc0; color: #1f6a2f; }
+  .vstage.pending { background: #7a4fc9; border-color: #6a3fb8; color: #fff; font-weight: 700; }
+  .vstage.rejected { background: #fbe1e3; border-color: #efb9be; color: #8e1720; }
+  .vstage.cancelled { opacity: .55; }
+  .hstate.recalled { background: #eceef1; color: #3d4148; }
   .queue-banner { margin-top: 12px; padding: 9px 11px; border-radius: 10px; background: #e6f1f6; border: 1px solid #c3dce8; color: #1d4a5e; font-size: 13.5px; line-height: 1.45; }
   .member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #dde0e4; }
   .member-row:last-child { border-bottom: 0; }
@@ -414,8 +437,19 @@
   .demo-head button { border: 0; background: transparent; color: #fff; cursor: pointer; font-size: 15px; padding: 2px 6px; }
   .demo-panel.min .demo-body { display: none; }
   .demo-panel.min .demo-head { border-radius: 14px; }
-  .demo-body { padding: 10px 12px 12px; overflow: auto; display: grid; gap: 10px; }
-  .demo-list { display: grid; gap: 2px; max-height: 214px; overflow: auto; padding-right: 4px; }
+  .demo-body { padding: 10px 12px 12px; overflow: auto; display: grid; gap: 10px; flex: 1 1 auto; min-height: 0; align-content: start; }
+  .demo-list { display: grid; gap: 2px; max-height: var(--list-h, 214px); overflow: auto; padding-right: 4px; }
+  /* The panel sits in the bottom-left corner, so it resizes from its top and right edges. */
+  .demo-panel.sized { width: var(--demo-w); height: var(--demo-h); max-height: calc(100vh - 24px); }
+  .demo-panel.sized.min { height: auto; }
+  .demo-grip { position: absolute; z-index: 2; touch-action: none; }
+  .demo-grip.t { left: 16px; right: 16px; top: -4px; height: 8px; cursor: ns-resize; }
+  .demo-grip.r { top: 16px; bottom: 16px; right: -4px; width: 8px; cursor: ew-resize; }
+  .demo-grip.tr { top: -4px; right: -4px; width: 18px; height: 18px; cursor: nesw-resize; border-radius: 4px; }
+  .demo-grip.tr::after { content: ''; position: absolute; right: 8px; top: 8px; width: 6px; height: 6px; border-top: 2px solid rgba(255,255,255,.8); border-right: 2px solid rgba(255,255,255,.8); border-radius: 0 3px 0 0; }
+  .demo-grip.tr:focus-visible { outline: 2px solid #8fb3ff; outline-offset: 1px; }
+  .demo-panel.min .demo-grip { display: none; }
+  body.demo-resizing { user-select: none; cursor: nesw-resize; }
   .demo-pick { display: flex; gap: 10px; align-items: center; font-size: 13px; color: #4a4f57; }
   .demo-pick button { border: 0; background: none; padding: 0; color: #2e3394; font: inherit; font-weight: 700; cursor: pointer; }
   .demo-list label { display: flex; gap: 8px; align-items: center; padding: 3px 0; cursor: pointer; }
@@ -594,6 +628,7 @@
     <nav class="side-nav admin" aria-label="Administration">
       <button class="side-item" id="sideConfig" type="button"><span>Configuration</span><span class="n" aria-hidden="true">⚙</span></button>
     </nav>
+    <button class="side-file" id="sideFile" type="button" hidden></button>
     <div class="side-foot" id="sideFoot"></div>
     <button class="side-item side-demo" type="button" data-open-demo><span>Run demo</span><span class="n" aria-hidden="true">▶</span></button>
   </aside>
@@ -733,6 +768,7 @@
           <label><span id="lbl_nextOwner">Next owner</span><input class="input" id="f_nextOwner" list="dlPeople" placeholder="—"></label>
           <label><span id="lbl_due">Due date</span><input class="input" id="f_due" type="date"></label>
           <label><span id="lbl_status">Status</span><select class="select" id="f_status"></select></label>
+          <label id="f_approvalWrap"><span>Verification when finished</span><select class="select" id="f_approval"></select></label>
           <div class="cf-wrap" id="customFields"></div>
           <label class="full"><span id="lbl_desc">Description</span><textarea class="textarea" id="f_desc" placeholder="What needs to happen before this is passed on?"></textarea></label>
           <div class="full form-error" id="formError"></div>
@@ -759,6 +795,7 @@
     <div class="form-error" id="loginErr" role="alert"></div>
     <button class="btn btn-red" type="submit">Sign in</button>
     <button class="login-demo" type="button" data-open-demo>▶ Watch an automated demo</button>
+    <div class="login-file" id="loginFile" hidden></div>
     <div class="login-hint" id="loginHint"></div>
   </form>
 </div>
@@ -784,7 +821,7 @@
   const STORE_KEY = 'designhub.v2';
   const LEGACY_KEY = 'designhub.handoff.v1';
   const MAX_FILE_BYTES = 750 * 1024;
-  const CONFIG_VERSION = 5;
+  const CONFIG_VERSION = 6;
   const SCOPES = [{ v: 'own', l: 'Their own work' }, { v: 'team', l: 'Their team’s work' }, { v: 'all', l: 'Everything' }];
   const VIEW_AS = [{ v: 'none', l: 'Nobody' }, { v: 'team', l: 'Their team' }, { v: 'all', l: 'Anyone' }];
   const RANK = { own: 0, none: 0, team: 1, all: 2 };
@@ -858,6 +895,9 @@
     declineOffer: { name: 'Decline the offered handoff', defaults: () => ({}) },
     withdrawOffer: { name: 'Withdraw the offered handoff', defaults: () => ({}) },
     pickUp:      { name: 'Pick up from the role queue',  defaults: () => ({ land: '' }) },
+    approve:     { name: 'Approve for the viewer’s verification group', defaults: () => ({}) },
+    reject:      { name: 'Reject the verification (back to the owner)', defaults: () => ({}) },
+    recallApproval: { name: 'Withdraw the verification request', defaults: () => ({}) },
     setStatus:   { name: 'Move to status',               defaults: () => ({ to: '' }) },
     transfer:    { name: 'Hand over to the next owner',  defaults: () => ({}) },
     route:       { name: 'Route to the next team',       defaults: () => ({ useLead: true }) },
@@ -907,6 +947,7 @@
     involves:  { l: () => 'People involved', ops: [['viewer', 'include the viewer'], ['viewerTeam', 'include someone in the viewer’s team']] },
     queue:     { l: () => 'Role queue', ops: [['inMine', 'is in one of the viewer’s queues'], ['inAny', 'is in a queue'], ['none', 'is not in a queue'], ['is', 'is in the queue', 'role'], ['nextSet', 'next owner is a queue'], ['nextNone', 'next owner is not a queue']] },
     offer:     { l: () => 'Handoff offer', ops: [['pending', 'is waiting for acceptance'], ['none', 'has none pending'], ['toViewer', 'is waiting for the viewer to accept'], ['byViewer', 'was offered by the viewer']] },
+    approval:  { l: () => 'Verification', ops: [['pending', 'is waiting for verification'], ['none', 'is not waiting for verification'], ['mine', 'is waiting for the viewer to verify'], ['byViewer', 'is the viewer’s, waiting for verification'], ['group', 'is waiting for the group', 'group'], ['passed', 'has passed verification'], ['rejected', 'was sent back by a verifier']] },
   };
   const FIELD_OPS = {
     text: TEXT_OPS, longtext: TEXT_OPS, url: TEXT_OPS, email: TEXT_OPS,
@@ -953,9 +994,9 @@
   // accountable until the next owner accepts it.
   function offerHandoffSteps() {
     return [
-      { type: 'confirm', when: 'unless:f_hasNext', message: 'No next owner is set, so this closes “{title}”. To hand it off instead, use Set next first.' },
+      { type: 'confirm', when: 'unless:f_hasNext', message: 'No next owner is set, so this marks “{title}” as complete. If it needs verification, it goes to the verifying group first. To hand it off instead, use Set next first.' },
       { type: 'setStatus', when: 'unless:f_hasNext', to: 'completed' },
-      { type: 'notify', when: 'unless:f_hasNext', who: 'owner', personId: '', message: '{ref} "{title}" was closed by {actor}.', onlyIfChanged: false },
+      { type: 'notify', when: 'unless:f_hasNext', who: 'owner', personId: '', message: '{ref} "{title}" was marked complete by {actor} (now {status}).', onlyIfChanged: false },
       { type: 'handoverNote', when: 'if:f_hasNext', sections: 'Summary*, Open actions, Risks and watch-outs' },
       { type: 'offer', when: 'if:f_hasNext' },
     ];
@@ -987,11 +1028,34 @@
     { id: 'r_steward',   name: 'Data stewards',        description: 'Picks up data ownership questions from the queue.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: true },
   ];
   const OFFER_FILTERS = () => [
-    { id: 'f_noOffer',   name: 'No pending handoff or queue', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'none', value: '' }, { subject: 'queue', op: 'none', value: '' }] },
+    { id: 'f_noOffer',   name: 'No pending handoff, queue or verification', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'none', value: '' }, { subject: 'queue', op: 'none', value: '' }, { subject: 'approval', op: 'none', value: '' }] },
     { id: 'f_offered',   name: 'Awaiting acceptance',         match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'pending', value: '' }] },
     { id: 'f_offerToMe', name: 'Awaiting my acceptance',      match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'toViewer', value: '' }] },
     { id: 'f_offerByMe', name: 'My handoffs awaiting others', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'byViewer', value: '' }] },
   ];
+  // Verification: finishing an item can route it through one or more approval groups (roles) first.
+  const APPROVAL_FILTERS = () => [
+    { id: 'f_verifyMine',    name: 'Awaiting my verification',     match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'mine', value: '' }] },
+    { id: 'f_verifyPending', name: 'Waiting for verification',     match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'pending', value: '' }] },
+    { id: 'f_verifyByMe',    name: 'My items in verification',     match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'byViewer', value: '' }] },
+    { id: 'f_high',          name: 'High priority',                match: 'all', count: 'items', conds: [{ subject: 'priority', op: 'in', value: ['pr1'] }] },
+  ];
+  const APPROVAL_ACTIONS = () => [
+    { id: 'a_approve', label: 'Approve', color: '#2f7a1e', outline: false, width: 'md', show: { statuses: ['*'], filterId: 'f_verifyMine' },
+      steps: [{ type: 'reason', when: '', prompt: 'Verification note (optional)', required: false }, { type: 'approve', when: '' }] },
+    { id: 'a_reject', label: 'Reject', color: '#9b111b', outline: false, width: 'md', show: { statuses: ['*'], filterId: 'f_verifyMine' },
+      steps: [{ type: 'reason', when: '', prompt: 'What needs fixing? The owner will see this.', required: true }, { type: 'reject', when: '' }] },
+    { id: 'a_recall', label: 'Withdraw from verification', color: '#2e3394', outline: true, width: 'full', show: { statuses: ['*'], filterId: 'f_verifyByMe' },
+      steps: [{ type: 'recallApproval', when: '' }] },
+  ];
+  const VERIFY_STATUS = () => ({ id: 'verify', name: 'Verification', color: '#7a4fc9', closed: false, hold: false });
+  const DEFAULT_APPROVALS = () => ({
+    enabled: true, holdStatusId: 'verify', appliesTo: ['*'], allowSelf: false, oneStagePerPerson: true, allowNone: false,
+    chains: [
+      { id: 'ap_dual', name: 'Two-group sign-off', filterId: 'f_high', order: 'sequence', stages: [{ roleId: 'r_reviewer' }, { roleId: 'r_steward' }] },
+      { id: 'ap_std',  name: 'Controls check',     filterId: '',       order: 'sequence', stages: [{ roleId: 'r_reviewer' }] },
+    ],
+  });
   const blockNotify = () => ({ type: 'notify', when: '', who: 'owner', personId: '', message: '{ref} "{title}" was blocked by {actor}. {reason}', onlyIfChanged: false });
   const nextNotify = () => ({ type: 'notify', when: '', who: 'nextOwner', personId: '', message: 'You are the next owner of {ref} "{title}" (set by {actor}).', onlyIfChanged: true });
 
@@ -1038,6 +1102,7 @@
       { id: 'assigned',  name: 'Assigned',    color: '#3a3fd4', closed: false, hold: false },
       { id: 'progress',  name: 'In Progress', color: '#c9610d', closed: false, hold: false },
       { id: 'blocked',   name: 'Blocked',     color: '#cf232b', closed: false, hold: true },
+      VERIFY_STATUS(),
       { id: 'completed', name: 'Completed',   color: '#2f9d45', closed: true,  hold: false },
     ],
     filters: [
@@ -1057,8 +1122,10 @@
       { id: 'f_impl',     name: 'Involves Implementation', match: 'all', count: 'items',  conds: [{ subject: 'anyTeam', op: 'is', value: 't5' }] },
       ...OFFER_FILTERS(),
       ...QUEUE_FILTERS(),
+      ...APPROVAL_FILTERS(),
     ],
     actions: [
+      ...APPROVAL_ACTIONS(),
       ...QUEUE_ACTIONS(),
       ...OFFER_ACTIONS(),
       { id: 'a_start',   label: 'Start',              color: '#2e3394', outline: false, width: 'sm', show: { statuses: ['assigned', 'blocked'], filterId: 'f_noOffer' },    steps: [{ type: 'setStatus', when: '', to: 'progress' }] },
@@ -1100,6 +1167,7 @@
       position: 'top', align: 'right', animation: 'slide', animMs: 300, reduceMotion: true,
       sound: true, soundFor: 'alerts', tone: 'bell', volume: 50,
     },
+    approvals: DEFAULT_APPROVALS(),
     extensions: { scriptsEnabled: false, flags: [], fieldTypes: [], conditions: [], steps: [] },
   };
 
@@ -1178,8 +1246,10 @@
   const nextLabel = it => (it.nextOwnerId ? nameOf(it.nextOwnerId) : it.nextQueueId ? `Queue: ${queueName(it.nextQueueId)}` : '');
   // Whoever queued an item keeps sight of it until it's picked up.
   const involvedIds = it => [it.ownerId, it.nextOwnerId, it.offer && it.offer.toId, it.offer && it.offer.fromId, it.createdBy,
-    ...(it.queueId ? (it.handovers || []).filter(h => h.state === 'queued').map(h => h.fromId) : [])].filter(Boolean);
-  const involvesViewer = it => involvedIds(it).includes(S.viewerId) || [it.queueId, it.nextQueueId].some(q => q && viewerQueueIds().includes(q));
+    ...(it.queueId ? (it.handovers || []).filter(h => h.state === 'queued').map(h => h.fromId) : []),
+    (pendingApproval(it) || {}).submittedBy].filter(Boolean);
+  const involvesViewer = it => involvedIds(it).includes(S.viewerId) || [it.queueId, it.nextQueueId].some(q => q && viewerQueueIds().includes(q))
+    || openStageRoleIds(it).some(r => rolesOf(S.viewerId).some(x => x.id === r));
   function involvesViewerTeam(it) {
     const t = viewerTeamId();
     return !!t && (it.teamId === t || it.nextTeamId === t || involvedIds(it).some(id => personTeam(id) === t));
@@ -1213,7 +1283,93 @@
       out.push({ id: 'auto_team', name: `My team: ${teamNameOf(t)}`, match: 'all', count: 'items', conds: [{ subject: 'involves', op: 'viewerTeam', value: '' }, { subject: 'state', op: 'open', value: '' }] });
     }
     rolesOf(S.viewerId).filter(r => r.queue).forEach(r => out.push({ id: 'auto_q_' + r.id, name: `Queue: ${r.name}`, match: 'all', count: 'items', conds: [{ subject: 'queue', op: 'is', value: r.id }] }));
+    const groups = new Set(ap().enabled ? ap().chains.flatMap(c => c.stages.map(s => s.roleId)) : []);
+    if (rolesOf(S.viewerId).some(r => groups.has(r.id))) out.push({ id: 'auto_verify', name: 'To verify', match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'mine', value: '' }] });
     return out;
+  }
+
+  // ---------- verification (approval groups) ----------
+  // A route is an ordered list of groups (roles). Finishing an item sends it through its route first:
+  // each group approves in turn (or all at once), and only the last approval moves it to the closing status.
+  const ap = () => cfg().approvals;
+  const groupName = id => (role(id) || {}).name || 'Removed group';
+  const chainById = id => byId(ap().chains, id);
+  const pendingApproval = it => (it.approvals || []).find(r => r.state === 'pending') || null;
+  const openStages = rec => rec.stages.filter(s => s.state === 'pending');
+  const openStageRoleIds = it => { const r = pendingApproval(it); return r ? openStages(r).map(s => s.roleId) : []; };
+  const usableChain = c => !!c && c.stages.some(s => role(s.roleId));
+  // The route an item takes: its own choice in the form, otherwise the first route whose filter matches.
+  function chainFor(it) {
+    const a = ap();
+    if (!a.enabled) return null;
+    if (it.approvalChainId === 'none' && a.allowNone) return null;
+    const own = it.approvalChainId && it.approvalChainId !== 'none' ? chainById(it.approvalChainId) : null;
+    if (usableChain(own)) return own;
+    return a.chains.find(c => usableChain(c) && (!c.filterId || filterMatches(c.filterId, it))) || null;
+  }
+  const needsVerification = target => { const t = ap().appliesTo; return isClosedStatus(target) && (t.includes('*') || t.includes(target)); };
+  const firstClosingId = () => (cfg().statuses.find(s => s.closed && needsVerification(s.id)) || cfg().statuses.find(s => s.closed) || {}).id || '';
+  // Who may approve a stage: active members of the group, never the person who did the work
+  // (unless allowed), and with "one group per person" nobody who already approved another stage.
+  function stageApprovers(rec, st) {
+    const a = ap();
+    return activePeople().filter(p => p.roleIds.includes(st.roleId)
+      && (a.allowSelf || (p.id !== rec.submittedBy && p.id !== rec.ownerId))
+      && (!a.oneStagePerPerson || !rec.stages.some(s => s !== st && s.by === p.id)));
+  }
+  function myStage(it, pid = S.viewerId) {
+    const rec = pendingApproval(it);
+    return rec ? openStages(rec).find(st => stageApprovers(rec, st).some(p => p.id === pid)) || null : null;
+  }
+  const stageNo = (rec, st) => (rec.order === 'sequence' && rec.stages.length > 1 ? ` (step ${rec.stages.indexOf(st) + 1} of ${rec.stages.length})` : '');
+  function alertStages(it, rec, stages) {
+    let n = 0;
+    stages.forEach(st => stageApprovers(rec, st).forEach(p => {
+      if (sendAlert(p.id, it, { kind: 'approval', label: 'VERIFY', approvalId: rec.id, roleId: st.roleId, text: `${it.ref} "${it.title}" was marked complete by ${nameOf(rec.submittedBy)} and needs verification by ${groupName(st.roleId)}${stageNo(rec, st)}.` })) n++;
+    }));
+    return n;
+  }
+  const readApprovalAlerts = (rec, roleId) => S.alerts.forEach(a => { if (a.approvalId === rec.id && (!roleId || a.roleId === roleId)) a.read = true; });
+  function settleApproval(rec, state, note) {
+    Object.assign(rec, { state, response: note || '', settledBy: S.viewerId, settledAt: Date.now() });
+    rec.stages.forEach(s => { if (s.state === 'pending' || s.state === 'waiting') s.state = state === 'approved' ? s.state : 'cancelled'; });
+    readApprovalAlerts(rec);
+  }
+  // Where a rejected or withdrawn item goes back to: the column it was finished from
+  // (or, if that was an on-hold column, the one it was working in before the hold).
+  function returnStatus(rec, it) {
+    const s = status(rec.fromStatusId);
+    if (s && s.hold) return holdReturnTarget(it);
+    return s && !s.closed && s.id !== ap().holdStatusId ? s.id : cfg().general.initialStatusId;
+  }
+  // moveStatus reports what verification did through this, so callers can describe it.
+  let gate = null;
+  const takeGate = () => { const g = gate; gate = null; return g; };
+  function submitForApproval(it, chain, targetStatusId) {
+    const rec = {
+      id: uid('ap'), chainId: chain.id, chainName: chain.name, order: chain.order, targetStatusId, fromStatusId: it.statusId,
+      submittedBy: S.viewerId, ownerId: it.ownerId, time: Date.now(), state: 'pending',
+      stages: chain.stages.filter(s => role(s.roleId)).map((s, i) => ({ roleId: s.roleId, state: chain.order === 'parallel' || i === 0 ? 'pending' : 'waiting', by: '', at: 0, note: '' })),
+    };
+    const nobody = rec.stages.find(st => !stageApprovers(rec, st).length);
+    if (nobody) {
+      gate = { type: 'blocked', text: `${it.ref} needs verification by ${groupName(nobody.roleId)}, but nobody in that group can verify it${ap().allowSelf ? '' : ' (people can’t verify their own work)'}. Add someone to the group in Configuration › People.` };
+      return;
+    }
+    it.approvals.unshift(rec);
+    const hold = status(ap().holdStatusId);
+    if (hold && !hold.closed && hold.id !== it.statusId) { it.blockReason = ''; it.statusId = hold.id; }
+    gate = { type: 'submitted', rec, sent: alertStages(it, rec, openStages(rec)) };
+  }
+  const routeText = rec => rec.stages.map(s => groupName(s.roleId)).join(rec.order === 'parallel' ? ' + ' : ' → ');
+  // Moves gated by verification, as words for the activity log.
+  function gateParts(parts, ctx) {
+    const g = takeGate();
+    if (!g) return '';
+    if (g.type === 'submitted') { parts.push(`sent for verification: ${routeText(g.rec)}`); ctx.sent = (ctx.sent || 0) + g.sent; return 'VERIFY'; }
+    if (g.type === 'recalled') { parts.push('verification request withdrawn'); return 'VERIFY'; }
+    toast(g.text);
+    return '';
   }
   const allViews = () => [...cfg().views, ...autoFilters().map(f => ({ id: 'v_' + f.id, label: f.name, filterId: f.id, count: 'match', sidebar: true, auto: true }))];
   const nameOf = id => !id ? '' : (person(id) || {}).name || S.removed.people[id] || 'Former member';
@@ -1389,6 +1545,20 @@
         if (cd.op === 'toViewer') return !!o && o.toId === S.viewerId;
         return !!o && (o.fromId === S.viewerId || o.byId === S.viewerId);
       }
+      case 'approval': {
+        const rec = pendingApproval(it);
+        const last = (it.approvals || [])[0];
+        switch (cd.op) {
+          case 'pending': return !!rec;
+          case 'none': return !rec;
+          case 'mine': return !!myStage(it);
+          case 'byViewer': return !!rec && (rec.submittedBy === S.viewerId || it.ownerId === S.viewerId);
+          case 'group': return !!rec && !!v && openStages(rec).some(s => s.roleId === v);
+          case 'passed': return !!last && last.state === 'approved';
+          case 'rejected': return !!last && last.state === 'rejected';
+        }
+        return true;
+      }
       case 'links': {
         const linked = (it.links || []).map(l => getItem(l.itemId)).filter(Boolean);
         if (cd.op === 'any') return linked.length > 0;
@@ -1457,6 +1627,7 @@
       else if (k === 'option') { if (!fieldOptions(def.field, c).includes(cd.value)) cd.value = ''; }
       else if (k === 'flag') { if (!flagIds.has(cd.value)) cd.value = ''; }
       else if (k === 'role') { if (!qrid.has(cd.value)) cd.value = ''; }
+      else if (k === 'group') { if (!rid.has(cd.value)) cd.value = ''; }
       else if (k === 'filter') { if (!fid.has(cd.value) || cd.value === f.id) cd.value = ''; }
       else if (!k) cd.value = '';
       else if (Array.isArray(cd.value)) cd.value = kindDefault(k);
@@ -1495,6 +1666,14 @@
     });
     const cardable = new Set(cardFieldOptions(c).map(o => o.v));
     c.card.fields = c.card.fields.filter(f => cardable.has(f));
+    const a = c.approvals;
+    if (!open.some(s => s.id === a.holdStatusId)) a.holdStatusId = '';
+    const closedIds = new Set(c.statuses.filter(s => s.closed).map(s => s.id));
+    a.appliesTo = a.appliesTo.filter(x => x === '*' || closedIds.has(x));
+    a.chains.forEach(ch => {
+      if (ch.filterId && !fid.has(ch.filterId)) ch.filterId = '';
+      ch.stages.forEach(s => { if (!rid.has(s.roleId)) s.roleId = ''; });
+    });
     return c;
   }
 
@@ -1649,12 +1828,40 @@
     return out;
   }
 
+  // Version 5 had no verification: add the Verification column, its filters and buttons, and the default
+  // routes for whichever of their groups exist.
+  function upgradeV5(c) {
+    const out = clone(c);
+    out.filters = Array.isArray(c.filters) ? c.filters : [];
+    APPROVAL_FILTERS().forEach(f => { if (!out.filters.some(x => x.id === f.id)) out.filters.push(f); });
+    const no = out.filters.find(x => x.id === 'f_noOffer');
+    if (no && JSON.stringify(no.conds) === JSON.stringify([{ subject: 'offer', op: 'none', value: '' }, { subject: 'queue', op: 'none', value: '' }])) {
+      const nf = OFFER_FILTERS()[0];
+      Object.assign(no, { name: nf.name, conds: nf.conds });
+    }
+    out.actions = Array.isArray(c.actions) ? c.actions : [];
+    APPROVAL_ACTIONS().reverse().forEach(a => { if (!out.actions.some(x => x.id === a.id)) out.actions.unshift(a); });
+    const a = DEFAULT_APPROVALS();
+    if (Array.isArray(out.statuses) && out.statuses.length) {
+      if (!out.statuses.some(s => s.id === 'verify')) {
+        const at = out.statuses.findIndex(s => s && s.closed);
+        out.statuses.splice(at < 0 ? out.statuses.length : at, 0, VERIFY_STATUS());
+      }
+    }
+    const roleIds = new Set((Array.isArray(out.roles) ? out.roles : []).map(r => r.id));
+    a.chains = a.chains.filter(ch => ch.stages.every(s => roleIds.has(s.roleId)));
+    out.approvals = a;
+    out.version = CONFIG_VERSION;
+    return out;
+  }
+
   function normalizeConfig(input) {
     let c = input && typeof input === 'object' ? clone(input) : {};
     const legacy = c.version === 2 || (Array.isArray(c.statuses) && c.statuses.some(s => s && has(s, 'category'))) || Array.isArray(c.focus) || (Array.isArray(c.actions) && c.actions.some(a => a && has(a, 'kind')));
     if (legacy) c = upgradeV2(c);
     if (c.version === 3 || (c.focus && typeof c.focus === 'object') || (Array.isArray(c.views) && c.views.some(v => v && v.kind))) c = upgradeV3(c);
     if (c.version === 4 || (Object.keys(c).length && !Array.isArray(c.roles))) c = upgradeV4(c);
+    if (Object.keys(c).length && !(c.approvals && typeof c.approvals === 'object')) c = upgradeV5(c);
     const d = clone(DEFAULT_CONFIG);
     const list = (k, fix) => (Array.isArray(c[k]) ? c[k] : d[k]).filter(x => x && typeof x === 'object').map(fix);
     const str = v => String(v ?? '').trim();
@@ -1724,11 +1931,21 @@
     out.views = list('views', v => ({ id: str(v.id) || uid('v'), label: str(v.label), filterId: v.filterId || '', count: v.count || 'match', sidebar: v.sidebar !== false }));
     if (!out.views.length) out.views = clone(DEFAULT_CONFIG.views);
     out.notifications = Object.assign(d.notifications, c.notifications || {});
+    const ac = c.approvals && typeof c.approvals === 'object' ? c.approvals : d.approvals;
+    out.approvals = {
+      enabled: ac.enabled !== false, holdStatusId: str(ac.holdStatusId),
+      appliesTo: Array.isArray(ac.appliesTo) && ac.appliesTo.length ? ac.appliesTo.map(String) : ['*'],
+      allowSelf: !!ac.allowSelf, oneStagePerPerson: ac.oneStagePerPerson !== false, allowNone: !!ac.allowNone,
+      chains: (Array.isArray(ac.chains) ? ac.chains : []).filter(x => x && typeof x === 'object').map(ch => ({
+        id: str(ch.id) || uid('ap'), name: str(ch.name), filterId: ch.filterId || '', order: ch.order === 'parallel' ? 'parallel' : 'sequence',
+        stages: (Array.isArray(ch.stages) ? ch.stages : []).filter(s => s && typeof s === 'object').map(s => ({ roleId: String(s.roleId || '') })),
+      })),
+    };
     if (!out.teams.length) out.teams = clone(DEFAULT_CONFIG.teams);
     if (!out.people.length) out.people = clone(DEFAULT_CONFIG.people);
     if (!out.priorities.length) out.priorities = clone(DEFAULT_CONFIG.priorities);
     if (!out.statuses.some(s => !s.closed)) out.statuses.unshift(clone(DEFAULT_CONFIG.statuses[0]));
-    if (!out.statuses.some(s => s.closed)) out.statuses.push(clone(DEFAULT_CONFIG.statuses[3]));
+    if (!out.statuses.some(s => s.closed)) out.statuses.push(clone(DEFAULT_CONFIG.statuses.find(s => s.closed)));
     return fixRefs(out);
   }
 
@@ -1743,6 +1960,8 @@
     it.queueId = it.queueId || '';
     it.nextQueueId = it.nextQueueId || '';
     it.createdBy = it.createdBy || '';
+    it.approvals = Array.isArray(it.approvals) ? it.approvals : [];
+    it.approvalChainId = it.approvalChainId || '';
     return it;
   }
 
@@ -1835,8 +2054,298 @@
         try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); toast('Storage is full — file contents were dropped, metadata kept.'); } catch (e2) { /* ignore */ }
       }
     }
+    queueFileWrite();
   }
   function commit() { save(); render(); }
+
+  // ---------- data file ----------
+  // The workspace can be kept in a JSON file, for example in a SharePoint library synced to this PC with OneDrive.
+  // Edge and Chrome can keep writing to a file the person opened (the File System Access API, plain JavaScript);
+  // this browser's copy stays as a cache. Who is signed in, the viewer and filters belong to this browser only,
+  // so they are never written to the file. Each save first checks the file hasn't been changed by someone else.
+  const LOCAL_ONLY = ['session', 'viewerId', 'filters', 'viewId', 'search', 'page'];
+  const FILE_DIRTY_KEY = 'designhub.file-dirty';
+  const JSON_TYPES = [{ description: 'Design Hub data', accept: { 'application/json': ['.json'] } }];
+  const fileApi = () => typeof window.showOpenFilePicker === 'function' && typeof window.showSaveFilePicker === 'function';
+  // status: off · reconnect (needs permission) · ok · saving · changed (newer file) · conflict · error
+  const dataFile = { handle: null, name: '', status: 'off', lastText: '', lastModified: 0, savedAt: 0, error: '', writing: false, again: false, timer: 0, poll: 0 };
+  const isWorkspace = d => !!d && typeof d === 'object' && Array.isArray(d.items) && !!d.config && typeof d.config === 'object';
+  function workspaceText() {
+    const data = clone(S);
+    LOCAL_ONLY.forEach(k => { delete data[k]; });
+    return JSON.stringify(Object.assign({ app: 'design-hub', kind: 'workspace' }, data), null, 2);
+  }
+  // The file handle is remembered in IndexedDB, so the same file can be reopened next time.
+  function idbHandles(mode, fn) {
+    return new Promise((resolve, reject) => {
+      const open = indexedDB.open('designhub', 1);
+      open.onupgradeneeded = () => open.result.createObjectStore('handles');
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const tx = db.transaction('handles', mode);
+        const req = fn(tx.objectStore('handles'));
+        tx.oncomplete = () => { db.close(); resolve(req.result); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      };
+    });
+  }
+  const rememberHandle = h => idbHandles('readwrite', st => (h ? st.put(h, 'data') : st.delete('data'))).catch(() => {});
+  const recallHandle = () => idbHandles('readonly', st => st.get('data')).catch(() => null);
+  // The file's modified time when this browser last read or wrote it, so a restart can tell whether it changed since.
+  const FILE_SYNC_KEY = 'designhub.file-sync';
+  const saveSync = () => { try { localStorage.setItem(FILE_SYNC_KEY, JSON.stringify({ lm: dataFile.lastModified })); } catch (e) { /* ignore */ } };
+  const loadSync = () => { try { return JSON.parse(localStorage.getItem(FILE_SYNC_KEY) || '{}').lm || 0; } catch (e) { return 0; } };
+  const setDirtyOffline = on => { try { if (on) localStorage.setItem(FILE_DIRTY_KEY, '1'); else localStorage.removeItem(FILE_DIRTY_KEY); } catch (e) { /* ignore */ } };
+  const dirtyOffline = () => { try { return !!localStorage.getItem(FILE_DIRTY_KEY); } catch (e) { return false; } };
+  const permOk = async (h, ask) => {
+    const o = { mode: 'readwrite' };
+    if ((await h.queryPermission(o)) === 'granted') return true;
+    return ask ? (await h.requestPermission(o)) === 'granted' : false;
+  };
+
+  function setFileStatus(status, error = '') {
+    dataFile.status = status;
+    dataFile.error = error;
+    renderFileStatus();
+    if (S.page === 'config' && cfgSection === 'data' && !$('#view-config').hidden) renderConfig();
+  }
+  // The file's newer version may replace this browser's copy only while nothing is half-typed or unsaved here:
+  // no open dialog, no item or note being written, no unsaved configuration.
+  const typing = () => !!editingId || !!editingNoteId || ['#f_title', '#f_desc', '#noteTitle', '#noteBody', '#postText'].some(s => { const el = $(s); return el && el.value.trim(); });
+  const canAutoReload = () => !dataFile.timer && !dataFile.writing && !dlg.open && !demo.running && !typing()
+    && !(S.page === 'config' && cfgDirty());
+
+  function adoptWorkspace(data, text, lastModified) {
+    const keep = {};
+    LOCAL_ONLY.forEach(k => { keep[k] = S ? S[k] : undefined; });
+    const page = keep.page;
+    S = normalizeState(Object.assign({}, data, keep));
+    S.page = page === 'config' && !canConfigure() ? 'board' : (page || 'board');
+    if (S.session && !loggedIn()) S.session = null;
+    fixViewer();
+    cfgDraft = null; cfgRemap = emptyRemap(); cfgErrors = []; lastCustomSig = null;
+    if (editingId && !getItem(editingId)) resetForm();
+    Object.assign(dataFile, { lastText: text, lastModified, status: 'ok', error: '' });
+    saveSync();
+    setDirtyOffline(false);
+    // The copy in this browser is updated, but the file already has this content: nothing to write back.
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+    render();
+    renderFileStatus();
+  }
+  function connectFile(h, text, lastModified) {
+    Object.assign(dataFile, { handle: h, name: h.name, lastText: text || '', lastModified: lastModified || 0 });
+    rememberHandle(h);
+    clearInterval(dataFile.poll);
+    dataFile.poll = setInterval(checkFile, 5000);
+  }
+  function disconnectFile() {
+    clearTimeout(dataFile.timer);
+    clearInterval(dataFile.poll);
+    Object.assign(dataFile, { handle: null, name: '', lastText: '', lastModified: 0, timer: 0, poll: 0 });
+    rememberHandle(null);
+    setDirtyOffline(false);
+    try { localStorage.removeItem(FILE_SYNC_KEY); } catch (e) { /* ignore */ }
+    setFileStatus('off');
+  }
+
+  function queueFileWrite() {
+    if (!dataFile.handle || demo.running) return;
+    if (dataFile.status === 'reconnect') { setDirtyOffline(true); return; }
+    if (dataFile.status === 'conflict') return;
+    clearTimeout(dataFile.timer);
+    dataFile.timer = setTimeout(() => { dataFile.timer = 0; writeFile(); }, 400);
+  }
+  async function writeFile(overwrite = false) {
+    const h = dataFile.handle;
+    if (!h) return;
+    const text = workspaceText();
+    if (!overwrite && text === dataFile.lastText) return;
+    if (dataFile.writing) { dataFile.again = true; return; }
+    dataFile.writing = true;
+    setFileStatus('saving');
+    try {
+      if (!overwrite && dataFile.lastModified) {
+        const f = await h.getFile();
+        if (f.lastModified !== dataFile.lastModified && (await f.text()) !== dataFile.lastText) { setFileStatus('conflict'); return; }
+      }
+      const w = await h.createWritable();
+      await w.write(text);
+      await w.close();
+      Object.assign(dataFile, { lastText: text, lastModified: (await h.getFile()).lastModified, savedAt: Date.now() });
+      saveSync();
+      setDirtyOffline(false);
+      setFileStatus('ok');
+    } catch (e) {
+      if (e && e.name === 'NotAllowedError') { setDirtyOffline(true); setFileStatus('reconnect'); }
+      else setFileStatus('error', e && e.name === 'NotFoundError' ? 'The file was moved, renamed or deleted.' : (e && e.message) || String(e));
+    } finally {
+      dataFile.writing = false;
+      if (dataFile.again) { dataFile.again = false; queueFileWrite(); }
+    }
+  }
+  // Every few seconds: has OneDrive (or someone else) brought in a newer version of the file?
+  async function checkFile() {
+    if (!dataFile.handle || dataFile.writing || demo.running || !['ok', 'changed'].includes(dataFile.status)) return;
+    try {
+      const f = await dataFile.handle.getFile();
+      if (f.lastModified === dataFile.lastModified) return;
+      const text = await f.text();
+      if (text === dataFile.lastText) { dataFile.lastModified = f.lastModified; return; }
+      let data = null;
+      try { data = JSON.parse(text); } catch (e) { /* half-synced file: try again next time */ }
+      if (!isWorkspace(data)) return;
+      if (canAutoReload()) { adoptWorkspace(data, text, f.lastModified); toast(`Updated with the latest changes from ${dataFile.name}.`); }
+      else if (dataFile.status !== 'changed') setFileStatus('changed');
+    } catch (e) {
+      if (e && e.name === 'NotAllowedError') setFileStatus('reconnect');
+      else if (e && e.name === 'NotFoundError') setFileStatus('error', 'The file was moved, renamed or deleted.');
+    }
+  }
+  async function readHandle(h) {
+    const f = await h.getFile();
+    const text = await f.text();
+    if (!text.trim()) return { empty: true, lastModified: f.lastModified };
+    let data;
+    try { data = JSON.parse(text); } catch (e) { throw new Error(`${h.name} is not valid JSON.`); }
+    if (!isWorkspace(data)) throw new Error(`${h.name} is not a Design Hub data file.`);
+    return { data, text, lastModified: f.lastModified };
+  }
+
+  // Opening a file replaces this browser's copy with the file's data (an empty file is filled with this workspace).
+  async function openDataFile() {
+    if (!fileApi()) { toast('This browser can’t save to a file. Use Microsoft Edge or Google Chrome, or use Download backup.'); return; }
+    let h;
+    try { [h] = await window.showOpenFilePicker({ types: JSON_TYPES, multiple: false }); } catch (e) { return; }
+    try {
+      if (!(await permOk(h, true))) { toast(`The browser needs permission to save to ${h.name}.`); return; }
+      const r = await readHandle(h);
+      if (r.empty) { connectFile(h, '', r.lastModified); await writeFile(true); toast(`${h.name} was empty, so this workspace was saved into it. Changes are now saved there automatically.`); return; }
+      const go = () => { connectFile(h, r.text, r.lastModified); adoptWorkspace(r.data, r.text, r.lastModified); toast(`Opened ${h.name}: ${plural(S.items.length, 'item')}. Changes are now saved there automatically.`); };
+      if (!loggedIn()) { go(); return; }
+      modal({
+        title: `Open ${h.name}?`,
+        html: `<div>The data in this browser will be replaced by the file’s: ${plural(r.data.items.length, 'item')}, its configuration and people. From then on every change is saved to the file.</div>
+          <div class="muted">This browser has ${plural(S.items.length, 'item')} that will be replaced. <button type="button" class="link-btn" id="m_backup">Download a backup of them first</button></div>`,
+        ok: 'Open file',
+        onOpen: body => { $('#m_backup', body).onclick = () => downloadBackup(); },
+        onOk: go,
+      });
+    } catch (e) { toast(e.message); }
+  }
+  async function newDataFile() {
+    if (!fileApi()) { toast('This browser can’t save to a file. Use Microsoft Edge or Google Chrome, or use Download backup.'); return; }
+    let h;
+    try { h = await window.showSaveFilePicker({ suggestedName: 'design-hub-data.json', types: JSON_TYPES }); } catch (e) { return; }
+    connectFile(h, '', 0);
+    await writeFile(true);
+    if (dataFile.status === 'ok') toast(`Saved this workspace to ${h.name}. Changes are now saved there automatically.`);
+  }
+  // After a restart the browser asks again before the page may use the file.
+  async function reconnectFile() {
+    const h = dataFile.handle;
+    if (!h) return;
+    try {
+      if (!(await permOk(h, true))) { toast(`Permission to use ${h.name} wasn’t given.`); return; }
+      const r = await readHandle(h);
+      if (r.empty) { await writeFile(true); return; }
+      // Changes were made here while the file wasn't connected: save them if nobody else changed the file meanwhile.
+      if (dirtyOffline()) {
+        if (r.lastModified === dataFile.lastModified) {
+          await writeFile(true);
+          if (dataFile.status === 'ok') toast(`Connected to ${h.name}; the changes you made meanwhile were saved.`);
+          return;
+        }
+        Object.assign(dataFile, { lastText: r.text, lastModified: r.lastModified });
+        setFileStatus('conflict');
+        resolveConflict(r);
+        return;
+      }
+      adoptWorkspace(r.data, r.text, r.lastModified);
+      toast(`Connected to ${h.name}.`);
+    } catch (e) { setFileStatus('error', e.message); }
+  }
+  async function reloadFromFile() {
+    try {
+      const r = await readHandle(dataFile.handle);
+      if (r.empty) { toast(`${dataFile.name} is empty.`); return; }
+      adoptWorkspace(r.data, r.text, r.lastModified);
+      toast(`Reloaded ${dataFile.name}.`);
+    } catch (e) { setFileStatus('error', e.message); }
+  }
+  // Someone else saved the file after this browser last read it, and this browser has changes of its own.
+  async function resolveConflict(r) {
+    try { r = r || await readHandle(dataFile.handle); } catch (e) { setFileStatus('error', e.message); return; }
+    modal({
+      title: `${dataFile.name} was changed elsewhere`,
+      html: `<div>Someone else saved the data file (or OneDrive synced a newer copy) after this browser last read it, and you have changes that aren’t in it yet.</div>
+        <div><b>Use the file’s version</b> to take their changes; your unsaved changes are dropped. <b>Keep mine</b> writes your version over theirs, and their changes are lost.</div>
+        <div class="muted">Not sure? <button type="button" class="link-btn" id="m_backup">Download your version first</button>, then use the file’s version.</div>
+        <div class="data-actions"><button type="button" class="btn" id="m_mine">Keep mine (overwrite the file)</button></div>`,
+      ok: 'Use the file’s version',
+      onOpen: body => {
+        $('#m_backup', body).onclick = () => downloadBackup();
+        $('#m_mine', body).onclick = async () => { dlg.close(); setFileStatus('ok'); await writeFile(true); if (dataFile.status === 'ok') toast(`Your version was saved to ${dataFile.name}.`); };
+      },
+      onOk: () => { if (r.empty) writeFile(true); else { adoptWorkspace(r.data, r.text, r.lastModified); toast(`Loaded the latest ${dataFile.name}.`); } },
+    });
+  }
+  function downloadBackup() {
+    const data = clone(S);
+    delete data.page;
+    download('design-hub-backup.json', Object.assign({ app: 'design-hub', kind: 'backup' }, data));
+    toast('Backup downloaded.');
+  }
+
+  const FILE_TEXT = {
+    ok: () => [`💾 <b>${esc(dataFile.name)}</b><br>${dataFile.savedAt ? `Saved ${new Date(dataFile.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Up to date'}`, ''],
+    saving: () => [`💾 <b>${esc(dataFile.name)}</b><br>Saving…`, ''],
+    reconnect: () => [`⚠ <b>Reconnect to ${esc(dataFile.name)}</b><br>Click to allow saving to the data file.`, 'warn'],
+    changed: () => [`↻ <b>${esc(dataFile.name)} has newer changes</b><br>Click to load them.`, 'warn'],
+    conflict: () => [`⚠ <b>${esc(dataFile.name)} was changed elsewhere</b><br>Click to choose what to keep.`, 'bad'],
+    error: () => [`⚠ <b>Can’t save to ${esc(dataFile.name)}</b><br>${esc(dataFile.error)}`, 'bad'],
+  };
+  function renderFileStatus() {
+    const b = $('#sideFile');
+    const t = FILE_TEXT[dataFile.status];
+    b.hidden = !t || !S.session;
+    if (t) { const [html, cls] = t(); b.innerHTML = html; b.className = `side-file ${cls}`; }
+    renderLoginFile();
+  }
+  function renderLoginFile() {
+    const box = $('#loginFile');
+    if (!fileApi()) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = dataFile.status === 'off'
+      ? `<div>Is your team’s workspace kept in a shared data file?</div><button class="btn" type="button" data-file-cmd="open">Open data file…</button>`
+      : dataFile.status === 'reconnect'
+        ? `<div>This browser uses the data file <b>${esc(dataFile.name)}</b>. Reconnect to load the latest people and work before signing in.</div><button class="btn" type="button" data-file-cmd="reconnect">Reconnect</button>`
+        : `<div>Data file: <b>${esc(dataFile.name)}</b></div>`;
+  }
+  async function fileStatusClick() {
+    switch (dataFile.status) {
+      case 'reconnect': return reconnectFile();
+      case 'changed': return reloadFromFile();
+      case 'conflict': return resolveConflict();
+      case 'error': return modal({ title: 'Can’t save to the data file', html: `<div>${esc(dataFile.error)}</div><div>Changes are kept in this browser. Open the file again (Configuration › Import / export) or disconnect it.</div>`, ok: 'OK', okClass: 'btn', noCancel: true, onOk: () => {} });
+      default: return modal({ title: 'Data file', html: `<div>This workspace is saved to <b>${esc(dataFile.name)}</b>${dataFile.savedAt ? `, last at ${fmtTime(dataFile.savedAt)}` : ''}. Changes from others are picked up every few seconds.</div>`, ok: 'Close', okClass: 'btn', noCancel: true, onOk: () => {} });
+    }
+  }
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-file-cmd]');
+    if (c) ({ open: openDataFile, new: newDataFile, reconnect: reconnectFile, reload: reloadFromFile, disconnect: disconnectFile, conflict: () => resolveConflict() })[c.dataset.fileCmd]();
+  });
+  $('#sideFile').addEventListener('click', fileStatusClick);
+  // Starting up: reuse the remembered file. Reading it right away needs the browser to still have permission.
+  async function initDataFile() {
+    if (!fileApi() || !window.indexedDB) { renderFileStatus(); return; }
+    const h = await recallHandle();
+    if (!h) { renderFileStatus(); return; }
+    connectFile(h, '', loadSync());
+    if (await permOk(h, false).catch(() => false)) { dataFile.status = 'reconnect'; await reconnectFile(); }
+    else setFileStatus('reconnect');
+  }
 
   const loggedIn = () => !!S.session && isActive(S.session.userId);
   // The viewer is the signed-in person, or someone their roles allow them to view as.
@@ -1976,6 +2485,7 @@
   // ---------- rendering ----------
   function render() {
     renderLogin();
+    renderFileStatus();
     if (!loggedIn()) return;
     fixViewer();
     cleanFilters();
@@ -2159,10 +2669,25 @@
       ${isHoldStatus(it.statusId) && it.blockReason ? `<div class="block-reason"><b>Reason:</b> ${esc(it.blockReason)}</div>` : ''}
       ${it.offer ? `<div class="offer-banner">Awaiting acceptance by <b>${esc(nameOf(it.offer.toId))}</b> · offered by ${esc(nameOf(it.offer.fromId))}</div>` : ''}
       ${it.queueId ? `<div class="queue-banner">In the <b>${esc(queueName(it.queueId))}</b> queue, waiting to be picked up.</div>` : ''}
+      ${verifyBannerHTML(it)}
       ${linksHTML(it)}
       ${it.comments.length || it.handovers.length ? `<div class="meta-row">${it.handovers.length ? `<button class="meta-chip" type="button" data-open-item="${it.id}">⇄ ${plural(it.handovers.length, 'handover')}</button>` : ''}${it.comments.length ? `<button class="meta-chip" type="button" data-open-item="${it.id}">💬 ${plural(it.comments.length, 'comment')}</button>` : ''}</div>` : ''}
       <div class="actions">${actionsHTML(it)}</div>
     </article>`;
+  }
+
+  // The route on a card: ✓ done, ● waiting now, ○ still to come.
+  const STAGE_MARK = { approved: '✓', pending: '●', waiting: '○', rejected: '✕', cancelled: '–' };
+  const stagesHTML = rec => rec.stages.map(s => `<span class="vstage ${esc(s.state)}" title="${esc(s.state === 'approved' ? `Verified by ${nameOf(s.by)}` : s.state)}">${STAGE_MARK[s.state] || ''} ${esc(groupName(s.roleId))}</span>`).join(`<span class="arrow">${rec.order === 'parallel' ? '+' : '→'}</span>`);
+  function verifyBannerHTML(it) {
+    const rec = pendingApproval(it);
+    if (rec) return `<div class="verify-banner"><div>Waiting for verification · <b>${esc(rec.chainName || 'Verification')}</b></div><div class="vstages">${stagesHTML(rec)}</div></div>`;
+    const last = it.approvals[0];
+    if (last && last.state === 'rejected' && isOpen(it)) {
+      const st = last.stages.find(s => s.state === 'rejected') || {};
+      return `<div class="block-reason"><b>Sent back by ${esc(nameOf(st.by))} (${esc(groupName(st.roleId))}):</b> ${esc(st.note || last.response)}</div>`;
+    }
+    return '';
   }
 
   function renderBoard() {
@@ -2234,15 +2759,22 @@
         const acc = !ro && offerOpen && offerAction(it, 'acceptOffer');
         const dec = !ro && offerOpen && offerAction(it, 'declineOffer');
         const pick = !ro && a.kind === 'queue' && it && it.queueId && offerAction(it, 'pickUp');
+        const verifyOpen = !ro && a.kind === 'approval' && it && (pendingApproval(it) || {}).id === a.approvalId && myStage(it);
+        const appr = verifyOpen && offerAction(it, 'approve');
+        const rej = verifyOpen && offerAction(it, 'reject');
+        const main = acc || pick || appr;
+        const solid = (x, text) => `<button class="btn-sm" style="background:${esc(x.color)};border-color:${esc(shade(x.color))}" type="button" data-inbox-action="${esc(x.id)}" data-id="${esc(it.id)}">${esc(text || x.label)}</button>`;
         return `<div class="alert">
           <div class="alert-msg">${esc(alertText(a))}</div>
           <div class="alert-meta">${esc(alertLabel(a))} · from ${esc(nameOf(a.fromId))} · ${fmtTime(a.time)}</div>
           <div class="alert-actions">
-            ${acc ? `<button class="btn-sm" style="background:${esc(acc.color)};border-color:${esc(shade(acc.color))}" type="button" data-inbox-action="${esc(acc.id)}" data-id="${esc(it.id)}">Review & accept</button>` : ''}
-            ${pick ? `<button class="btn-sm" style="background:${esc(pick.color)};border-color:${esc(shade(pick.color))}" type="button" data-inbox-action="${esc(pick.id)}" data-id="${esc(it.id)}">${esc(pick.label)}</button>` : ''}
+            ${acc ? solid(acc, 'Review & accept') : ''}
+            ${pick ? solid(pick) : ''}
+            ${appr ? solid(appr) : ''}
             ${dec ? `<button class="btn-sm b-plain" type="button" data-inbox-action="${esc(dec.id)}" data-id="${esc(it.id)}">${esc(dec.label)}</button>` : ''}
-            <button class="btn-sm ${acc || pick ? 'b-plain' : 'b-indigo'}" type="button" data-alert-open="${a.id}">Open item</button>
-            ${acc || pick || ro ? '' : `<button class="btn-sm b-plain" type="button" data-alert-read="${a.id}">Mark read</button>`}
+            ${rej ? `<button class="btn-sm b-plain" type="button" data-inbox-action="${esc(rej.id)}" data-id="${esc(it.id)}">${esc(rej.label)}</button>` : ''}
+            <button class="btn-sm ${main ? 'b-plain' : 'b-indigo'}" type="button" data-alert-open="${a.id}">Open item</button>
+            ${main || ro ? '' : `<button class="btn-sm b-plain" type="button" data-alert-read="${a.id}">Mark read</button>`}
           </div></div>`;
       }).join('')
       : `<div class="empty-box">No unread alerts for the current viewer.</div>`;
@@ -2469,13 +3001,12 @@
   }
   const notifyKind = (kind, toId, it) => { if (cfg().notifications[kind]) sendAlert(toId, it, { kind }); };
 
-  function flashCard(id) {
-    requestAnimationFrame(() => {
-      const el = document.getElementById('card-' + id);
-      if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
-    });
+  // Rendering is synchronous, so the card is normally on the page already; otherwise try again on the next frame.
+  function flashCard(id, retry = true) {
+    const el = document.getElementById('card-' + id);
+    if (!el) { if (retry) requestAnimationFrame(() => flashCard(id, false)); return; }
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
   }
 
   // o.enc escapes each value (for URLs or JSON); o.raw keeps line breaks (for email bodies).
@@ -2599,7 +3130,7 @@
       case 'title': it.title = String(value); return 'title changed';
       case 'desc': case 'description': it.desc = String(value); return 'description changed';
       case 'due': it.due = value ? String(value).slice(0, 10) : ''; return it.due ? `due date set to ${it.due}` : 'due date cleared';
-      case 'status': { const st = status(value) || findByName(cfg().statuses, value); if (!st) throw new Error(`Unknown status “${value}”`); return moveStatus(it, st.id) ? `moved to ${st.name}` : ''; }
+      case 'status': { const st = status(value) || findByName(cfg().statuses, value); if (!st) throw new Error(`Unknown status “${value}”`); const p = moveStatus(it, st.id) ? [`moved to ${st.name}`] : []; gateParts(p, {}); return p.join('; '); }
       case 'priority': { const p = priority(value) || findByName(cfg().priorities, value); if (!p) throw new Error(`Unknown priority “${value}”`); it.priorityId = p.id; return `priority set to ${p.name}`; }
       case 'owner': { const p = value ? findP(value) : null; if (value && !p) throw new Error(`Unknown person “${value}”`); it.ownerId = p ? p.id : ''; if (p && p.teamId) it.teamId = p.teamId; return p ? `assigned to ${p.name}` : 'unassigned'; }
       case 'nextowner': { const p = value ? findP(value) : null; if (value && !p) throw new Error(`Unknown person “${value}”`); it.nextOwnerId = p ? p.id : ''; it.nextTeamId = p ? (p.teamId || it.nextTeamId) : ''; return p ? `next owner set to ${p.name}` : 'next owner cleared'; }
@@ -2655,9 +3186,22 @@
     const p = status(it.prevStatusId);
     return p && !p.closed && !p.hold ? p.id : cfg().general.initialStatusId;
   }
-  // Status changes keep the hold bookkeeping in one place.
-  function moveStatus(it, target, reason = '') {
+  // Status changes keep the hold and verification bookkeeping in one place. Finishing an item that has a
+  // verification route (or dropping it in the Verification column) sends it for verification instead;
+  // moving it anywhere else while it waits withdraws the request. o.bypass is used by verification itself.
+  function moveStatus(it, target, reason = '', o = {}) {
     if (!status(target) || target === it.statusId) return false;
+    if (!o.bypass) {
+      const rec = pendingApproval(it);
+      const hold = ap().holdStatusId;
+      const finishing = needsVerification(target) || (!!hold && target === hold);
+      if (rec && finishing) { gate = { type: 'waiting', text: `${it.ref} is still waiting for verification by ${openStages(rec).map(s => groupName(s.roleId)).join(' and ')}.` }; return false; }
+      if (rec) { settleApproval(rec, 'recalled', `Moved to ${statusName(target)}`); gate = { type: 'recalled', rec }; }
+      else if (finishing && !isClosedStatus(it.statusId)) {
+        const chain = chainFor(it);
+        if (chain) { submitForApproval(it, chain, needsVerification(target) ? target : firstClosingId()); return false; }
+      }
+    }
     if (isHoldStatus(target) && !isHoldStatus(it.statusId)) it.prevStatusId = it.statusId;
     it.blockReason = isHoldStatus(target) ? reason : '';
     it.statusId = target;
@@ -2728,6 +3272,7 @@
   }
 
   function applySteps(a, it, snap, steps, ctx) {
+    takeGate();
     const parts = [];
     const notes = [];
     let type = 'EDIT';
@@ -2737,6 +3282,7 @@
         case 'setStatus': {
           const target = s.to === '__prev' ? holdReturnTarget(it) : s.to;
           if (moveStatus(it, target, ctx.reason)) { parts.push(`moved to ${statusName(target)}`); type = isHoldStatus(target) ? 'BLOCK' : (type === 'HANDOFF' ? type : 'STATUS'); }
+          type = gateParts(parts, ctx) || type;
           break;
         }
         case 'transfer': {
@@ -2850,6 +3396,47 @@
           type = 'HANDOFF';
           break;
         }
+        case 'approve': case 'reject': {
+          const rec = pendingApproval(it);
+          if (!rec) break;
+          const st = myStage(it);
+          if (!st) { toast(`You can’t verify ${it.ref}: ${openStages(rec).some(s => rolesOf(S.viewerId).some(r => r.id === s.roleId)) ? 'you did this work or already verified another step' : `it is waiting for ${openStages(rec).map(s => groupName(s.roleId)).join(' and ')}`}.`); break; }
+          const tell = (label, text) => uniq([rec.submittedBy, it.ownerId]).forEach(pid => { if (sendAlert(pid, it, { kind: 'custom', label, text })) ctx.sent = (ctx.sent || 0) + 1; });
+          Object.assign(st, { state: s.type === 'approve' ? 'approved' : 'rejected', by: S.viewerId, at: Date.now(), note: ctx.reason || '' });
+          readApprovalAlerts(rec, st.roleId);
+          type = 'VERIFY';
+          if (s.type === 'reject') {
+            settleApproval(rec, 'rejected', ctx.reason);
+            const back = returnStatus(rec, it);
+            moveStatus(it, back, '', { bypass: true });
+            parts.push(`sent back by ${groupName(st.roleId)} (verification rejected)`);
+            tell('SENT BACK', `${viewerName()} (${groupName(st.roleId)}) sent ${it.ref} "${it.title}" back: ${ctx.reason}. It is in ${statusName(back)} again.`);
+            break;
+          }
+          parts.push(`verified for ${groupName(st.roleId)}`);
+          if (openStages(rec).length) break;
+          const next = rec.stages.find(x => x.state === 'waiting');
+          if (next) {
+            next.state = 'pending';
+            ctx.sent = (ctx.sent || 0) + alertStages(it, rec, [next]);
+            parts.push(`passed to ${groupName(next.roleId)}`);
+            break;
+          }
+          settleApproval(rec, 'approved', ctx.reason);
+          moveStatus(it, rec.targetStatusId, '', { bypass: true });
+          parts.push(`passed verification and moved to ${statusName(it.statusId)}`);
+          tell('VERIFIED', `${it.ref} "${it.title}" passed verification (${routeText(rec)}) and is now ${statusName(it.statusId)}.`);
+          break;
+        }
+        case 'recallApproval': {
+          const rec = pendingApproval(it);
+          if (!rec) break;
+          settleApproval(rec, 'recalled', ctx.reason);
+          moveStatus(it, returnStatus(rec, it), '', { bypass: true });
+          parts.push(`verification request withdrawn (back in ${statusName(it.statusId)})`);
+          type = 'VERIFY';
+          break;
+        }
         case 'declineOffer':
           if (!it.offer) break;
           parts.push(`handoff declined by ${viewerName()}`);
@@ -2952,6 +3539,14 @@
         ${h.response ? `<div class="note-sec"><b>${esc(responseLabel(h))}</b>${esc(h.response)}</div>` : ''}
         ${h.settledAt ? `<div class="muted" style="margin-top:6px">${esc(HSTATE[h.state] || h.state)} by ${esc(nameOf(h.settledBy))} · ${fmtTime(h.settledAt)}</div>` : ''}
       </div>`).join('') : '<p class="muted" style="margin:0">No handoffs yet.</p>';
+    const VSTATE = { pending: 'Waiting', approved: 'Verified', rejected: 'Sent back', recalled: 'Withdrawn' };
+    const route = chainFor(it);
+    const verifications = it.approvals.length ? it.approvals.map(r => `<div class="handover">
+        <div class="handover-top"><b>${esc(r.chainName || 'Verification')}</b><span class="hstate ${esc(r.state === 'approved' ? 'accepted' : r.state === 'rejected' ? 'declined' : r.state)}">${esc(VSTATE[r.state] || r.state)}</span><span class="muted">sent by ${esc(nameOf(r.submittedBy))} · ${fmtTime(r.time)}</span></div>
+        <div class="vstages">${stagesHTML(r)}</div>
+        ${r.stages.filter(s => s.by).map(s => `<div class="note-sec"><b>${esc(groupName(s.roleId))}: ${esc(s.state === 'approved' ? 'verified' : 'sent back')} by ${esc(nameOf(s.by))} · ${fmtTime(s.at)}</b>${esc(s.note || '—')}</div>`).join('')}
+        ${r.state === 'recalled' ? `<div class="muted" style="margin-top:6px">Withdrawn by ${esc(nameOf(r.settledBy))} · ${fmtTime(r.settledAt)}${r.response ? ` — ${esc(r.response)}` : ''}</div>` : ''}
+      </div>`).join('') : `<p class="muted" style="margin:0">${route ? `Not sent yet. When it is finished it goes to <b>${esc(route.name)}</b>: ${esc(route.stages.map(s => groupName(s.roleId)).join(route.order === 'parallel' ? ' + ' : ' → '))}.` : 'This item needs no verification.'}</p>`;
     const comments = it.comments.length
       ? it.comments.map(c => `<div class="comment"><div class="who"><b>${esc(nameOf(c.authorId))}</b> · ${fmtTime(c.time)}</div>${esc(c.text)}</div>`).join('')
       : '<p class="muted" style="margin:0">No comments yet.</p>';
@@ -2962,6 +3557,7 @@
       ${it.offer ? `<div class="offer-banner">Waiting for <b>${esc(nameOf(it.offer.toId))}</b> to accept, since ${fmtTime(it.offer.time)}.</div>` : ''}
       ${it.desc ? `<p style="margin:0">${esc(it.desc)}</p>` : ''}
       <div class="detail-sec"><h4>Handovers</h4>${handovers}</div>
+      ${ap().enabled || it.approvals.length ? `<div class="detail-sec"><h4>Verification</h4>${verifications}</div>` : ''}
       <div class="detail-sec"><h4>Comments (${it.comments.length})</h4>${comments}
         <div style="display:grid;gap:8px;margin-top:10px">
           <textarea class="textarea" id="d_comment" placeholder="Add a comment as ${esc(viewerName())}…" style="min-height:70px" aria-label="Comment"></textarea>
@@ -3010,6 +3606,12 @@
     };
     fill(F('priority'), cfg().priorities.map(p => ({ v: p.id, l: p.name })), want.priorityId, defaultPriorityId());
     fill(F('status'), cfg().statuses.map(s => ({ v: s.id, l: s.name })), want.statusId, cfg().general.initialStatusId);
+    // Verification route: by rule (the first route whose filter matches), a chosen route, or none if allowed.
+    const a = ap();
+    $('#f_approvalWrap').hidden = !a.enabled || !a.chains.length;
+    const routes = [{ v: '', l: 'Automatic (by rule)' }, ...a.chains.filter(usableChain).map(c => ({ v: c.id, l: `${c.name}: ${c.stages.map(s => groupName(s.roleId)).join(c.order === 'parallel' ? ' + ' : ' → ')}` })), ...(a.allowNone ? [{ v: 'none', l: 'No verification' }] : [])];
+    fill(F('approval'), routes, want.approvalChainId === undefined ? '' : want.approvalChainId, '');
+    if (want.approvalChainId !== undefined) F('approval').value = routes.some(r => r.v === want.approvalChainId) ? want.approvalChainId : '';
   }
 
   const cfDomId = f => 'cf_' + f.id;
@@ -3117,7 +3719,7 @@
     editingId = null;
     ['title', 'ref', 'nextTeam', 'nextOwner', 'due', 'desc'].forEach(k => { F(k).value = ''; });
     F('ref').placeholder = nextRef();
-    renderFormOptions({ priorityId: defaultPriorityId(), statusId: cfg().general.initialStatusId });
+    renderFormOptions({ priorityId: defaultPriorityId(), statusId: cfg().general.initialStatusId, approvalChainId: '' });
     F('team').value = teamNameOf(viewerTeamId());
     F('owner').value = viewerName();
     renderCustomFields({}, true);
@@ -3129,7 +3731,7 @@
     editingId = it.id;
     F('title').value = it.title;
     F('ref').value = it.ref;
-    renderFormOptions({ priorityId: it.priorityId, statusId: it.statusId });
+    renderFormOptions({ priorityId: it.priorityId, statusId: it.statusId, approvalChainId: it.approvalChainId || '' });
     F('team').value = teamNameOf(it.teamId);
     F('owner').value = ownerLabel(it);
     F('nextTeam').value = teamNameOf(it.nextTeamId);
@@ -3267,6 +3869,7 @@
     const d = {
       title, ref, priorityId: F('priority').value, teamId, ownerId, nextTeamId, nextOwnerId, due: F('due').value, desc: F('desc').value.trim(),
       queueId: ownerQueue ? ownerQueue.id : '', nextQueueId: nextQueue ? nextQueue.id : '',
+      approvalChainId: F('approval').value || '',
     };
     const queueAlert = it => `${it.ref} "${it.title}" was placed in the ${queueName(it.queueId)} queue by ${viewerName()}. Pick it up to take ownership.`;
     const newStatus = F('status').value;
@@ -3276,10 +3879,13 @@
       const it = getItem(editingId);
       const before = clone(it);
       Object.assign(it, d, { fields: Object.assign({}, it.fields, custom), updated: Date.now() });
-      moveStatus(it, newStatus, it.blockReason);
+      const moved = moveStatus(it, newStatus, it.blockReason);
+      const gparts = [];
+      const gtype = gateParts(gparts, {});
       id = it.id;
       log(`${it.ref} updated by ${viewerName()}.`, 'EDIT', it);
-      if (before.statusId !== it.statusId) log(`${it.ref} moved to ${statusName(it.statusId)} by ${viewerName()}.`, 'STATUS', it);
+      if (moved) log(`${it.ref} moved to ${statusName(it.statusId)} by ${viewerName()}.`, 'STATUS', it);
+      if (gparts.length) { log(`${it.ref} ${gparts.join('; ')} by ${viewerName()}.`, gtype, it); toast(`${it.ref} ${gparts.join('; ')}.`); }
       if (it.ownerId !== before.ownerId) notifyKind('assigned', it.ownerId, it);
       if (it.queueId && it.queueId !== before.queueId) notifyQueue(it.queueId, it, queueAlert(it));
       if (it.nextOwnerId && it.nextOwnerId !== before.nextOwnerId) notifyKind('next', it.nextOwnerId, it);
@@ -3287,10 +3893,13 @@
     } else {
       const now = Date.now();
       const it = itemDefaults(Object.assign({ id: uid('i'), created: now, updated: now, statusId: cfg().general.initialStatusId, prevStatusId: '', blockReason: '', createdBy: S.viewerId }, d, { fields: custom }));
-      moveStatus(it, newStatus);
       S.items.push(it);
+      moveStatus(it, newStatus);
+      const gparts = [];
+      const gtype = gateParts(gparts, {});
       id = it.id;
       log(`${it.ref} created by ${viewerName()}.`, 'CREATE', it);
+      if (gparts.length) log(`${it.ref} ${gparts.join('; ')} by ${viewerName()}.`, gtype, it);
       notifyKind('assigned', it.ownerId, it);
       if (it.queueId) notifyQueue(it.queueId, it, queueAlert(it));
       if (it.nextOwnerId) notifyKind('next', it.nextOwnerId, it);
@@ -3318,6 +3927,7 @@
     { id: 'statuses', label: 'Statuses & columns', count: d => d.statuses.length },
     { id: 'filters', label: 'Filters & rules', count: d => d.filters.length },
     { id: 'workflow', label: 'Workflow & buttons', count: d => d.actions.length },
+    { id: 'approvals', label: 'Verification', count: d => d.approvals.chains.length },
     { id: 'fields', label: 'Fields & card layout', count: d => d.fields.custom.length },
     { id: 'dashboard', label: 'Stat cards', count: d => d.stats.length },
     { id: 'views', label: 'Board views', count: d => d.views.length },
@@ -3403,6 +4013,7 @@
       if (a.show.filterId === fid) uses.push({ kind: 'action', text: `button “${a.label}” (shown when)` });
       if (a.steps.some(s => s.when && s.when.split(':')[1] === fid)) uses.push({ kind: 'action', text: `button “${a.label}” (step condition)` });
     });
+    d.approvals.chains.forEach(ch => { if (ch.filterId === fid) uses.push({ kind: 'route', text: `verification route “${ch.name}”` }); });
     return uses;
   }
 
@@ -3455,6 +4066,7 @@
       case 'team': value = cell('Value', sel(`${base}.value`, teamOpts(d, '— choose —'), cd.value, { rerender: true })); break;
       case 'option': value = cell('Value', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...fieldOptions(def.field, d).map(o => ({ v: o, l: o }))], cd.value, { rerender: true })); break;
       case 'role': value = cell('Queue', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...d.roles.filter(r => r.queue).map(r => ({ v: r.id, l: r.name || '(unnamed)' }))], cd.value, { rerender: true }), 'w-md'); break;
+      case 'group': value = cell('Group', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...d.roles.map(r => ({ v: r.id, l: r.name || '(unnamed)' }))], cd.value, { rerender: true }), 'w-md'); break;
       case 'flag': value = d.extensions.flags.length
         ? cell('Flag', sel(`${base}.value`, [{ v: '', l: '— choose —' }, ...d.extensions.flags.map(f => ({ v: f.id, l: f.name || '(unnamed)' }))], cd.value, { rerender: true }), 'w-md')
         : '<div class="cell grow muted">Define status flags under Extensions first.</div>'; break;
@@ -3520,6 +4132,9 @@
       case 'offer': params = '<div class="cell grow muted">Sends the item to the next owner, who must accept it. The current owner stays accountable until then. Pair it with “Ask for a handover note”.</div>'; break;
       case 'acceptOffer': params = cell('After accepting, the item is', sel(`${base}.land`, statusOpts(d, x => !x.closed), s.land), 'w-md') + '<div class="cell grow muted">Shows the handover note in the dialog, then makes the receiver the owner.</div>'; break;
       case 'declineOffer': case 'withdrawOffer': params = '<div class="cell grow muted">Cancels the pending offer; the current owner keeps the item. Pair Decline with a required reason.</div>'; break;
+      case 'approve': params = '<div class="cell grow muted">Signs off the viewer’s group. The next group is alerted; after the last one the item moves to its closing status. Routes are set under Verification.</div>'; break;
+      case 'reject': params = '<div class="cell grow muted">Sends the item back to the column it was finished from and tells the owner why. Pair it with a required reason.</div>'; break;
+      case 'recallApproval': params = '<div class="cell grow muted">Cancels the pending verification and returns the item to the column it was finished from.</div>'; break;
       case 'runButton': params = cell('Button', sel(`${base}.actionId`, [{ v: '', l: '— choose —' }, ...d.actions.filter(x => x.id !== ownerId).map(x => ({ v: x.id, l: x.label || '(unnamed)' }))], s.actionId), 'w-md'); break;
       default:
         if (isCustomStep(s.type)) {
@@ -3601,7 +4216,7 @@
             ${chkCell(chk(`roles.${i}.actAs`, r.actAs, 'Can act while viewing as someone', { disabled: r.viewAs === 'none' }))}
             ${chkCell(chk(`roles.${i}.configure`, r.configure, 'Can configure the workspace'))}
             ${chkCell(chk(`roles.${i}.queue`, r.queue, 'Has a work queue'))}
-            <div class="cell full muted">${plural(holders, 'person')}${r.queue ? ` · ${plural(queued, 'item')} in or heading to its queue` : ''}${r.viewAs !== 'none' && !r.actAs ? ' · viewing others is read-only' : ''}</div>
+            <div class="cell full muted">${plural(holders, 'person')}${r.queue ? ` · ${plural(queued, 'item')} in or heading to its queue` : ''}${(() => { const rs = d.approvals.chains.filter(ch => ch.stages.some(s => s.roleId === r.id)); return rs.length ? ` · verifies in ${rs.map(ch => `“${esc(ch.name)}”`).join(', ')}` : ''; })()}${r.viewAs !== 'none' && !r.actAs ? ' · viewing others is read-only' : ''}</div>
           </div>`;
         }).join('')}
         ${addBtn('roles', '+ Add role')}`),
@@ -3744,6 +4359,40 @@
         }).join('')}
         ${addBtn('views', '+ Add view')}`),
 
+    approvals: d => {
+      const a = d.approvals;
+      const roleOpts = [{ v: '', l: '— choose a group —' }, ...d.roles.map(r => ({ v: r.id, l: r.name || '(unnamed)' }))];
+      const members = rid => d.people.filter(p => p.active && (p.roleIds || []).includes(rid)).length;
+      const waiting = S.items.filter(i => pendingApproval(i)).length;
+      const matching = withConfig(d, () => a.chains.map(ch => S.items.filter(it => isOpen(it) && chainFor(it) === ch).length));
+      return section('Verification', `When an item is marked complete, it can go to one or more <b>approval groups</b> to be verified first. A group is a role (see Roles); anyone in it can verify for the group. Each group signs off in turn, or all at once; the last sign-off moves the item to its closing status. A rejection sends it back to its owner with the reason. Verifiers see items in an automatic <b>To verify</b> view and in their Action Inbox. ${plural(waiting, 'item')} waiting now.`, `
+          <div class="gen-grid">
+            <div class="cell full">${chk('approvals.enabled', a.enabled, 'Verify work before it closes', { rerender: true })}</div>
+            ${cell('While waiting, items sit in', sel('approvals.holdStatusId', [{ v: '', l: 'Their current column' }, ...statusOpts(d, s => !s.closed)], a.holdStatusId))}
+            <div class="cell full"><span class="mini-label">Needs verification when moving to</span>${toggleChips('approvals.appliesTo', a.appliesTo, statusOpts(d, s => s.closed), { any: 'Any closing status' })}</div>
+            <div class="cell full">${chk('approvals.allowSelf', a.allowSelf, 'People can verify their own work')}<span class="toggle-desc">Off: the owner and whoever marked it complete can’t verify it (maker-checker).</span></div>
+            <div class="cell full">${chk('approvals.oneStagePerPerson', a.oneStagePerPerson, 'A person can sign off only one group per item')}<span class="toggle-desc">So two groups really means two different people.</span></div>
+            <div class="cell full">${chk('approvals.allowNone', a.allowNone, 'Items can opt out (“No verification” in the form)')}</div>
+          </div>
+          <p class="cfg-hint">Tip: moving an item into the waiting column also sends it for verification, and moving it out withdraws the request.</p>`) +
+        section('Routes', 'Routes are checked from the top; an item takes the first one whose filter it matches (or the one chosen in its form). Each step names a group.', `
+          ${a.chains.map((ch, i) => `<div class="crow block">
+            ${cell('Route name', inp(`approvals.chains.${i}.name`, ch.name, { rerender: true, ph: 'e.g. Two-group sign-off' }))}
+            ${cell('Applies to', sel(`approvals.chains.${i}.filterId`, [{ v: '', l: 'Any item' }, ...filterOpts(d)], ch.filterId, { rerender: true }), 'w-md')}
+            ${cell('Groups sign off', sel(`approvals.chains.${i}.order`, [{ v: 'sequence', l: 'One after another' }, { v: 'parallel', l: 'All at once' }], ch.order, { rerender: true }), 'w-md')}
+            <span class="match-pill">${matching[i]} open now</span>
+            ${tools('approvals.chains', i, a.chains.length)}
+            <div class="cell full"><span class="mini-label">Approval groups${ch.order === 'sequence' ? ', in order' : ''}</span>
+              ${ch.stages.map((s, j) => `<div class="crow">
+                ${cell(`${ch.order === 'sequence' ? `Step ${j + 1}` : 'Group'}${s.roleId ? ` · ${members(s.roleId) === 1 ? '1 person' : `${members(s.roleId)} people`}` : ''}`, sel(`approvals.chains.${i}.stages.${j}.roleId`, roleOpts, s.roleId, { rerender: true }))}
+                ${tools(`approvals.chains.${i}.stages`, j, ch.stages.length)}
+              </div>`).join('') || '<p class="muted" style="margin:0 0 6px">No groups yet.</p>'}
+              ${addBtn(`approvals.chains.${i}.stages`, '+ Add group')}
+            </div>
+          </div>`).join('') || '<p class="muted" style="margin:0 0 8px">No routes: nothing needs verification.</p>'}
+          ${addBtn('approvals.chains', '+ Add route')}`);
+    },
+
     notifications: d => section('Form alerts', 'Alerts from the Create or Edit form. Alerts from card buttons are set per button as “Send an alert” steps in Workflow & buttons. People are never alerted about their own actions.', `
         <div class="toggle-list">
           <div>${chk('notifications.assigned', d.notifications.assigned, 'Assigned alerts')}<span class="toggle-desc">The owner, when an item is created for them or reassigned to them in the form.</span></div>
@@ -3883,7 +4532,30 @@ ctx.person(name)      ctx.team(name)</pre>
           ${placeholderHint}`);
     },
 
-    data: () => section('Configuration file', 'Move a configuration between browsers or keep a copy. Importing loads it into this screen so you can review it before saving. Files from earlier versions are upgraded automatically.', `
+    data: () => {
+      const st = dataFile.status;
+      const tone = { reconnect: 'warn', changed: 'warn', conflict: 'bad', error: 'bad' }[st] || '';
+      const statusText = {
+        off: 'Not using a data file: everything is kept in this browser only.',
+        ok: `Saving to <b>${esc(dataFile.name)}</b>${dataFile.savedAt ? ` · last saved ${fmtTime(dataFile.savedAt)}` : ''}. Changes from others are picked up every few seconds.`,
+        saving: `Saving to <b>${esc(dataFile.name)}</b>…`,
+        reconnect: `This browser uses <b>${esc(dataFile.name)}</b>, but needs your permission again before it can save to it.`,
+        changed: `<b>${esc(dataFile.name)}</b> has newer changes from someone else.`,
+        conflict: `<b>${esc(dataFile.name)}</b> was changed by someone else while you also made changes. Choose which version to keep.`,
+        error: `Can’t save to <b>${esc(dataFile.name)}</b>: ${esc(dataFile.error)}`,
+      }[st];
+      const buttons = !fileApi() ? '' : st === 'off'
+        ? `<button class="btn btn-red" type="button" data-file-cmd="open">Open data file…</button><button class="btn" type="button" data-file-cmd="new">Save to a new data file…</button>`
+        : `${st === 'reconnect' ? '<button class="btn btn-red" type="button" data-file-cmd="reconnect">Reconnect</button>' : ''}
+           ${st === 'conflict' ? '<button class="btn btn-red" type="button" data-file-cmd="conflict">Choose what to keep…</button>' : ''}
+           ${['ok', 'changed', 'error'].includes(st) ? '<button class="btn" type="button" data-file-cmd="reload">Reload from file</button>' : ''}
+           <button class="btn" type="button" data-file-cmd="open">Open a different file…</button>
+           <button class="btn" type="button" data-file-cmd="disconnect">Stop using the file</button>`;
+      return section('Data file', `Keep the whole workspace (configuration, people, items, alerts and activity) in a JSON file instead of only in this browser. To share it through <b>SharePoint</b>, click <b>Sync</b> on the document library so it appears in File Explorer, then open or create the file in that folder. Every change is saved to the file, and changes others make arrive when OneDrive syncs them.`, `
+          <div class="file-status ${tone}"><div>${fileApi() ? statusText : 'This browser can’t save to a file directly. Use Microsoft Edge or Google Chrome, or use Download backup and Restore below.'}</div></div>
+          <div class="data-actions">${buttons}</div>
+          <p class="cfg-hint">Who is signed in and your filters stay in this browser; everything else is in the file. It works best when one person edits at a time: if two people save at once, you’re asked which version to keep. The file includes everyone’s password hashes and any Extensions scripts, so only give edit rights to the folder to people you trust.</p>`) +
+      section('Configuration file', 'Move a configuration between browsers or keep a copy. Importing loads it into this screen so you can review it before saving. Files from earlier versions are upgraded automatically.', `
         <div class="data-actions">
           <button class="btn" type="button" data-cfg-cmd="export-config">Export configuration</button>
           <button class="btn" type="button" data-cfg-cmd="import-config">Import configuration…</button>
@@ -3893,7 +4565,8 @@ ctx.person(name)      ctx.team(name)</pre>
         <div class="data-actions">
           <button class="btn" type="button" data-cfg-cmd="export-all">Download backup</button>
           <button class="btn" type="button" data-cfg-cmd="import-all">Restore from backup…</button>
-        </div>`),
+        </div>`);
+    },
   };
 
   function renderConfig() {
@@ -4001,6 +4674,8 @@ ctx.person(name)      ctx.team(name)</pre>
     'card.fields': () => { const used = new Set(cfgDraft.card.fields); return (cardFieldOptions(cfgDraft).find(o => !used.has(o.v)) || cardFieldOptions(cfgDraft)[0]).v; },
     stats: () => ({ id: uid('st'), filterId: (cfgDraft.filters.find(f => f.id === 'f_dueSoon') || cfgDraft.filters[0] || {}).id || '', label: 'Due soon', sub: '', visible: true }),
     views: () => ({ id: uid('v'), label: '', filterId: '', count: 'match', sidebar: true }),
+    'approvals.chains': () => ({ id: uid('ap'), name: '', filterId: '', order: 'sequence', stages: [{ roleId: (cfgDraft.roles.find(r => r.queue) || cfgDraft.roles[0] || {}).id || '' }] }),
+    'approvals.chains.*.stages': () => ({ roleId: '' }),
     'extensions.flags': () => ({ id: uid('fl'), name: '', help: '' }),
     'extensions.fieldTypes': () => ({ id: uid('ft'), name: '', base: 'text', pattern: '', patternMsg: '', min: '', max: '', decimals: '', prefix: '', suffix: '', options: [], script: '' }),
     'extensions.conditions': () => ({ id: uid('xc'), name: '', params: [], script: '!item.closed' }),
@@ -4051,6 +4726,9 @@ ctx.person(name)      ctx.team(name)</pre>
     }
     if (list === 'statuses') {
       d.general.initialStatusId = m(d.general.initialStatusId);
+      d.approvals.holdStatusId = m(d.approvals.holdStatusId) || '';
+      d.approvals.appliesTo = uniq(d.approvals.appliesTo.map(m).filter(Boolean));
+      if (!d.approvals.appliesTo.length) d.approvals.appliesTo = ['*'];
       d.actions.forEach(a => {
         a.show.statuses = uniq(a.show.statuses.map(m).filter(Boolean));
         a.steps.forEach(s => { if (s.type === 'setStatus') s.to = m(s.to); if (s.type === 'acceptOffer') s.land = m(s.land); });
@@ -4112,7 +4790,7 @@ ctx.person(name)      ctx.team(name)</pre>
   function deleteFilter(i) {
     const f = cfgDraft.filters[i];
     const uses = filterUses(cfgDraft, f.id);
-    const blocking = uses.filter(u => u.kind === 'action' || u.kind === 'filter');
+    const blocking = uses.filter(u => u.kind === 'action' || u.kind === 'filter' || u.kind === 'route');
     if (blocking.length) {
       modal({ title: `“${f.name || 'Filter'}” is in use`, html: `<div>It is used by ${esc(blocking.map(u => u.text).join(', '))}. Change those first so their behaviour stays predictable.</div>`, ok: 'OK', okClass: 'btn', onOk: () => {} });
       return;
@@ -4223,6 +4901,16 @@ ctx.person(name)      ctx.team(name)</pre>
     });
     d.stats.forEach((s, i) => { if (!String(s.label || '').trim()) add('dashboard', `Stat card #${i + 1} needs a label.`); if (!d.filters.some(f => f.id === s.filterId)) add('dashboard', `Stat card #${i + 1} needs a filter.`); });
     d.views.forEach((v, i) => { if (!String(v.label || '').trim()) add('views', `Board view #${i + 1} needs a label.`); });
+    const apv = d.approvals;
+    if (apv.holdStatusId && !d.statuses.some(s => s.id === apv.holdStatusId && !s.closed)) add('approvals', 'The waiting column must be an open status.');
+    apv.chains.forEach((ch, i) => {
+      const nm = ch.name.trim() || `#${i + 1}`;
+      if (!ch.name.trim()) add('approvals', `Verification route #${i + 1} needs a name.`);
+      if (!ch.stages.length) add('approvals', `Verification route “${nm}” needs at least one group.`);
+      ch.stages.forEach((s, j) => { if (!d.roles.some(r => r.id === s.roleId)) add('approvals', `Verification route “${nm}”, step ${j + 1}, needs a group.`); });
+      const dup = ch.stages.map(s => s.roleId).find((r, j, all) => r && all.indexOf(r) !== j);
+      if (dup) add('approvals', `Verification route “${nm}” lists ${(d.roles.find(r => r.id === dup) || {}).name || 'a group'} twice.`);
+    });
     if (!d.views.length) add('views', 'Add at least one board view.');
     const nt = d.notifications;
     if (!(+nt.popupSeconds >= 2 && +nt.popupSeconds <= 120)) add('notifications', 'Pop-up duration must be between 2 and 120 seconds.');
@@ -4370,12 +5058,7 @@ ctx.person(name)      ctx.team(name)</pre>
       case 'defaults':
         cfgDraft = normalizeConfig(DEFAULT_CONFIG); cfgErrors = [];
         renderConfig(); toast('Default configuration loaded. Review it, then Save.'); break;
-      case 'export-all': {
-        const data = clone(S);
-        delete data.page;
-        download('design-hub-backup.json', Object.assign({ app: 'design-hub', kind: 'backup' }, data));
-        toast('Backup downloaded.'); break;
-      }
+      case 'export-all': downloadBackup(); break;
       case 'import-all': importMode = 'all'; $('#importInput').click(); break;
     }
   }
@@ -4508,11 +5191,18 @@ ctx.person(name)      ctx.team(name)</pre>
     col.classList.remove('drop');
     const it = getItem(dragId);
     dragId = null;
-    if (!it || readOnly() || !moveStatus(it, col.dataset.status)) return;
+    if (!it || readOnly()) return;
+    takeGate();
+    const moved = moveStatus(it, col.dataset.status);
+    const parts = moved ? [`moved to ${statusName(it.statusId)}`] : [];
+    const ctx = {};
+    const type = gateParts(parts, ctx) || 'STATUS';
+    if (!parts.length) return;
     it.updated = Date.now();
-    log(`${it.ref} moved to ${statusName(it.statusId)} by ${viewerName()}.`, 'STATUS', it);
+    log(`${it.ref} ${parts.join('; ')} by ${viewerName()}.`, type, it);
     commit();
     flashCard(it.id);
+    if (type === 'VERIFY') toast(`${it.ref} ${parts.join('; ')}.${ctx.sent ? ` ${plural(ctx.sent, 'alert')} sent.` : ''}`);
   });
 
   $('#stats').addEventListener('click', e => {
@@ -4988,6 +5678,51 @@ ctx.person(name)      ctx.team(name)</pre>
       await dClick(dInbox('Pick up'), 'Pick up');
       dCheck('C. Wong picked it up and owns it', () => dField('OMD-003', label('owner')) === 'C. Wong');
     } },
+    { id: 'verify', title: 'Two approval groups verify finished work', run: async () => {
+      await dSignIn('achan');
+      await dSay('OMD-001 is High priority, so finishing it needs two groups: Controls reviewers, then Data stewards.');
+      await dClick(dCardBtn('OMD-001', 'Set next'), 'Set next on OMD-001');
+      await dChoose('#m_owner', '', 'next owner');
+      await dClick('#dlgOk', 'Save');
+      await dClick(dCardBtn('OMD-001', 'Complete & handoff'), 'Complete & handoff on OMD-001');
+      await dClick('#dlgOk', 'confirm');
+      dCheck('It waits in Verification, not Completed', () => dColOf('OMD-001') === 'verify' && dCard('OMD-001').querySelector('.verify-banner'));
+      dCheck('The card shows both groups, the first one active', () => dCard('OMD-001').querySelector('.vstage.pending').textContent.includes('Controls reviewers'));
+      await dSay('C. Wong is a Controls reviewer: the item is in their Action Inbox and “To verify” view.');
+      await dSignIn('cwong');
+      setPanelOpen('inbox', true);
+      dCheck('“To verify” view counts it', () => (dSide('To verify')() || {}).textContent.includes('1'));
+      await dClick(dInbox('Approve'), 'Approve');
+      await dType('[data-reason]', 'Controls evidence checked.');
+      await dClick('#dlgOk', 'Approve');
+      dCheck('Step 1 done; Data stewards now asked', () => pendingApproval(dItem('OMD-001')).stages[1].state === 'pending');
+      await dSay('B. Lee, a Data steward, gives the final sign-off.');
+      await dSignIn('blee');
+      await dClick(dCardBtn('OMD-001', 'Approve'), 'Approve on OMD-001');
+      await dClick('#dlgOk', 'Approve');
+      dCheck('Both groups signed off: Completed', () => dItem('OMD-001').statusId === 'completed');
+      await dSignIn('achan');
+      setPanelOpen('inbox', true);
+      dCheck('A. Chan was told it passed', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('passed verification')));
+    } },
+    { id: 'reject', title: 'A verifier sends work back', run: async () => {
+      await dSignIn('achan');
+      setPanelOpen('form', true);
+      await dSay('Marking OMD-002 complete in the form also sends it for verification.');
+      await dClick(dCardBtn('OMD-002', 'Edit'), 'Edit on OMD-002');
+      await dChoose('#f_status', 'completed', 'status');
+      await dClick('#formSave', 'Save');
+      dCheck('Sent to Controls reviewers', () => dColOf('OMD-002') === 'verify');
+      await dSay('C. Wong owns OMD-002, so they can’t verify it; D. Patel can.');
+      await dSignIn('dpatel');
+      await dClick(dCardBtn('OMD-002', 'Reject'), 'Reject on OMD-002');
+      await dType('[data-reason]', 'Exception list is missing two items.');
+      await dClick('#dlgOk', 'Reject');
+      dCheck('Back in In Progress with the reason on the card', () => dColOf('OMD-002') === 'progress' && dCard('OMD-002').querySelector('.block-reason').textContent.includes('Exception list'));
+      await dSignIn('cwong');
+      setPanelOpen('inbox', true);
+      dCheck('The owner was told why', () => $$('#inbox .alert-msg').some(m => m.textContent.includes('sent OMD-002') && m.textContent.includes('Exception list')));
+    } },
     { id: 'teamadmin', title: 'Team admin oversight (read-only)', run: async () => {
       await dSignIn('dpatel');
       await dSay('D. Patel is a team admin: an automatic “My team” view appears.');
@@ -5179,6 +5914,71 @@ ctx.person(name)      ctx.team(name)</pre>
       })() : '');
   }
 
+  // The demo window's size is a per-browser convenience, remembered apart from workspace data.
+  const DEMO_SIZE_KEY = 'designhub.demo-size';
+  function setDemoSize(size) {
+    if (!size) {
+      demoPanel.classList.remove('sized');
+      ['--demo-w', '--demo-h', '--list-h'].forEach(p => demoPanel.style.removeProperty(p));
+      return;
+    }
+    const w = Math.round(Math.max(300, Math.min(window.innerWidth - 24, size.w)));
+    const h = Math.round(Math.max(220, Math.min(window.innerHeight - 24, size.h)));
+    demoPanel.classList.add('sized');
+    demoPanel.style.setProperty('--demo-w', w + 'px');
+    demoPanel.style.setProperty('--demo-h', h + 'px');
+    // The scenario list grows with the window but leaves room for the controls and results.
+    demoPanel.style.setProperty('--list-h', Math.max(110, Math.round(h * 0.4)) + 'px');
+  }
+  function saveDemoSize(size) {
+    try { if (size) localStorage.setItem(DEMO_SIZE_KEY, JSON.stringify(size)); else localStorage.removeItem(DEMO_SIZE_KEY); } catch (e) { /* ignore */ }
+  }
+  const demoSize = () => { const r = demoPanel.getBoundingClientRect(); return { w: r.width, h: r.height }; };
+  function wireDemoResize() {
+    try { const s = JSON.parse(localStorage.getItem(DEMO_SIZE_KEY) || 'null'); if (s && s.w && s.h) setDemoSize(s); } catch (e) { /* ignore */ }
+    $$('.demo-grip', demoPanel).forEach(grip => {
+      const mode = grip.dataset.grip;
+      grip.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        const start = demoSize();
+        const sx = e.clientX, sy = e.clientY;
+        grip.setPointerCapture(e.pointerId);
+        document.body.classList.add('demo-resizing');
+        // Anchored at the bottom left: dragging the top edge up or the right edge out makes it bigger.
+        const move = ev => setDemoSize({
+          w: mode.includes('r') ? start.w + ev.clientX - sx : start.w,
+          h: mode.includes('t') ? start.h - (ev.clientY - sy) : start.h,
+        });
+        const end = () => {
+          grip.removeEventListener('pointermove', move);
+          document.body.classList.remove('demo-resizing');
+          if (demoPanel.classList.contains('sized')) saveDemoSize(demoSize());
+        };
+        grip.addEventListener('pointermove', move);
+        grip.addEventListener('pointerup', end, { once: true });
+        grip.addEventListener('pointercancel', end, { once: true });
+      });
+      grip.addEventListener('dblclick', () => { setDemoSize(null); saveDemoSize(null); });
+    });
+    $('.demo-grip.tr', demoPanel).addEventListener('keydown', e => {
+      const step = e.shiftKey ? 60 : 20;
+      const d = { ArrowRight: [step, 0], ArrowLeft: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+      if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setDemoSize(null); saveDemoSize(null); return; }
+      if (!d) return;
+      e.preventDefault();
+      const s = demoSize();
+      setDemoSize({ w: s.w + d[0], h: s.h + d[1] });
+      saveDemoSize(demoSize());
+    });
+  }
+  // Keep a resized window on screen when the browser shrinks (uses the stored size, so a minimised window is fine).
+  window.addEventListener('resize', () => {
+    if (!demoPanel || !demoPanel.classList.contains('sized')) return;
+    const v = p => parseFloat(demoPanel.style.getPropertyValue(p));
+    setDemoSize({ w: v('--demo-w'), h: v('--demo-h') });
+  });
+
   function openDemoPanel() {
     if (!demoPanel) {
       demoPanel = document.createElement('div');
@@ -5195,8 +5995,11 @@ ctx.person(name)      ctx.team(name)</pre>
           </div>
           <div class="demo-caption" id="demoCaption">Choose scenarios and press Run. Your data is set aside, a fresh sample board is used, and your data is restored afterwards.</div>
           <div class="demo-results" id="demoResults"></div>
-        </div>`;
+        </div>
+        <div class="demo-grip t" data-grip="t"></div><div class="demo-grip r" data-grip="r"></div>
+        <div class="demo-grip tr" data-grip="tr" tabindex="0" role="separator" aria-label="Resize the demo window. Arrow keys change the size; Enter resets it." title="Drag to resize · double-click to reset"></div>`;
       document.body.appendChild(demoPanel);
+      wireDemoResize();
       demoPointer = document.createElement('div');
       demoPointer.className = 'demo-pointer';
       demoPointer.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 2l7 19 2.6-7.4L20 11z" fill="#fff" stroke="#16181d" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="demo-bubble"></div>';
@@ -5297,6 +6100,7 @@ ctx.person(name)      ctx.team(name)</pre>
   commit();
   if (loggedIn()) popPendingForViewer();
   if (location.hash === '#demo') openDemoPanel();
+  initDataFile();
 })();
 </script>
 </body>

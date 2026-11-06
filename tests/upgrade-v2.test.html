@@ -1,0 +1,70 @@
+<!-- inject: early -->
+<!-- Upgrading a version 2 configuration with fixed action kinds and metric keys. -->
+<script>
+// Seeds a workspace saved by the previous (v2) version: fixed action kinds, status categories, metric keys.
+try {
+  localStorage.clear();
+  const now = Date.now();
+  localStorage.setItem('designhub.v2', JSON.stringify({
+    version: 2, viewerId: 'p1', page: 'board', filters: { teamId: 'all', priorityId: 'all', focus: 'mine' }, viewFilter: {}, viewId: '', search: '',
+    removed: { people: {}, teams: {} },
+    config: {
+      version: 2,
+      general: { appName: 'Legacy Hub', refPrefix: 'OMD-', refDigits: 3, dueSoonDays: 4, modules: { posts: true, files: true, notes: true } },
+      teams: [{ id: 't1', name: 'Operations Design', leadId: 'p1', nextTeamId: 't2' }, { id: 't2', name: 'Data Governance', leadId: 'p2', nextTeamId: '' }],
+      people: [{ id: 'p1', name: 'A. Chan', teamId: 't1', active: true }, { id: 'p2', name: 'B. Lee', teamId: 't2', active: true }],
+      priorities: [{ id: 'pr1', name: 'High', fg: '#9f1d26', bg: '#f5d6d9', dueDays: 1 }],
+      statuses: [
+        { id: 'assigned', name: 'Assigned', color: '#3a3fd4', category: 'todo' },
+        { id: 'progress', name: 'Doing', color: '#c9610d', category: 'active' },
+        { id: 'blocked', name: 'Blocked', color: '#cf232b', category: 'blocked' },
+        { id: 'completed', name: 'Done', color: '#2f9d45', category: 'done' },
+      ],
+      workflow: { initialStatusId: 'assigned', handoffStatusId: 'assigned', completeStatusId: 'completed', autoRoute: true, autoLead: true, confirmComplete: true },
+      actions: [
+        { id: 'a1', label: 'Go', kind: 'move', to: 'progress', from: ['assigned'], color: '#2e3394', width: 'sm' },
+        { id: 'a2', label: 'Pass on', kind: 'handoff', from: ['assigned', 'progress'], color: '#2f7a1e', width: 'lg' },
+        { id: 'a3', label: 'Hold', kind: 'move', to: 'blocked', from: ['assigned', 'progress'], color: '#6a2b0a', width: 'md', askReason: true },
+        { id: 'a4', label: 'Edit', kind: 'edit', from: ['*'], outline: true, width: 'md' },
+      ],
+      stats: [{ id: 's1', metric: 'open', label: 'Open', sub: '', visible: true }, { id: 's2', metric: 'active', label: 'Doing', sub: '', visible: true }],
+      focus: [{ metric: 'all', label: 'Everything' }, { metric: 'mine', label: 'Mine', visible: true }],
+      views: [{ id: 'v1', label: 'Gov work', kind: 'board', filter: { involvesTeamId: 't2' }, count: 'all' }, { id: 'v2', label: 'Board', kind: 'board', filter: {}, count: 'open' }],
+      notifications: { handoff: true, next: true, assigned: true, blocked: true, completed: true, popups: true, popupSeconds: 9 },
+    },
+    items: [
+      { id: 'i1', ref: 'OMD-001', title: 'Legacy item', priorityId: 'pr1', statusId: 'assigned', teamId: 't1', ownerId: 'p1', nextTeamId: 't2', nextOwnerId: 'p2', due: '', desc: '', fields: {}, created: now, updated: now },
+      { id: 'i2', ref: 'OMD-002', title: 'Doing item', priorityId: 'pr1', statusId: 'progress', teamId: 't1', ownerId: 'p1', nextTeamId: '', nextOwnerId: '', due: '', desc: '', fields: {}, created: now, updated: now },
+    ],
+    alerts: [], activity: [], posts: [], files: [], notes: [],
+  }));
+} catch (e) {}
+window.addEventListener('load', () => setTimeout(() => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  q('#loginUser').value = 'achan'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit();
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref').textContent === ref);
+  try {
+    ok('board renders', qa('#board .card').length === 2 && q('#brandTitle').textContent === 'Legacy Hub');
+    ok('actions converted', [...card('OMD-001').querySelectorAll('[data-action]')].map(b => b.textContent).join('|') === 'Go|Pass on|Hold|Edit');
+    ok('stats converted (open 2, doing 1)', qa('.stat-value').map(x => x.textContent).join(',') === '2,1');
+    ok('focus converted', [...q('#fFocus').options].some(o => o.textContent === 'Mine') && [...q('#fFocus').options].some(o => o.textContent === 'Board'));
+    ok('old focus key reset', q('#fFocus').value === 'v2');
+    const gov = qa('#sideNav .side-item').find(b => b.textContent.includes('Gov work'));
+    ok('view converted with count', gov && gov.querySelector('.n').textContent === '1');
+    [...card('OMD-001').querySelectorAll('[data-action]')].find(b => b.textContent === 'Hold').click();
+    ok('askReason kept', q('#dlg').open && !!q('[data-reason]'));
+    q('#dlg button[value="cancel"]').click();
+    [...card('OMD-001').querySelectorAll('[data-action]')].find(b => b.textContent === 'Pass on').click();
+    ok('handoff converted', card('OMD-001').textContent.includes('B. Lee'));
+    const s = JSON.parse(localStorage.getItem('designhub.v2'));
+    ok('saved as config v6', s.config.version === 6 && !('workflow' in s.config) && s.config.statuses.find(x => x.id === 'blocked').hold === true && s.config.statuses.find(x => x.id === 'completed').closed === true);
+    ok('dueSoon days carried over', s.config.filters.find(f => f.id === 'f_dueSoon').conds[0].value === 4);
+  } catch (e) { out.push('ERROR ' + e.message + ' ' + e.stack); }
+  localStorage.clear();
+  const pre = document.createElement('pre'); pre.textContent = out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:99999;background:#fff;color:#000;font:14px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+}, 400));
+</script>

@@ -1,0 +1,41 @@
+<!-- inject: early -->
+<!-- Upgrading the original name-based saved format (seeded before the app loads). -->
+<script>
+try {
+  localStorage.clear();
+  localStorage.setItem('designhub.handoff.v1', JSON.stringify({
+    viewer: 'C. Wong',
+    config: {
+      people: [{ id: 'p1', name: 'A. Chan', team: 'Operations Design' }, { id: 'p3', name: 'C. Wong', team: 'Controls' }],
+      teams: [{ id: 't1', name: 'Operations Design' }, { id: 't3', name: 'Controls' }],
+      priorities: [{ id: 'pr1', name: 'High', fg: '#9f1d26', bg: '#f5d6d9' }],
+      statuses: [{ key: 'assigned', label: 'Assigned', color: '#3a3fd4' }, { key: 'progress', label: 'Doing', color: '#c9610d' }, { key: 'blocked', label: 'Blocked', color: '#cf232b' }, { key: 'completed', label: 'Completed', color: '#2f9d45' }],
+    },
+    items: [{ id: 'x1', ref: 'OMD-009', title: 'Migrated item', priority: 'High', status: 'progress', team: 'Controls', owner: 'C. Wong', nextTeam: 'Risk', nextOwner: 'Z. Person', due: '2030-01-01', desc: 'old' }],
+    alerts: [{ id: 'al1', to: 'C. Wong', from: 'A. Chan', itemId: 'x1', ref: 'OMD-009', msg: 'old msg', type: 'HANDOFF', time: Date.now(), read: false, popped: true }],
+    posts: [{ id: 'po1', author: 'A. Chan', text: 'hi', ref: 'OMD-009', time: Date.now() }],
+    activity: [], files: [], notes: [],
+  }));
+} catch (e) {}
+window.addEventListener('load', () => setTimeout(() => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s);
+  q('#loginUser').value = 'cwong'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit();
+  try {
+    const c = [...document.querySelectorAll('#board .card')].find(x => x.textContent.includes('OMD-009'));
+    ok('migrated card exists', !!c);
+    ok('in progress column (renamed Doing)', !!q('.col[data-status="progress"] #' + c.id) && q('.col[data-status="progress"] h3').textContent === 'Doing');
+    ok('owner + next owner names', c.textContent.includes('C. Wong') && c.textContent.includes('Z. Person'));
+    ok('viewer migrated', q('#viewerName').textContent === 'C. Wong');
+    ok('alert migrated', q('#inboxUnread').textContent === '1 unread');
+    ok('unknown person added to config', JSON.parse(localStorage.getItem('designhub.v2')).config.people.some(p => p.name === 'Z. Person' && p.username === 'zperson'));
+    const s = JSON.parse(localStorage.getItem('designhub.v2'));
+    ok('saved in current format', s && s.version === 3 && s.config.version === 6 && s.items[0].ownerId === 'p3');
+  } catch (e) { out.push('ERROR ' + e.message); }
+  localStorage.clear();
+  const pre = document.createElement('pre'); pre.textContent = out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:99999;background:#fff;color:#000;font:14px/1.4 monospace;padding:12px';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+}, 300));
+</script>

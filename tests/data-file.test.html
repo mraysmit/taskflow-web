@@ -1,0 +1,217 @@
+<!-- inject: early -->
+<!-- budget: 240000 -->
+<!-- The data file: saving to it, picking up a colleague's changes, conflicts, reconnecting after a restart.
+     The browser's file access (File System Access API) and IndexedDB are replaced by an in-memory "disk"
+     kept in sessionStorage, so the test can edit the file like a colleague and reload the page like a restart. -->
+<script>
+(() => {
+  const phase = sessionStorage.getItem('phase') || '1';
+  if (phase === '1') { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('phase', '1'); }
+  const disk = () => JSON.parse(sessionStorage.getItem('disk') || 'null');
+  const writeDisk = text => { const d = disk() || {}; sessionStorage.setItem('disk', JSON.stringify({ name: d.name, text, lm: (d.lm || 0) + 1 })); };
+  window.__disk = { get: disk, write: writeDisk, data: () => JSON.parse(disk().text) };
+  class FakeHandle {
+    constructor(name) { this.name = name; this.kind = 'file'; }
+    async queryPermission() { return sessionStorage.getItem('perm') || 'granted'; }
+    async requestPermission() { window.__asked = (window.__asked || 0) + 1; sessionStorage.setItem('perm', 'granted'); return 'granted'; }
+    async getFile() {
+      const d = disk();
+      if (!d) throw Object.assign(new Error('File not found'), { name: 'NotFoundError' });
+      return { lastModified: d.lm, text: async () => d.text };
+    }
+    async createWritable() {
+      let buf = '';
+      return { write: async t => { buf += t; }, close: async () => { writeDisk(buf); window.__writes = (window.__writes || 0) + 1; } };
+    }
+  }
+  window.showOpenFilePicker = async () => [new FakeHandle(disk().name)];
+  window.showSaveFilePicker = async o => { sessionStorage.setItem('disk', JSON.stringify({ name: o.suggestedName, text: '', lm: 1 })); return [new FakeHandle(o.suggestedName)][0]; };
+  // A tiny IndexedDB stand-in that remembers which file was open.
+  const idb = () => JSON.parse(sessionStorage.getItem('idb') || '{}');
+  const later = f => setTimeout(f, 0);
+  Object.defineProperty(window, 'indexedDB', { configurable: true, value: {
+    open() {
+      const req = {};
+      later(() => {
+        req.result = {
+          close() {},
+          transaction() {
+            const tx = {};
+            const done = r => { later(() => tx.oncomplete && tx.oncomplete()); return r; };
+            tx.objectStore = () => ({
+              put(v, k) { const s = idb(); s[k] = v.name; sessionStorage.setItem('idb', JSON.stringify(s)); return done({}); },
+              get(k) { const n = idb()[k]; return done({ result: n ? new FakeHandle(n) : undefined }); },
+              delete(k) { const s = idb(); delete s[k]; sessionStorage.setItem('idb', JSON.stringify(s)); return done({}); },
+            });
+            return tx;
+          },
+        };
+        if (req.onsuccess) req.onsuccess();
+      });
+      return req;
+    },
+  } });
+})();
+
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const phase = sessionStorage.getItem('phase');
+  if (phase === '3') return;
+  const out = JSON.parse(sessionStorage.getItem('out') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const titles = () => qa('#board .card-title').map(t => t.textContent);
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const side = () => q('#sideFile');
+  const D = window.__disk;
+  // A colleague edits the file: change the saved data and bump its modified time.
+  const colleague = fn => { const d = D.data(); fn(d); D.write(JSON.stringify(d, null, 2)); };
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  try {
+    await wait(300);
+    if (phase === '1') {
+      await login('achan');
+      ok('No data file yet: no status in the sidebar', side().hidden);
+      q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+      ok('Import / export explains the data file', q('#view-config').textContent.includes('Not using a data file') && !!q('[data-file-cmd="new"]'));
+      q('[data-file-cmd="new"]').click(); await wait(200);
+      const d1 = D.data();
+      ok('“Save to a new data file” writes the whole workspace', D.get().name === 'design-hub-data.json' && d1.kind === 'workspace' && d1.items.length === 4 && d1.config.people.length === 7);
+      ok('Browser-only things are not in the file', !('session' in d1) && !('viewerId' in d1) && !('filters' in d1));
+      ok('Sidebar shows the file and that it’s saved', !side().hidden && side().textContent.includes('design-hub-data.json') && side().textContent.includes('Saved'));
+
+      q('#tabs [data-tab="board"]').click(); await wait(20);
+      q('#btnNew').click(); setv(q('#f_title'), 'Saved to the file'); q('#form').requestSubmit(); await wait(700);
+      ok('Each change is saved to the file', D.data().items.some(i => i.title === 'Saved to the file'));
+      const w0 = window.__writes;
+      q('#search').value = 'xyz'; q('#search').dispatchEvent(new Event('input', { bubbles: true })); await wait(700);
+      q('#search').value = ''; q('#search').dispatchEvent(new Event('input', { bubbles: true })); await wait(700);
+      ok('Searching (browser-only) doesn’t rewrite the file', window.__writes === w0);
+
+      colleague(d => d.items.push(Object.assign({}, d.items[0], { id: 'i_col', ref: 'OMD-090', title: 'From a colleague' })));
+      for (let t = 0; t < 70 && !titles().includes('From a colleague'); t++) await wait(100);
+      ok('A colleague’s change is picked up automatically (within one 5-second check)', titles().includes('From a colleague') && qa('.toast').some(t => t.textContent.includes('latest changes')));
+
+      colleague(d => { d.items.find(i => i.ref === 'OMD-002').title = 'Colleague renamed this'; });
+      btn('OMD-001', 'Start').click(); await wait(700);
+      ok('Both changed: nothing is overwritten, you are asked', D.data().items.find(i => i.ref === 'OMD-002').title === 'Colleague renamed this' && side().classList.contains('bad') && side().textContent.includes('changed elsewhere'));
+      side().click(); await wait(50);
+      ok('Conflict dialog offers both versions and a download', q('#dlg').open && !!q('#m_mine') && !!q('#m_backup'));
+      q('#dlgOk').click(); await wait(100);
+      ok('“Use the file’s version” takes theirs', titles().includes('Colleague renamed this') && !side().classList.contains('bad'));
+
+      colleague(d => { d.items.find(i => i.ref === 'OMD-003').title = 'Theirs again'; });
+      btn('OMD-001', 'Start').click(); await wait(700);
+      side().click(); await wait(50);
+      q('#m_mine').click(); await wait(200);
+      const d2 = D.data();
+      ok('“Keep mine” writes your version over theirs', d2.items.find(i => i.ref === 'OMD-001').statusId === 'progress' && d2.items.find(i => i.ref === 'OMD-003').title !== 'Theirs again' && side().textContent.includes('Saved'));
+
+      // A run of the automated demo uses sample data: it must never reach the file.
+      const before = D.get().text;
+      q('[data-open-demo]').click(); await wait(50);
+      q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
+      qa('.demo-list input').forEach(i => { i.checked = i.value === 'lifecycle'; });
+      q('[data-demo="run"]').click(); await wait(300);
+      while (q('[data-demo="run"]').disabled) await wait(100);
+      await wait(700);
+      ok('Running the demo doesn’t touch the file', D.get().text === before);
+      q('[data-demo="close"]').click();
+
+      q('[data-logout]').click(); await wait(700);
+      ok('Sign-in screen names the data file', q('#loginFile').textContent.includes('design-hub-data.json'));
+      // While this browser is closed, a colleague adds work. Then the browser restarts without permission.
+      colleague(d => d.items.push(Object.assign({}, d.items[0], { id: 'i_away', ref: 'OMD-091', title: 'Added while you were away' })));
+      sessionStorage.setItem('perm', 'prompt');
+      sessionStorage.setItem('phase', '2');
+      sessionStorage.setItem('out', JSON.stringify(out));
+      location.reload();
+      return;
+    }
+
+    // ---- Phase 2: after a restart ----
+    ok('After a restart the sign-in screen offers Reconnect', !!q('#loginFile [data-file-cmd="reconnect"]') && q('#loginFile').textContent.includes('design-hub-data.json'));
+    q('#loginFile [data-file-cmd="reconnect"]').click(); await wait(300);
+    ok('Reconnect asks permission and loads the latest file', window.__asked === 1 && q('#loginFile').textContent.includes('Data file:'));
+    await login('achan');
+    ok('Work added while away is there', titles().includes('Added while you were away'));
+    ok('Sidebar shows the file is in use', !side().hidden && !side().classList.contains('warn'));
+
+    // Restart again, but this time make a change before reconnecting.
+    sessionStorage.setItem('perm', 'prompt');
+    sessionStorage.setItem('phase', '3');
+    sessionStorage.setItem('out', JSON.stringify(out));
+    location.reload();
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); finish(); }
+});
+
+window.addEventListener('load', async () => {
+  if (sessionStorage.getItem('phase') !== '3') return;
+  const out = JSON.parse(sessionStorage.getItem('out') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const side = () => q('#sideFile');
+  const D = window.__disk;
+  const titles = () => qa('#board .card-title').map(t => t.textContent);
+  try {
+    await wait(300);
+    // Still signed in from phase 2: the sidebar asks to reconnect.
+    ok('Signed-in after restart: sidebar asks to reconnect', !side().hidden && side().classList.contains('warn') && side().textContent.includes('Reconnect'));
+    const before = D.get().text;
+    q('#btnNew').click(); setv(q('#f_title'), 'Made while disconnected'); q('#form').requestSubmit(); await wait(700);
+    ok('Changes made before reconnecting stay in this browser only', D.get().text === before && titles().includes('Made while disconnected'));
+    side().click(); await wait(300);
+    ok('Reconnecting saves them to the (unchanged) file', D.data().items.some(i => i.title === 'Made while disconnected') && side().textContent.includes('Saved'));
+
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('[data-file-cmd="disconnect"]').click(); await wait(100);
+    const w = window.__writes || 0;
+    q('#tabs [data-tab="board"]').click(); await wait(20);
+    q('#btnNew').click(); setv(q('#f_title'), 'Only in this browser'); q('#form').requestSubmit(); await wait(700);
+    ok('“Stop using the file” stops saving to it', side().hidden && (window.__writes || 0) === w && !D.data().items.some(i => i.title === 'Only in this browser'));
+
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('[data-file-cmd="open"]').click(); await wait(200);
+    ok('Opening a file while signed in asks first', q('#dlg').open && q('#dlgBody').textContent.includes('will be replaced') && !!q('#m_backup'));
+    q('#dlgOk').click(); await wait(200);
+    q('#tabs [data-tab="board"]').click(); await wait(20);
+    ok('Opening loads the file’s data', !titles().includes('Only in this browser') && titles().includes('Made while disconnected'));
+
+    D.write('');
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('[data-file-cmd="open"]').click(); await wait(200);
+    ok('Opening an empty file fills it with this workspace', JSON.parse(D.get().text).items.length > 0);
+
+    D.write('{ not json');
+    await wait(6000);
+    const kept = JSON.parse(localStorage.getItem('designhub.v2'));
+    ok('A half-synced (broken) file is ignored, not loaded', kept.items.length > 0 && !side().classList.contains('bad') && !side().classList.contains('warn'));
+    q('[data-file-cmd="reload"]').click(); await wait(200);
+    ok('Reloading a broken file reports an error instead of wiping the board', side().classList.contains('bad') && q('#view-config').textContent.includes('not valid JSON'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

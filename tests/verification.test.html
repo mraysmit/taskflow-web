@@ -1,0 +1,155 @@
+<!-- Verification: approval groups in order or at once, reject, withdraw, maker-checker, routes in the form and Configuration. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tick = () => wait(20);
+  const setv = (el, v, ev = 'input') => { el.value = v; el.dispatchEvent(new Event(ev, { bubbles: true })); if (ev === 'input') el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const B = path => q(`#view-config [data-bind="${path}"]`);
+  const nav = s => q(`[data-cfg-nav="${s}"]`).click();
+  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const item = ref => store().items.find(i => i.ref === ref);
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const colOf = ref => { const c = card(ref); return c ? c.closest('.col').dataset.status : ''; };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const logout = async () => { q('[data-logout]').click(); await tick(); };
+  const as = async u => { await logout(); await login(u); qa('.toast').forEach(t => t.remove()); };
+  const okDlg = async () => { q('#dlgOk').click(); await tick(); };
+  const side = label => qa('#sideNav .side-item').find(b => b.firstElementChild.textContent === label);
+  const unread = pid => store().alerts.filter(a => a.toId === pid && !a.read);
+  const toasts = () => qa('.toast').map(t => t.textContent).join(' | ');
+  try {
+    await wait(200);
+    await login('achan');
+    const c0 = store().config;
+    ok('Defaults: Verification column and two routes', c0.statuses.map(s => s.id).join() === 'assigned,progress,blocked,verify,completed' && c0.approvals.holdStatusId === 'verify' && c0.approvals.chains.map(c => c.name).join('|') === 'Two-group sign-off|Controls check');
+    ok('Form offers a route choice', [...q('#f_approval').options].map(o => o.textContent).join('|').startsWith('Automatic (by rule)|Two-group sign-off: Controls reviewers → Data stewards'));
+
+    // ---- Two groups, one after another (OMD-001 is High priority) ----
+    btn('OMD-001', 'Set next').click(); setv(q('#m_owner'), '', 'change'); await okDlg();
+    btn('OMD-001', 'Complete & handoff').click(); await tick(); await okDlg();
+    ok('Marked complete → Verification column, not Completed', colOf('OMD-001') === 'verify' && item('OMD-001').statusId === 'verify');
+    ok('Banner shows both groups, first one active', card('OMD-001').querySelector('.verify-banner').textContent.includes('Two-group sign-off') && qa('#board .card .vstage').length === 2 && card('OMD-001').querySelector('.vstage.pending').textContent.includes('Controls reviewers'));
+    ok('First group alerted (C. Wong, D. Patel), second not yet', unread('p3').some(a => a.kind === 'approval') && unread('p4').some(a => a.kind === 'approval') && !unread('p2').some(a => a.kind === 'approval'));
+    ok('Owner gets no Approve button (maker-checker), can withdraw', !btn('OMD-001', 'Approve') && !!btn('OMD-001', 'Withdraw from verification'));
+    ok('Normal buttons hidden while waiting', !btn('OMD-001', 'Start') && !btn('OMD-001', 'Complete & handoff'));
+    btn('OMD-001', 'Edit').click(); setv(q('#f_status'), 'completed', 'change'); q('#form').requestSubmit(); await tick();
+    ok('Can’t skip verification via the form', item('OMD-001').statusId === 'verify' && toasts().includes('still waiting for verification'));
+
+    await as('cwong');
+    ok('“To verify” view appears with a count', !!side('To verify') && side('To verify').textContent.includes('1'));
+    q('[data-acc=inbox] .pcard-head') && !q('[data-acc=inbox]').classList.contains('collapsed') || q('[data-acc=inbox] .pcard-head').click();
+    const ib = qa('#inbox [data-inbox-action]').map(b => b.textContent);
+    ok('Inbox offers Approve and Reject', ib.includes('Approve') && ib.includes('Reject'));
+    qa('#inbox [data-inbox-action]').find(b => b.textContent === 'Approve').click(); await tick();
+    q('[data-reason]').value = 'Controls look right.'; await okDlg();
+    const r1 = item('OMD-001').approvals[0];
+    ok('Step 1 verified, step 2 now active', r1.stages[0].state === 'approved' && r1.stages[0].by === 'p3' && r1.stages[1].state === 'pending' && item('OMD-001').statusId === 'verify');
+    ok('Second group alerted; the other reviewer’s alert cleared', unread('p2').some(a => a.kind === 'approval') && !unread('p4').some(a => a.kind === 'approval'));
+
+    await as('blee');
+    ok('Steward sees it to verify', !!btn('OMD-001', 'Approve'));
+    btn('OMD-001', 'Approve').click(); await tick(); await okDlg();
+    ok('Last sign-off → Completed', item('OMD-001').statusId === 'completed' && item('OMD-001').approvals[0].state === 'approved');
+    ok('Sender told it passed', unread('p1').some(a => a.label === 'VERIFIED'));
+    ok('Verifier loses sight of it once done (member sees own work)', !card('OMD-001'));
+
+    // ---- Rejection ----
+    await as('achan');
+    card('OMD-001').querySelector('[data-open-item]').click(); await tick();
+    ok('Details show the record with who verified', q('#dlgBody').textContent.includes('Verified') && q('#dlgBody').textContent.includes('Controls look right.') && q('#dlgBody').textContent.includes('C. Wong'));
+    await okDlg();
+    btn('OMD-003', 'Edit').click(); setv(q('#f_status'), 'completed', 'change'); q('#form').requestSubmit(); await tick();
+    ok('Form status change also goes to verification', item('OMD-003').statusId === 'verify' && item('OMD-003').approvals[0].chainName === 'Controls check' && item('OMD-003').approvals[0].fromStatusId === 'blocked');
+    await as('dpatel');
+    btn('OMD-003', 'Reject').click(); await tick(); await okDlg();
+    ok('Reject needs a reason', q('#dlg').open && q('#m_err').textContent.includes('reason'));
+    q('[data-reason]').value = 'Evidence missing for recs.'; await okDlg();
+    const r3 = item('OMD-003');
+    ok('Rejected → back where it came from', r3.approvals[0].state === 'rejected' && r3.statusId === 'progress');
+    ok('Card shows who sent it back and why', card('OMD-003').querySelector('.block-reason').textContent.includes('Sent back by D. Patel') && card('OMD-003').textContent.includes('Evidence missing'));
+    ok('Owner told', unread('p5').some(a => a.label === 'SENT BACK' && a.text.includes('Evidence missing')));
+
+    // ---- Own work, drag in/out, withdraw ----
+    await as('cwong');
+    btn('OMD-002', 'Set next').click(); setv(q('#m_owner'), '', 'change'); await okDlg();
+    btn('OMD-002', 'Complete & handoff').click(); await tick(); await okDlg();
+    ok('A reviewer can’t verify their own item', colOf('OMD-002') === 'verify' && !btn('OMD-002', 'Approve') && !unread('p3').some(a => a.kind === 'approval' && a.itemId === item('OMD-002').id));
+    const dragTo = (ref, st) => { const dt = new DataTransfer(); card(ref).dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt })); const t = q(`.col[data-status="${st}"]`); t.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt })); t.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); };
+    dragTo('OMD-002', 'assigned'); await tick();
+    ok('Dragging out withdraws the request', colOf('OMD-002') === 'assigned' && item('OMD-002').approvals[0].state === 'recalled' && !unread('p4').some(a => a.kind === 'approval' && a.itemId === item('OMD-002').id));
+    dragTo('OMD-002', 'verify'); await tick();
+    ok('Dragging into Verification sends it', colOf('OMD-002') === 'verify' && item('OMD-002').approvals[0].state === 'pending');
+    btn('OMD-002', 'Withdraw from verification').click(); await tick();
+    ok('Withdraw button returns it', colOf('OMD-002') === 'assigned' && item('OMD-002').approvals[0].state === 'recalled');
+
+    // ---- Route chosen in the form ----
+    await as('achan');
+    q('#btnNew').click(); setv(q('#f_title'), 'Routed item'); setv(q('#f_owner'), 'G. Lim'); setv(q('#f_priority'), 'pr3', 'change');
+    setv(q('#f_approval'), 'ap_dual', 'change'); setv(q('#f_status'), 'completed', 'change'); q('#form').requestSubmit(); await tick();
+    const ri = store().items.find(i => i.title === 'Routed item');
+    ok('Chosen route used even for a Low item', ri && ri.approvalChainId === 'ap_dual' && ri.statusId === 'verify' && ri.approvals[0].chainId === 'ap_dual');
+
+    // ---- Configuration ----
+    q('#sideConfig').click(); nav('approvals'); await tick();
+    ok('Verification section lists routes and groups', !!B('approvals.chains.0.name') && B('approvals.chains.0.stages.1.roleId').value === 'r_steward' && !!B('approvals.holdStatusId'));
+    q('#view-config [data-op="add"][data-list="approvals.chains"]').click(); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    ok('Unnamed route rejected', q('#view-config').textContent.includes('needs a name'));
+    setv(B('approvals.chains.2.name'), 'Both at once'); setv(B('approvals.chains.2.order'), 'parallel', 'change'); await tick();
+    q('#view-config [data-op="add"][data-list="approvals.chains.2.stages"]').click(); await tick();
+    setv(B('approvals.chains.2.stages.1.roleId'), 'r_steward', 'change'); await tick();
+    setv(B('approvals.chains.2.stages.0.roleId'), 'r_steward', 'change'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    ok('Same group twice rejected', q('#view-config').textContent.includes('twice'));
+    setv(B('approvals.chains.2.stages.0.roleId'), 'r_reviewer', 'change'); await tick();
+    q('#view-config [data-op="up"][data-list="approvals.chains"][data-i="2"]').click(); await tick();
+    q('#view-config [data-op="up"][data-list="approvals.chains"][data-i="1"]').click(); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    ok('Parallel route saved first', store().config.approvals.chains[0].name === 'Both at once' && store().config.approvals.chains[0].order === 'parallel');
+    q('#tabs [data-tab="board"]').click(); await tick();
+    qa('#sideNav .side-item')[0].click(); await tick();
+    btn('OMD-002', 'Complete & handoff') ? null : null;
+    btn('OMD-002', 'Edit').click(); setv(q('#f_status'), 'completed', 'change'); q('#form').requestSubmit(); await tick();
+    const pr = item('OMD-002').approvals[0];
+    ok('Parallel: both groups asked at once', pr.order === 'parallel' && pr.stages.every(s => s.state === 'pending') && unread('p2').some(a => a.kind === 'approval' && a.itemId === item('OMD-002').id) && unread('p4').some(a => a.kind === 'approval' && a.itemId === item('OMD-002').id));
+    await as('blee'); btn('OMD-002', 'Approve').click(); await tick(); await okDlg();
+    ok('One of two done: still waiting', item('OMD-002').statusId === 'verify');
+    await as('dpatel'); btn('OMD-002', 'Approve').click(); await tick(); await okDlg();
+    ok('Both done → Completed', item('OMD-002').statusId === 'completed');
+
+    // Nobody eligible: B. Lee is the only steward and can't verify their own item
+    await as('achan');
+    q('#sideConfig').click(); nav('approvals'); await tick();
+    setv(B('approvals.chains.2.stages.0.roleId'), 'r_steward', 'change'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    q('#tabs [data-tab="board"]').click(); await tick();
+    await as('blee');
+    q('#btnNew').click(); setv(q('#f_title'), 'Steward own work'); setv(q('#f_priority'), 'pr3', 'change'); q('#form').requestSubmit(); await tick();
+    const sw = () => store().items.find(i => i.title === 'Steward own work');
+    btn(sw().ref, 'Edit').click(); setv(q('#f_status'), 'completed', 'change'); q('#form').requestSubmit(); await tick();
+    ok('Refused with a clear message when nobody can verify', sw().statusId === 'assigned' && toasts().includes('nobody in that group can verify it'));
+
+    // Turning verification off
+    await as('achan');
+    q('#sideConfig').click(); nav('approvals'); await tick();
+    B('approvals.enabled').click(); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    q('#tabs [data-tab="board"]').click(); await tick();
+    btn(sw().ref, 'Edit').click(); setv(q('#f_status'), 'completed', 'change'); q('#form').requestSubmit(); await tick();
+    ok('Verification off: completes directly; form picker hidden', sw().statusId === 'completed' && q('#f_approvalWrap').hidden && !side('To verify'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.filter(l => l.startsWith('PASS')).length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:12.5px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

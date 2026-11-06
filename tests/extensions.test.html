@@ -1,0 +1,216 @@
+<!-- Extensions: status flags, field types, custom conditions, script and sequence steps, email, webhooks, linked items. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tick = () => wait(15);
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const fieldVal = (ref, lbl) => { const f = [...card(ref).querySelectorAll('.field')].find(x => x.querySelector('.field-l').textContent === lbl); return f && f.querySelector('.field-v').textContent; };
+  const dlgOpen = () => q('#dlg').open;
+  const okDlg = () => q('#dlgOk').click();
+  const setv = (el, v, ev = 'input') => { el.value = v; el.dispatchEvent(new Event(ev, { bubbles: true })); if (ev === 'input') el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const B = path => q(`#view-config [data-bind="${path}"]`);
+  const nav = s => q(`[data-cfg-nav="${s}"]`).click();
+  const addRow = list => q(`#view-config [data-op="add"][data-list="${list}"]`).click();
+  const lastIdx = sel => qa(sel).length - 1;
+  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const errsShown = () => (q('.cfg-errors') ? q('.cfg-errors').textContent : '');
+  const save = async name => { q('[data-cfg-cmd="save"]').click(); await wait(25); if (q('.cfg-errors')) out.push(`FAIL save (${name}) blocked: ${errsShown()}`); };
+  const openCfg = async s => { if (q('#view-config').hidden) q('#sideConfig').click(); nav(s); await tick(); };
+  const board = async () => { q('#tabs [data-tab="board"]').click(); await tick(); };
+  const anchors = []; HTMLAnchorElement.prototype.click = function () { anchors.push(this.href); };
+  const fetches = []; window.fetch = (url, opts) => { fetches.push({ url, opts }); return Promise.resolve({ status: 202 }); };
+  const addButton = async (label, stepType) => {
+    nav('workflow'); addRow('actions'); await tick();
+    const i = lastIdx('#view-config [data-bind^="actions."][data-bind$=".label"]');
+    setv(B(`actions.${i}.label`), label); await tick();
+    setv(B(`actions.${i}.steps.0.type`), stepType, 'change'); await tick();
+    return i;
+  };
+  try {
+    await wait(200); const loginAs = async (u, p = 'demo') => { document.querySelector('#loginUser').value = u; document.querySelector('#loginPass').value = p; document.querySelector('#loginForm').requestSubmit(); await new Promise(r => setTimeout(r, 60)); }; await loginAs('achan');
+    // ---- Status flags ----
+    await openCfg('extensions');
+    addRow('extensions.flags'); await tick();
+    setv(B('extensions.flags.0.name'), 'Billable'); await tick();
+    await save('flag');
+    const flagId = store().config.extensions.flags[0].id;
+    nav('statuses');
+    q(`#view-config [data-toggle="statuses.1.flags"][value="${flagId}"]`).click(); await tick();
+    nav('filters'); addRow('filters'); await tick();
+    const fi = lastIdx('#view-config [data-bind^="filters."][data-bind$=".name"]');
+    setv(B(`filters.${fi}.name`), 'Billable work'); await tick();
+    setv(B(`filters.${fi}.conds.0.subject`), 'flag', 'change'); await tick();
+    setv(B(`filters.${fi}.conds.0.value`), flagId, 'change'); await tick();
+    await save('flag filter');
+    const bf = store().config.filters.find(f => f.name === 'Billable work');
+    ok('Custom status flag stored on status', store().config.statuses[1].flags.includes(flagId));
+    ok('Flag condition matches in-progress item', q('.match-pill') && qa('#view-config .crow.block').find(r => r.querySelector(`[data-bind="filters.${fi}.name"]`)).querySelector('.match-pill').textContent === '1 now');
+
+    // ---- Field types ----
+    nav('extensions'); addRow('extensions.fieldTypes'); await tick();
+    setv(B('extensions.fieldTypes.0.name'), 'Cost centre'); await tick();
+    setv(B('extensions.fieldTypes.0.pattern'), '^CC-\\d{4}$'); await tick();
+    setv(B('extensions.fieldTypes.0.patternMsg'), 'Use the form CC-1234');
+    addRow('extensions.fieldTypes'); await tick();
+    setv(B('extensions.fieldTypes.1.name'), 'Money'); await tick();
+    setv(B('extensions.fieldTypes.1.base'), 'number', 'change'); await tick();
+    setv(B('extensions.fieldTypes.1.decimals'), '2'); setv(B('extensions.fieldTypes.1.prefix'), '£');
+    await save('field types');
+    const ft = store().config.extensions.fieldTypes;
+    nav('fields');
+    addRow('fields.custom'); await tick();
+    setv(B('fields.custom.0.label'), 'Cost centre'); await tick();
+    setv(B('fields.custom.0.type'), 'x:' + ft[0].id, 'change'); await tick();
+    addRow('fields.custom'); await tick();
+    setv(B('fields.custom.1.label'), 'Budget'); await tick();
+    setv(B('fields.custom.1.type'), 'x:' + ft[1].id, 'change'); await tick();
+    addRow('card.fields'); await tick();
+    const cr = qa('#view-config [data-bind^="card.fields."]').pop();
+    setv(cr, [...cr.options].find(o => o.textContent === 'Budget').value, 'change'); await tick();
+    await save('fields');
+    await board();
+    q('#btnNew').click(); setv(q('#f_title'), 'Budgeted'); setv(q(`#cf_${store().config.fields.custom[0].id}`), 'XX-1');
+    q('#form').requestSubmit(); await tick();
+    ok('Custom field type pattern enforced', q('#formError').textContent === 'Use the form CC-1234');
+    setv(q(`#cf_${store().config.fields.custom[0].id}`), 'CC-1234'); setv(q(`#cf_${store().config.fields.custom[1].id}`), '12.5');
+    q('#form').requestSubmit(); await tick();
+    const bref = qa('#board .card-ref').map(x => x.textContent).find(r => card(r).textContent.includes('Budgeted'));
+    ok('Custom type formatting (decimals + prefix)', bref && fieldVal(bref, 'Budget') === '£12.50');
+
+    // ---- Custom conditions (script) ----
+    await openCfg('extensions');
+    B('extensions.scriptsEnabled').click(); await tick();
+    addRow('extensions.conditions'); await tick();
+    setv(B('extensions.conditions.0.name'), 'Over budget'); await tick();
+    addRow('extensions.conditions.0.params'); await tick();
+    setv(B('extensions.conditions.0.params.0.key'), 'amount'); await tick();
+    setv(B('extensions.conditions.0.params.0.type'), 'number', 'change'); await tick();
+    setv(B('extensions.conditions.0.script'), 'item.fields["Budget"] > params.amount'); await tick();
+    await save('condition');
+    const xc = store().config.extensions.conditions[0];
+    ok('Condition shows live count', qa('#view-config .match-pill').some(p => /of \d+ items now/.test(p.textContent)));
+    nav('filters'); addRow('filters'); await tick();
+    const ci = lastIdx('#view-config [data-bind^="filters."][data-bind$=".name"]');
+    setv(B(`filters.${ci}.name`), 'Over 10'); await tick();
+    setv(B(`filters.${ci}.conds.0.subject`), 'x:' + xc.id, 'change'); await tick();
+    setv(B(`filters.${ci}.conds.0.params.amount`), '10'); await tick();
+    await save('custom condition filter');
+    const ofRow = qa('#view-config .crow.block').find(r => r.querySelector(`[data-bind="filters.${ci}.name"]`));
+    ok('Custom condition with parameter matches', ofRow.querySelector('.match-pill').textContent === '1 now');
+    // Composed filter
+    addRow('filters'); await tick();
+    const mi = lastIdx('#view-config [data-bind^="filters."][data-bind$=".name"]');
+    setv(B(`filters.${mi}.name`), 'Open but not blocked'); await tick();
+    setv(B(`filters.${mi}.conds.0.subject`), 'matches', 'change'); await tick();
+    setv(B(`filters.${mi}.conds.0.value`), 'f_open', 'change'); await tick();
+    addRow(`filters.${mi}.conds`); await tick();
+    setv(B(`filters.${mi}.conds.1.subject`), 'matches', 'change'); await tick();
+    setv(B(`filters.${mi}.conds.1.op`), 'isNot', 'change'); await tick();
+    setv(B(`filters.${mi}.conds.1.value`), 'f_blocked', 'change'); await tick();
+    await save('matches filter');
+    const expectOpen = store().items.filter(i => !['completed', 'blocked'].includes(i.statusId)).length;
+    const mRow = qa('#view-config .crow.block').find(r => r.querySelector(`[data-bind="filters.${mi}.name"]`));
+    ok('Filter composed from other filters', mRow.querySelector('.match-pill').textContent === `${expectOpen} now`);
+
+    // ---- Custom step types ----
+    nav('extensions'); addRow('extensions.steps'); await tick();
+    setv(B('extensions.steps.0.name'), 'Bump'); await tick();
+    setv(B('extensions.steps.0.mode'), 'script', 'change'); await tick();
+    setv(B('extensions.steps.0.script'), 'ctx.set("priority", "High");\nctx.alert("D. Patel", ctx.template("{ref} bumped by {actor}"));'); await tick();
+    addRow('extensions.steps'); await tick();
+    setv(B('extensions.steps.1.name'), 'Start and tell owner'); await tick();
+    addRow('extensions.steps.1.steps'); await tick();
+    setv(B('extensions.steps.1.steps.0.type'), 'setStatus', 'change'); await tick();
+    setv(B('extensions.steps.1.steps.0.to'), 'progress', 'change'); await tick();
+    addRow('extensions.steps.1.steps'); await tick();
+    setv(B('extensions.steps.1.steps.1.message'), '{ref} started by {actor}'); await tick();
+    await save('step types');
+    const xs = store().config.extensions.steps;
+    await addButton('Bump', 'x:' + xs[0].id);
+    await addButton('Kick off', 'x:' + xs[1].id);
+    await addButton('Follow-up', 'createItem');
+    const ei = await addButton('Email next', 'email');
+    setv(B(`actions.${ei}.steps.0.to`), 'nextOwner', 'change'); await tick();
+    const wi = await addButton('Notify system', 'webhook');
+    setv(B(`actions.${wi}.steps.0.url`), 'https://example.test/hook?ref={ref}'); await tick();
+    const ri = await addButton('Start via', 'runButton');
+    setv(B(`actions.${ri}.steps.0.actionId`), 'a_start', 'change'); await tick();
+    nav('people');
+    const pb = qa('#view-config [data-bind^="people."][data-bind$=".name"]').findIndex(i => i.value === 'B. Lee');
+    setv(B(`people.${pb}.email`), 'b.lee@example.com'); await tick();
+    await save('buttons');
+    await board();
+    const lowRef = 'OMD-003';
+    btn(lowRef, 'Bump').click(); await tick();
+    ok('Script step changed priority', [...card(lowRef).querySelectorAll('.tag')].some(t => t.textContent === 'High'));
+    ok('Script step sent alert via ctx.alert', store().alerts.some(a => a.toId === 'p4' && a.text === `${lowRef} bumped by A. Chan` && a.label === 'BUMP'));
+    btn('OMD-001', 'Kick off').click(); await tick();
+    ok('Sequence step type ran its steps', !!q('.col[data-status="progress"] #' + card('OMD-001').id));
+    const before = store().items.length;
+    btn('OMD-001', 'Follow-up').click(); await tick();
+    const st = store();
+    const child = st.items.find(i => i.title === 'Follow-up: Custody model data ownership review');
+    ok('Create linked item', st.items.length === before + 1 && !!child && child.ownerId === 'p2' && child.teamId === 't2');
+    ok('Links both ways', st.items.find(i => i.ref === 'OMD-001').links.some(l => l.itemId === child.id) && child.links.some(l => l.type === 'From'));
+    ok('Link chips on cards', card('OMD-001').querySelector('.link-chip').textContent.includes(child.ref));
+    ok('New owner alerted', st.alerts.some(a => a.toId === 'p2' && a.label === 'CREATED'));
+    btn('OMD-001', 'Email next').click(); await tick();
+    ok('Email draft opened with address and subject', anchors.some(h => h.startsWith('mailto:b.lee%40example.com?subject=OMD-001')));
+    btn('OMD-001', 'Notify system').click(); await wait(60);
+    const fx = fetches[0];
+    ok('Webhook called with templated URL and JSON body', fx && fx.url === 'https://example.test/hook?ref=OMD-001' && JSON.parse(fx.opts.body).ref === 'OMD-001');
+    ok('Webhook result logged', store().activity.some(a => a.type === 'WEBHOOK' && a.msg.includes('202')));
+    btn('OMD-001', 'Pause').click(); await tick();
+    btn('OMD-001', 'Start via').click(); await tick();
+    ok('Run another button', !!q('.col[data-status="progress"] #' + card('OMD-001').id));
+    // linked-items condition
+    await openCfg('filters'); addRow('filters'); await tick();
+    const li = lastIdx('#view-config [data-bind^="filters."][data-bind$=".name"]');
+    setv(B(`filters.${li}.name`), 'Has links'); await tick();
+    setv(B(`filters.${li}.conds.0.subject`), 'links', 'change'); await tick();
+    await save('links filter');
+    const lRow = qa('#view-config .crow.block').find(r => r.querySelector(`[data-bind="filters.${li}.name"]`));
+    ok('Linked-items condition', lRow.querySelector('.match-pill').textContent === '2 now');
+    // Guards
+    nav('extensions');
+    q('#view-config [data-op="del"][data-list="extensions.fieldTypes"][data-i="0"]').click();
+    ok('Field type in use cannot be deleted', dlgOpen() && q('#dlgBody').textContent.includes('Cost centre')); okDlg(); await tick();
+    q('#view-config [data-op="del"][data-list="extensions.steps"][data-i="0"]').click();
+    ok('Step type in use cannot be deleted', dlgOpen() && q('#dlgBody').textContent.includes('Bump')); okDlg(); await tick();
+    // Validation of scripts
+    setv(B('extensions.conditions.0.script'), 'item.fields[ >'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await wait(25);
+    ok('Script syntax error blocks save', errsShown().includes('Over budget'));
+    q('[data-cfg-cmd="discard"]').click(); await tick();
+    // Scripts off
+    B('extensions.scriptsEnabled').click(); await save('scripts off');
+    await board();
+    const pr = store().items.find(i => i.ref === 'OMD-002').priorityId;
+    btn('OMD-002', 'Bump').click(); await tick();
+    ok('Scripts off: script step skipped', store().items.find(i => i.ref === 'OMD-002').priorityId === pr && qa('.toast').some(t => t.textContent.includes('Scripts are turned off')));
+    // Import arrives with scripts off
+    await openCfg('extensions'); B('extensions.scriptsEnabled').click(); await save('scripts on again');
+    const exported = JSON.stringify({ config: store().config });
+    HTMLInputElement.prototype.click = function () {};
+    nav('data'); q('[data-cfg-cmd="import-config"]').click();
+    const dt = new DataTransfer(); dt.items.add(new File([exported], 'cfg.json', { type: 'application/json' }));
+    q('#importInput').files = dt.files; q('#importInput').dispatchEvent(new Event('change')); await wait(150);
+    nav('extensions'); await tick();
+    ok('Imported config has scripts switched off', B('extensions.scriptsEnabled') && !B('extensions.scriptsEnabled').checked && qa('.toast').some(t => t.textContent.includes('switched off')));
+    q('[data-cfg-cmd="discard"]').click(); await tick();
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.filter(l => l.startsWith('PASS')).length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:99999;background:#fff;color:#000;font:12px/1.35 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

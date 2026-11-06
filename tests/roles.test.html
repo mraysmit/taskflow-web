@@ -1,0 +1,148 @@
+<!-- Sign-in, roles, what each role sees, View as, role queues, People and Roles configuration. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tick = () => wait(20);
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const fieldVal = (ref, lbl) => { const f = [...card(ref).querySelectorAll('.field')].find(x => x.querySelector('.field-l').textContent === lbl); return f && f.querySelector('.field-v').textContent; };
+  const dlgOpen = () => q('#dlg').open;
+  const okDlg = () => q('#dlgOk').click();
+  const setv = (el, v, ev = 'input') => { el.value = v; el.dispatchEvent(new Event(ev, { bubbles: true })); if (ev === 'input') el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const B = path => q(`#view-config [data-bind="${path}"]`);
+  const nav = s => q(`[data-cfg-nav="${s}"]`).click();
+  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const sideLabels = () => qa('#sideNav .side-item').map(b => b.firstElementChild.textContent);
+  const sideCount = label => { const b = qa('#sideNav .side-item').find(x => x.firstElementChild.textContent === label); return b ? (b.querySelector('.n') || {}).textContent : null; };
+  const login = async (u, p = 'demo') => { q('#loginUser').value = u; q('#loginPass').value = p; q('#loginForm').requestSubmit(); await wait(60); };
+  const logout = async () => { q('[data-logout]').click(); await tick(); };
+  try {
+    await wait(200);
+    // ---- Sign-in screen ----
+    ok('Sign-in screen shown first', !q('#login').hidden && q('.app').inert);
+    ok('Demo accounts listed', q('#loginHint').textContent.includes('achan') && q('#loginHint').textContent.includes('dpatel') && q('#loginHint').textContent.includes('not real security'));
+    await login('achan', 'wrong');
+    ok('Wrong password rejected', !q('#login').hidden && q('#loginErr').textContent.includes('don’t match'));
+    await login('ACHAN');
+    ok('Sign in (username not case-sensitive)', q('#login').hidden && !q('.app').inert && q('#viewerName').textContent === 'A. Chan');
+    const st0 = store();
+    ok('Passwords stored only as salted hashes', st0.config.people.every(p => p.passwordHash && p.salt && !('password' in p)) && !JSON.stringify(st0).includes('"demo"'));
+    try {
+      const p1 = st0.config.people.find(p => p.id === 'p1');
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${p1.salt}:demo`));
+      const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+      ok('Hash is standard SHA-256', hex === p1.passwordHash);
+    } catch (e) { out.push('SKIP SHA-256 cross-check (crypto.subtle unavailable)'); }
+    ok('System administrator sees everything and can configure', qa('#board .card').length === 4 && !q('#sideConfig').closest('nav').hidden && !q('#btnSample').hidden);
+    ok('System administrator gets a People panel for everyone', !q('#teamCard').hidden && qa('#teamMembers .member-row').length === 7);
+    await logout();
+    ok('Sign out returns to sign-in screen', !q('#login').hidden);
+
+    // ---- Team member: own work only ----
+    await login('eng');
+    ok('Member sees only their own work', qa('#board .card').length === 1 && !!card('OMD-003'));
+    ok('Member has no configuration, sample or View as', q('#sideConfig').closest('nav').hidden && q('#btnSample').hidden && q('#fViewer').closest('label').hidden && q('#teamCard').hidden);
+    ok('Member gets no team view', !sideLabels().some(l => l.startsWith('My team')));
+    await logout();
+
+    // ---- Team admin: their team ----
+    await login('dpatel');
+    ok('Team admin gets automatic team and queue views', sideLabels().includes('My team: Operations') && sideLabels().includes('Queue: Controls reviewers'));
+    ok('Team admin sees their team’s work', qa('#board .card').map(c => c.querySelector('.card-ref').textContent).sort().join() === 'OMD-002,OMD-003');
+    ok('View as limited to team', [...q('#fViewer').options].map(o => o.textContent.replace(' (me)', '')).sort().join() === 'D. Patel,E. Ng,F. Ho');
+    ok('Team panel lists members with workload', q('#teamCardTitle').textContent === 'My team: Operations' && qa('#teamMembers .member-row').length === 3 && q('#teamMembers').textContent.includes('open'));
+    qa('#teamMembers [data-view-as]').find(b => b.closest('.member-row').textContent.includes('E. Ng')).click(); await tick();
+    ok('Viewing a member is read-only', !q('#roBanner').hidden && q('#roBanner').textContent.includes('read-only') && qa('#board [data-action]').length === 0);
+    ok('Board shows exactly what the member sees', qa('#board .card').length === 1 && !!card('OMD-003'));
+    q('#btnNew').click(); setv(q('#f_title'), 'Sneaky'); q('#form').requestSubmit(); await tick();
+    ok('Read-only blocks saving', !store().items.some(i => i.title === 'Sneaky'));
+    q('#roBanner [data-back-to-me]').click(); await tick();
+    ok('Back to my view', q('#roBanner').hidden && q('#viewerName').textContent === 'D. Patel');
+    await logout();
+
+    // ---- Role queue ----
+    await login('achan');
+    [...card('OMD-001').querySelectorAll('[data-action]')].find(b => b.textContent === 'Set next').click();
+    ok('Set next offers role queues', [...q('#m_owner').options].some(o => o.value === 'q:r_reviewer'));
+    setv(q('#m_owner'), 'q:r_reviewer', 'change'); okDlg(); await tick();
+    ok('Next owner shows the queue', fieldVal('OMD-001', 'Next owner') === 'Queue: Controls reviewers');
+    btn('OMD-001', 'Complete & handoff').click();
+    ok('Handover note mentions the queue', dlgOpen() && q('#dlgBody').textContent.includes('Controls reviewers'));
+    setv(q('[data-note="0"]'), 'Ready for control review'); okDlg(); await tick();
+    ok('Handoff to queue: no owner until picked up', fieldVal('OMD-001', 'Current owner') === 'Queue: Controls reviewers' && !!card('OMD-001').querySelector('.queue-banner'));
+    const qa1 = store().alerts.filter(a => a.kind === 'queue').map(a => a.toId).sort().join();
+    ok('Everyone with the role is alerted', qa1 === 'p3,p4');
+    await logout();
+    await login('cwong');
+    ok('Queue view counts it', sideCount('Queue: Controls reviewers') === '1');
+    ok('Queue member can see the queued item', !!card('OMD-001'));
+    const pick = qa('#inbox [data-inbox-action]').find(b => b.textContent === 'Pick up');
+    ok('Inbox offers Pick up', !!pick);
+    pick.click(); await tick();
+    ok('Pick up makes them the owner', fieldVal('OMD-001', 'Current owner') === 'C. Wong' && !card('OMD-001').querySelector('.queue-banner'));
+    ok('Handover record shows who picked it up', store().items.find(i => i.ref === 'OMD-001').handovers[0].state === 'accepted' && store().items.find(i => i.ref === 'OMD-001').handovers[0].toId === 'p3');
+    ok('Sender told it was picked up', store().alerts.some(a => a.toId === 'p1' && a.label === 'PICKED UP'));
+    ok('Other queue members’ alerts cleared', store().alerts.filter(a => a.kind === 'queue' && !a.read).length === 0);
+    // Assign straight to a queue from the form
+    q('#btnNew').click(); setv(q('#f_title'), 'Steward question'); setv(q('#f_owner'), 'Queue: Data stewards'); q('#form').requestSubmit(); await tick();
+    const sq = store().items.find(i => i.title === 'Steward question');
+    ok('Form assigns to a role queue', sq && sq.queueId === 'r_steward' && !sq.ownerId && store().alerts.some(a => a.toId === 'p2' && a.kind === 'queue'));
+    ok('Creator keeps sight of it', !!qa('#board .card').find(c => c.textContent.includes('Steward question')));
+    q('#btnNew').click(); setv(q('#f_title'), 'Bad queue'); setv(q('#f_owner'), 'Queue: Nobody'); q('#form').requestSubmit(); await tick();
+    ok('Unknown queue rejected', q('#formError').textContent.includes('no role queue'));
+    q('#formCancel').click();
+    await logout();
+
+    // ---- Configuration: roles and people ----
+    await login('achan');
+    q('#sideConfig').click(); nav('roles'); await tick();
+    ok('Roles section lists default roles', qa('#view-config [data-bind^="roles."][data-bind$=".name"]').map(i => i.value).join('|') === 'Team member|Team admin|System administrator|Controls reviewers|Data stewards');
+    q('#view-config [data-op="add"][data-list="roles"]').click(); await tick();
+    const ri = qa('#view-config [data-bind^="roles."][data-bind$=".name"]').length - 1;
+    setv(B(`roles.${ri}.name`), 'Auditors'); await tick();
+    B(`roles.${ri}.queue`).click(); await tick();
+    q('[data-cfg-cmd="save"]').click(); await wait(30);
+    const audId = store().config.roles.find(r => r.name === 'Auditors').id;
+    nav('people'); await tick();
+    const ei = qa('#view-config [data-bind^="people."][data-bind$=".name"]').findIndex(i => i.value === 'E. Ng');
+    q(`#view-config [data-toggle="people.${ei}.roleIds"][value="${audId}"]`).click(); await tick();
+    setv(B(`people.${ei}.newPassword`), 'secret1'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await wait(30);
+    ok('People: roles and new password saved', store().config.people.find(p => p.id === 'p5').roleIds.includes(audId) && !q('.cfg-errors'));
+    // Lockout guard
+    const ai = qa('#view-config [data-bind^="people."][data-bind$=".name"]').findIndex(i => i.value === 'A. Chan');
+    q(`#view-config [data-toggle="people.${ai}.roleIds"][value="r_sysadmin"]`).click(); await tick();
+    q('[data-cfg-cmd="save"]').click(); await wait(30);
+    ok('Cannot remove the last administrator', !!q('.cfg-errors') && q('.cfg-errors').textContent.includes('configure the workspace'));
+    ok('Error jumps to the Roles section', q('.cfg-nav .active').textContent.includes('Roles'));
+    q('[data-cfg-cmd="discard"]').click(); await tick();
+    // Duplicate username
+    nav('people'); await tick();
+    setv(B(`people.${ei}.username`), 'achan'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await wait(30);
+    ok('Duplicate usernames rejected', q('.cfg-errors') && q('.cfg-errors').textContent.includes('used twice'));
+    q('[data-cfg-cmd="discard"]').click(); await tick();
+    await logout();
+    await login('eng', 'demo');
+    ok('Old password no longer works', !q('#login').hidden);
+    await login('eng', 'secret1');
+    ok('New password works and new queue view appears', q('#login').hidden && sideLabels().includes('Queue: Auditors'));
+    await logout();
+    ok('Hint drops accounts with changed passwords', !q('#loginHint').textContent.includes('eng'));
+    await login('achan');
+    q('#tabs [data-tab="board"]').click(); await tick();
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.filter(l => l.startsWith('PASS')).length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:99999;background:#fff;color:#000;font:12px/1.35 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

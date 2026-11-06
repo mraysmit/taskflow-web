@@ -1,0 +1,86 @@
+<!-- The Action Inbox: alerts, Review & accept, Decline, Pick up, Mark read, read-only viewing. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const setv = (el, v, ev = 'input') => { el.value = v; el.dispatchEvent(new Event(ev, { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const logout = async () => { q('[data-logout]').click(); await wait(30); };
+  const unread = () => q('#inboxUnread').textContent;
+  const msgs = () => qa('#inbox .alert-msg').map(m => m.textContent);
+  try {
+    await wait(200);
+    await login('achan');
+    ok('Empty inbox shows a message', unread() === '0 unread' && q('#inbox').textContent.includes('No unread alerts'));
+    // Send B. Lee a handoff request
+    btn('OMD-001', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Ready'; q('#dlgOk').click(); await wait(30);
+    await logout(); await login('blee');
+    ok('Alert arrives with unread count in inbox header, panel title and stat', unread() === '1 unread' && q('#panelUnread').textContent === '1 unread' && qa('.stat').find(s => s.textContent.includes('Unread alerts')).querySelector('.stat-value').textContent === '1');
+    ok('Pop-up shown on sign-in', !!q('.toast.pop'));
+    ok('Alert text, type and sender shown', msgs()[0].includes('wants to hand off OMD-001') && q('#inbox .alert-meta').textContent.includes('HANDOFF REQUEST') && q('#inbox .alert-meta').textContent.includes('A. Chan'));
+    q('[data-acc=inbox] .pcard-head').click(); await wait(20);
+    ok('Collapsed inbox still shows the count', q('[data-acc=inbox]').classList.contains('collapsed') && unread() === '1 unread');
+    q('[data-acc=inbox] .pcard-head').click(); await wait(20);
+    const review = qa('#inbox [data-inbox-action]').find(b => b.textContent === 'Review & accept');
+    ok('Review & accept and Decline buttons in inbox', !!review && qa('#inbox [data-inbox-action]').some(b => b.textContent === 'Decline'));
+    review.click(); await wait(20);
+    ok('Review & accept opens the handover dialog', q('#dlg').open && q('#dlgBody').textContent.includes('Ready'));
+    q('#dlgOk').click(); await wait(30);
+    ok('Accepting clears the alert', unread() === '0 unread');
+    await logout(); await login('achan');
+    ok('Sender gets the accepted alert', msgs().some(m => m.includes('accepted the handoff')));
+    q('#inbox [data-alert-open]').click();
+    for (let t = 0; t < 20 && !(card('OMD-001') && card('OMD-001').classList.contains('flash')); t++) await wait(50);
+    ok('Open item marks the alert read', unread() === '0 unread');
+    ok('Open item highlights the card', !!card('OMD-001') && card('OMD-001').classList.contains('flash'));
+    // Decline path from the inbox
+    btn('OMD-002', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Exceptions'; q('#dlgOk').click(); await wait(30);
+    await logout(); await login('dpatel');
+    qa('#inbox [data-inbox-action]').find(b => b.textContent === 'Decline').click(); await wait(20);
+    q('[data-reason]').value = 'Not mine'; q('#dlgOk').click(); await wait(30);
+    ok('Decline from inbox works', unread() === '0 unread' && !card('OMD-002').querySelector('.offer-banner'));
+    await logout(); await login('cwong');
+    ok('Owner told about the decline', msgs().some(m => m.includes('declined') && m.includes('Not mine')));
+    const declineMsg = q('#inbox .alert-msg').textContent;
+    q('#inbox [data-alert-read]').click(); await wait(20);
+    ok('Mark read on one alert (decline notice + next-in-line alert, one left)', unread() === '1 unread' && !msgs().includes(declineMsg) && msgs()[0].includes('next in line'));
+    // Queue pick-up from the inbox
+    await logout(); await login('achan');
+    btn('OMD-003', 'Set next').click(); setv(q('#m_owner'), 'q:r_reviewer', 'change'); q('#dlgOk').click(); await wait(20);
+    btn('OMD-003', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Review please'; q('#dlgOk').click(); await wait(30);
+    // Comment alert to an owner
+    card('OMD-001').querySelector('[data-open-item]').click(); q('#d_comment').value = 'Check this'; q('#d_addComment').click(); await wait(20); q('#dlgOk').click();
+    await logout(); await login('cwong');
+    const pick = qa('#inbox [data-inbox-action]').find(b => b.textContent === 'Pick up');
+    ok('Queue alert offers Pick up in inbox', !!pick);
+    pick.click(); await wait(30);
+    ok('Pick up from inbox makes them owner', card('OMD-003').textContent.includes('C. Wong') && !card('OMD-003').querySelector('.queue-banner'));
+    await logout(); await login('blee');
+    ok('Comment alert reaches the owner', msgs().some(m => m.includes('commented on OMD-001')));
+    q('#btnMarkRead').click(); await wait(20);
+    ok('Mark alerts read clears all', unread() === '0 unread');
+    // Read-only viewing
+    await logout(); await login('achan');
+    btn('OMD-002', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Again'; q('#dlgOk').click(); await wait(30);
+    await logout(); await login('dpatel');
+    await logout(); await login('dpatel');
+    qa('#teamMembers [data-view-as]').find(b => b.closest('.member-row').textContent.includes('E. Ng')).click(); await wait(30);
+    ok('Read-only view hides inbox actions', qa('#inbox [data-inbox-action], #inbox [data-alert-read]').length === 0);
+    q('[data-back-to-me]').click(); await wait(30);
+    ok('Own alerts still there after viewing someone else', unread() === '1 unread' && qa('#inbox [data-inbox-action]').length === 2);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.filter(l => l.startsWith('PASS')).length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:99999;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

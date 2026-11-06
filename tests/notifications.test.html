@@ -1,0 +1,108 @@
+<!-- Notification position, animation and sound settings (Web Audio is replaced by a counter). -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+// Fake Web Audio so we can count the tones played.
+window.__tones = []; window.__state = 'running';
+window.AudioContext = class {
+  constructor() { this.currentTime = 0; this.destination = {}; }
+  get state() { return window.__state; }
+  resume() { window.__state = 'running'; return Promise.resolve(); }
+  createGain() { return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+  createOscillator() { const o = { type: '', frequency: { value: 0 }, connect() {}, start() { window.__tones.push(o.frequency.value); }, stop() {} }; return o; }
+};
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tick = () => wait(20);
+  const setv = (el, v, ev = 'input') => { el.value = v; el.dispatchEvent(new Event(ev, { bubbles: true })); if (ev === 'input') el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const B = path => q(`#view-config [data-bind="${path}"]`);
+  const nav = s => q(`[data-cfg-nav="${s}"]`).click();
+  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const box = () => q('#toasts');
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const logout = async () => { q('[data-logout]').click(); await tick(); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  try {
+    await wait(200);
+    await login('achan');
+    const n0 = store().config.notifications;
+    ok('Defaults: top, right, slide, bell on for alerts', n0.position === 'top' && n0.align === 'right' && n0.animation === 'slide' && n0.sound === true && n0.soundFor === 'alerts' && n0.tone === 'bell' && n0.volume === 50);
+
+    q('#sideConfig').click(); nav('notifications'); await tick();
+    ok('All controls present', ['position', 'align', 'animation', 'animMs', 'reduceMotion', 'sound', 'tone', 'soundFor', 'volume', 'toastSeconds', 'popupSeconds'].every(k => B('notifications.' + k)));
+    // Preview uses the unsaved draft
+    setv(B('notifications.position'), 'top', 'change'); await tick();
+    setv(B('notifications.animation'), 'bounce', 'change'); await tick();
+    setv(B('notifications.align'), 'center', 'change'); await tick();
+    q('[data-cfg-cmd="preview-pop"]').click(); await tick();
+    ok('Preview pop-up drops from top, centred, bouncing', box().classList.contains('pos-top') && box().classList.contains('al-center') && box().classList.contains('an-bounce') && !!q('.toast.pop'));
+    ok('Preview pop-up has no Open item button', !q('.toast.pop [data-t-open]') && !!q('.toast.pop [data-t-close]'));
+    ok('Preview plays the bell (5 partials)', window.__tones.length === 5 && window.__tones[0] === 830);
+    const top = getComputedStyle(box()); ok('Top position computed', top.top === '80px' && top.position === 'fixed');
+    q('[data-cfg-cmd="preview-toast"]').click(); await tick();
+    ok('Newest notification is first when dropping from the top', box().firstElementChild.classList.contains('toast') && !box().firstElementChild.classList.contains('pop'));
+    window.__tones = [];
+    setv(B('notifications.tone'), 'chime', 'change'); await tick();
+    q('[data-cfg-cmd="preview-sound"]').click(); await wait(30);
+    ok('Chime tone plays two notes', window.__tones.length === 4 && window.__tones[0] === 1318.5);
+    window.__tones = [];
+    setv(B('notifications.volume'), '0'); await tick();
+    q('[data-cfg-cmd="preview-sound"]').click(); await tick();
+    ok('Volume 0 plays nothing and says so', window.__tones.length === 0 && qa('.toast').some(t => t.textContent.includes('Volume is 0')));
+    setv(B('notifications.volume'), '150'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    ok('Volume over 100 rejected', q('#view-config').textContent.includes('Volume must be between 0 and 100'));
+    setv(B('notifications.animMs'), '10'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    ok('Animation speed under 50 rejected', q('#view-config').textContent.includes('Animation speed must be between 50 and 2000'));
+    setv(B('notifications.volume'), '80'); setv(B('notifications.animMs'), '600'); await tick();
+    setv(B('notifications.soundFor'), 'all', 'change'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    const n1 = store().config.notifications;
+    ok('Settings saved', n1.position === 'top' && n1.align === 'center' && n1.animation === 'bounce' && n1.tone === 'chime' && n1.volume === 80 && n1.animMs === 600 && n1.soundFor === 'all');
+    ok('Speed applied as CSS variable', box().style.getPropertyValue('--nd') === '600ms');
+    // "Every notification" plays on plain messages
+    window.__tones = [];
+    qa('.toast').forEach(t => t.remove());
+    q('[data-cfg-cmd="preview-toast"]').click(); await tick();
+    ok('Every-notification mode chimes on a plain message', window.__tones.length === 4);
+    // Real alert: send B. Lee a handoff and sign in as them
+    const all = qa('.side-item').find(s => s.textContent.includes('All work')); all && all.click(); await tick();
+    btn('OMD-001', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Ready'; q('#dlgOk').click(); await wait(30);
+    await logout(); await wait(600);
+    window.__tones = [];
+    await login('blee');
+    ok('Alert pop-up appears at the top with the saved style', !!q('.toast.pop [data-t-open]') && box().classList.contains('pos-top') && box().classList.contains('an-bounce'));
+    ok('Sign-in alert plays the chime once', window.__tones.length === 4);
+    const pop = q('.toast.pop'); q('.toast.pop [data-t-close]').click(); await tick();
+    ok('Dismiss runs the exit animation first', pop.isConnected && pop.classList.contains('out') && getComputedStyle(pop).animationName === 'toastSlideOut');
+    await wait(700);
+    ok('Then removes it', !pop.isConnected);
+    // Fade and none
+    await logout(); await login('achan');
+    q('#sideConfig').click(); nav('notifications'); await tick();
+    setv(B('notifications.animation'), 'none', 'change'); setv(B('notifications.position'), 'bottom', 'change'); setv(B('notifications.sound'), false, 'change');
+    B('notifications.sound').checked = false; B('notifications.sound').dispatchEvent(new Event('change', { bubbles: true })); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    window.__tones = [];
+    qa('.toast').forEach(x => x.remove());
+    q('[data-cfg-cmd="preview-pop"]').click(); await tick();
+    ok('No animation and bottom position', box().classList.contains('an-none') && box().classList.contains('pos-bottom') && getComputedStyle(q('.toast.pop')).animationName === 'none');
+    ok('Sound off: preview pop-up is silent', window.__tones.length === 0);
+    q('.toast.pop [data-t-close]').click(); await tick();
+    ok('No animation removes at once', !q('.toast.pop'));
+    window.__state = 'suspended';
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.filter(l => l.startsWith('PASS')).length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>
