@@ -11,6 +11,8 @@ window.addEventListener('load', async () => {
     // Real user data to protect: sign in and create an item.
     q('#loginUser').value = 'achan'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(50);
     q('#btnNew').click(); q('#f_title').value = 'MY REAL ITEM'; q('#form').requestSubmit(); await wait(50);
+    q('.col-grip[data-grip="side"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    const notesBefore = localStorage.getItem('taskhub.notifications'), layoutBefore = localStorage.getItem('taskhub.layout');
     q('[data-open-demo]').click(); await wait(50);
     q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
     q('[data-demo="run"]').click();
@@ -28,6 +30,8 @@ window.addEventListener('load', async () => {
     const st = JSON.parse(localStorage.getItem('taskhub.v2'));
     ok('Your own data restored afterwards', st.items.some(i => i.title === 'MY REAL ITEM') && st.session && st.session.userId === 'p1' && !st.config.statuses.some(s => s.name === 'Review'));
     ok('Demo backup cleared', !localStorage.getItem('taskhub.demo-backup'));
+    ok('Your notification history is untouched by the demo', !!notesBefore && localStorage.getItem('taskhub.notifications') === notesBefore);
+    ok('Your column widths are put back', localStorage.getItem('taskhub.layout') === layoutBefore);
     ok('no JS errors', !(window.__errs || []).length);
   } catch (e) { out.push('ERROR ' + e.message + ' ' + e.stack); }
   if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));

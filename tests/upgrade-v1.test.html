@@ -26,7 +26,7 @@ window.addEventListener('load', () => setTimeout(() => {
     ok('migrated card exists', !!c);
     ok('in progress column (renamed Doing)', !!q('.col[data-status="progress"] #' + c.id) && q('.col[data-status="progress"] h3').textContent === 'Doing');
     ok('owner + next owner names', c.textContent.includes('C. Wong') && c.textContent.includes('Z. Person'));
-    ok('viewer migrated', q('#viewerName').textContent === 'C. Wong');
+    ok('viewer migrated', q('#fViewer').selectedOptions[0].textContent.startsWith('C. Wong'));
     ok('alert migrated', q('#inboxUnread').textContent === '1 unread');
     ok('unknown person added to config', JSON.parse(localStorage.getItem('taskhub.v2')).config.people.some(p => p.name === 'Z. Person' && p.username === 'zperson'));
     const s = JSON.parse(localStorage.getItem('taskhub.v2'));

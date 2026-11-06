@@ -61,6 +61,14 @@ window.addEventListener('load', async () => {
     ok('Double-click or Enter puts them back', sideW() === 236 && panelW() === 368 && !('side' in saved()) && !('panel' in saved()));
     ok('The board still fits between them', q('.main').getBoundingClientRect().width >= 420);
 
+    // Who is signed in, and Log out, are at the bottom of the sidebar; the Action Inbox leads the panel
+    ok('The Action Inbox is the first pane in the Operations Panel', q('.panel .pcard[data-acc]').dataset.acc === 'inbox' && !q('#viewerCard'));
+    ok('The sidebar shows who is signed in, their roles and Log out', q('#sideFoot .sf-name').textContent === 'A. Chan' && q('#sideFoot').textContent.includes('System administrator') && !!q('#sideFoot [data-logout]'));
+    const fv = q('#fViewer'); fv.value = 'p2'; fv.dispatchEvent(new Event('change', { bubbles: true })); await wait(20);
+    ok('Viewing as someone shows it there, with Back to my view', q('#sideFoot').textContent.includes('Viewing as B. Lee') && !!q('#sideFoot [data-back-to-me]'));
+    q('#sideFoot [data-back-to-me]').click(); await wait(20);
+    ok('Back to my view works from the sidebar', !q('#sideFoot').textContent.includes('Viewing as') && !q('#sideFoot [data-back-to-me]'));
+
     // Members don't get Load sample
     await drag('.col-grip[data-grip="side"]', 40);
     q('[data-logout]').click(); await wait(20);

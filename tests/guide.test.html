@@ -1,8 +1,10 @@
-<!-- The User Guide: opening it from the sidebar, chapters written from the live configuration, search, links and what each role sees. -->
+<!-- The User Guide: opens in its own tab (index.html#guide) that only reads the workspace; chapters written from the live configuration, search, links back into the app, and what each role sees. Phases reload the page: 1 the app, 2 the guide tab, 3 the app after following a guide link. -->
 <script>
 window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
 window.addEventListener('load', async () => {
-  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const phase = sessionStorage.getItem('gphase') || '1';
+  const out = JSON.parse(sessionStorage.getItem('gout') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
   const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const tick = () => wait(20);
@@ -12,83 +14,113 @@ window.addEventListener('load', async () => {
   const search = async v => { const s = q('#guideSearch'); s.value = v; s.dispatchEvent(new Event('input', { bubbles: true })); await tick(); };
   const shown = () => qa('.g-ch').filter(s => !s.hidden).map(s => s.id.slice(2));
   const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const gone = sel => getComputedStyle(q(sel)).display === 'none';
+  const next = (p, hash) => {
+    if (window.__errs) out.push('JSERRS (phase ' + phase + '): ' + window.__errs.join(' | '));
+    sessionStorage.setItem('gout', JSON.stringify(out)); sessionStorage.setItem('gphase', p);
+  };
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
   try {
-    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
-    await login('achan');
-    const side = q('#sideGuide');
-    ok('Sidebar has a User Guide option', !!side && side.textContent.includes('User Guide') && !side.closest('nav').hidden);
-    side.click(); await tick();
-    ok('Opens the guide page', !q('#view-guide').hidden && q('#view-board').hidden && q('#hero').hidden);
-    ok('Sidebar highlights it and the tab title says so', side.classList.contains('active') && document.title.endsWith('User Guide'));
-    ok('Welcomes you by the workspace name', q('.g-hero h1').textContent === 'Welcome to Task Hub');
-    const ids = qa('.g-ch').map(s => s.id.slice(2));
-    ok('Has all the chapters, in order', ids.join() === 'start,layout,roles,board,cards,handoff,queues,verify,inbox,create,details,pages,data,config,demo,keys,faq');
-    ok('Contents list and quick tiles cover every chapter', qa('.g-toc a').length === ids.length && qa('.g-quick-tile').length === ids.length);
+    await wait(200);
+    if (phase === '1') {
+      q('[data-load-default]').click(); await wait(300);
+      await login('achan');
+      const side = q('#sideGuide');
+      ok('Sidebar has a User Guide option', !!side && side.textContent.includes('User Guide') && !side.closest('nav').hidden);
+      const opened = [];
+      const realOpen = window.open;
+      window.open = (url, name) => { opened.push([url, name]); return { focus() {}, closed: false }; };
+      side.click(); await tick();
+      ok('User Guide opens a separate tab', opened.length === 1 && opened[0][0] === location.href.split('#')[0] + '#guide' && opened[0][1] === 'taskhub-guide');
+      ok('…and the board stays where it was', !q('#view-board').hidden && q('#view-guide').hidden);
+      side.click(); await tick();
+      ok('Clicking again reuses the same tab', opened.length === 2 && opened[1][1] === 'taskhub-guide');
+      window.open = () => null;
+      side.click(); await tick();
+      ok('If the browser blocks new tabs, the guide is shown in the app instead', !q('#view-guide').hidden && q('.g-hero h1').textContent === 'Welcome to Task Hub' && qa('.toast').some(t => t.textContent.includes('blocked')));
+      window.open = realOpen;
+      q('[data-view]').click(); await tick();
+      window.postMessage({ taskhubGuide: 'config:notifications' }, '*'); await tick();
+      ok('Guide links are only taken from the guide tab', q('#view-config').hidden && !q('#view-board').hidden);
+      next('2');
+      location.hash = 'guide';
+      location.reload();
+      return;
+    }
 
-    // Written from the live configuration
-    const cfg = store().config;
-    ok('Board chapter lists every column', cfg.statuses.every(s => ch('board').textContent.includes(s.name)));
-    ok('Verification column is described once, as waiting for checking', qa('#g-board .g-list li').filter(li => li.textContent.includes('Verification')).length === 1);
-    ok('Buttons table has one row per configured button', qa('#g-cards .g-actions tbody tr').length === cfg.actions.length);
-    ok('Roles table marks your own roles', qa('#g-roles .g-table tr.mine').length === 2 && ch('roles').textContent.includes('A. Chan'));
-    ok('Verification chapter shows the routes and their groups', ch('verify').textContent.includes('Two-group sign-off') && ch('verify').textContent.includes('Controls reviewers') && ch('verify').textContent.includes('Data stewards'));
-    ok('Role queues chapter names the queue roles', ch('queues').textContent.includes('Queue: Controls reviewers'));
-    ok('Notification sample uses the configured colours', getComputedStyle(q('#g-inbox .g-note-demo .toast.pop')).borderLeftColor === 'rgb(181, 20, 30)' && getComputedStyle(q('#g-inbox .g-note-demo .toast.msg')).borderLeftColor === 'rgb(47, 122, 30)');
-    ok('Data chapter says the browser isn’t using a data file', ch('data').textContent.includes('not using a data file'));
+    if (phase === '2') {
+      const before = localStorage.getItem('taskhub.v2');
+      ok('The guide tab shows only the guide', document.body.classList.contains('guide-tab') && !q('#view-guide').hidden && gone('.sidebar') && gone('.panel') && gone('.topbar') && gone('#login'));
+      ok('…titled as the guide', document.title === 'Task Hub · User Guide' && q('.g-hero h1').textContent === 'Welcome to Task Hub');
+      ok('It has a way back to the app', !!q('.g-back') && q('.g-back').textContent.includes('Back to Task Hub'));
+      ok('A wide tab shows the contents list beside the chapters', getComputedStyle(q('.g-toc')).display !== 'none');
+      const ids = qa('.g-ch').map(s => s.id.slice(2));
+      ok('Has all the chapters, in order', ids.join() === 'start,layout,roles,board,cards,handoff,queues,verify,inbox,create,details,pages,data,config,demo,keys,faq');
+      ok('Contents list and quick tiles cover every chapter', qa('.g-toc a').length === ids.length && qa('.g-quick-tile').length === ids.length);
 
-    // Search
-    await search('queue');
-    ok('Search narrows the chapters', shown().includes('queues') && !shown().includes('keys') && q('.g-toc [data-guide-jump="keys"]').classList.contains('dim'));
-    await search('zzzqqq');
-    ok('No matches says so', shown().length === 0 && !q('.g-none').hidden);
-    await search('reconnect');
-    const faq = [...qa('#g-faq details')].find(d => d.textContent.includes('Reconnect'));
-    ok('Matching questions open their answers', faq && faq.open && [...qa('#g-faq details')].some(d => !d.open));
-    await search('');
-    ok('Clearing the search shows everything again', shown().length === ids.length && qa('#g-faq details').every(d => !d.open));
-    await search('reconnect');
-    q('.g-toc [data-guide-jump="keys"]').click(); await tick();
-    ok('Jumping to a hidden chapter clears the search', !ch('keys').hidden && q('#guideSearch').value === '' && shown().length === ids.length);
+      // Written from the live configuration
+      const cfg = store().config;
+      ok('Board chapter lists every column', cfg.statuses.every(s => ch('board').textContent.includes(s.name)));
+      ok('Verification column is described once, as waiting for checking', qa('#g-board .g-list li').filter(li => li.textContent.includes('Verification')).length === 1);
+      ok('Buttons table has one row per configured button', qa('#g-cards .g-actions tbody tr').length === cfg.actions.length);
+      ok('Roles table marks the signed-in person’s roles', qa('#g-roles .g-table tr.mine').length === 2 && ch('roles').textContent.includes('A. Chan'));
+      ok('Verification chapter shows the routes and their groups', ch('verify').textContent.includes('Two-group sign-off') && ch('verify').textContent.includes('Controls reviewers') && ch('verify').textContent.includes('Data stewards'));
+      ok('Role queues chapter names the queue roles', ch('queues').textContent.includes('Queue: Controls reviewers'));
+      ok('Notification sample uses the configured colours', getComputedStyle(q('#g-inbox .g-note-demo .toast.pop')).borderLeftColor === 'rgb(181, 20, 30)' && getComputedStyle(q('#g-inbox .g-note-demo .toast.msg')).borderLeftColor === 'rgb(47, 122, 30)');
+      ok('Data chapter points to the app for the data file status', ch('data').textContent.includes('sidebar in the app'));
+      ok('Administrators get links into Configuration', !!q('#view-guide [data-guide-go^="config:"]'));
 
-    // Links that do things
-    q('#g-board [data-guide-go^="view:"]').click(); await tick();
-    ok('“Show the items assigned to me” opens that board view', !q('#view-board').hidden && q('#boardTitle').textContent.includes('Assigned to me'));
-    side.click(); await tick();
-    q('#g-inbox [data-guide-go="config:notifications"]').click(); await tick();
-    ok('Configuration links open the right section', !q('#view-config').hidden && q('[data-cfg-nav="notifications"]').classList.contains('active'));
-    side.click(); await tick();
-    q('#g-create [data-guide-go="new"]').click(); await tick();
-    ok('“Open a new form” opens the form', q('#formMode').textContent === 'New' && !q('[data-acc="form"]').classList.contains('collapsed'));
-    q('#g-demo [data-guide-go="demo"]').click(); await tick();
-    ok('The demo link opens the demo', !!q('.demo-panel') && !q('.demo-panel').hidden);
-    q('[data-demo="close"]').click(); await tick();
+      // Search and jumping
+      await search('queue');
+      ok('Search narrows the chapters', shown().includes('queues') && !shown().includes('keys') && q('.g-toc [data-guide-jump="keys"]').classList.contains('dim'));
+      await search('zzzqqq');
+      ok('No matches says so', shown().length === 0 && !q('.g-none').hidden);
+      await search('reconnect');
+      const faq = [...qa('#g-faq details')].find(d => d.textContent.includes('Reconnect'));
+      ok('Matching questions open their answers', faq && faq.open && [...qa('#g-faq details')].some(d => !d.open));
+      await search('');
+      ok('Clearing the search shows everything again', shown().length === ids.length && qa('#g-faq details').every(d => !d.open));
+      await search('reconnect');
+      q('.g-toc [data-guide-jump="keys"]').click(); await tick();
+      ok('Jumping to a hidden chapter clears the search', !ch('keys').hidden && q('#guideSearch').value === '' && shown().length === ids.length);
+      ok('The guide tab never saves anything', localStorage.getItem('taskhub.v2') === before);
 
-    // Follows configuration changes
-    q('#sideConfig').click(); await tick();
-    q('[data-cfg-nav="general"]').click(); await tick();
-    const name = q('#view-config [data-bind="general.appName"]');
-    name.value = 'Ops Hub'; name.dispatchEvent(new Event('input', { bubbles: true })); await tick();
-    q('[data-cfg-cmd="save"]').click(); await tick();
-    side.click(); await tick();
-    ok('Follows a renamed workspace', q('.g-hero h1').textContent === 'Welcome to Ops Hub' && ch('start').textContent.includes('Ops Hub is a shared board'));
-    ok('Stays on the guide after a re-render', (window.dispatchEvent(new Event('resize')), !q('#view-guide').hidden));
+      // Follows changes made in the app tab
+      const s = store(); s.config.general.appName = 'Ops Hub'; localStorage.setItem('taskhub.v2', JSON.stringify(s));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'taskhub.v2' })); await tick();
+      ok('Follows changes saved in the app tab', q('.g-hero h1').textContent === 'Welcome to Ops Hub' && ch('start').textContent.includes('Ops Hub is a shared board') && document.title === 'Ops Hub · User Guide');
 
-    // A team member
-    await logout(); await login('eng');
-    ok('Everyone gets the guide, including team members', !!q('#sideGuide') && !q('#sideGuide').closest('nav').hidden && q('#sideConfig').closest('nav').hidden);
-    q('#sideGuide').click(); await tick();
-    ok('Team members are told Configuration is for administrators', ch('config').textContent.includes('only available') && !q('#view-guide [data-guide-go^="config:"]'));
-    ok('Their own roles are marked', qa('#g-roles .g-table tr.mine').length === 1 && ch('roles').textContent.includes('E. Ng'));
-    ok('Read-only viewing is explained', ch('roles').textContent.includes('read-only'));
-    ok('no JS errors', !(window.__errs || []).length);
-  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
-  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
-  try { localStorage.clear(); } catch (e) {}
-  const fails = out.filter(l => !l.startsWith('PASS'));
-  const pre = document.createElement('pre');
-  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
-  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
-  document.body.appendChild(pre);
-  if (window.__report) window.__report(out);
+      // A link with no app tab to talk to: go to the app and do it there
+      next('3');
+      q('#g-inbox [data-guide-go="config:notifications"]').click();
+      return;
+    }
+
+    if (phase === '3') {
+      ok('Opened on its own, a guide link goes to the app…', location.hash === '' && !document.body.classList.contains('guide-tab') && !q('.sidebar').hidden);
+      ok('…and does what it said: Configuration → Notifications', !q('#view-config').hidden && q('[data-cfg-nav="notifications"]').classList.contains('active') && !sessionStorage.getItem('taskhub.guide-go'));
+      ok('The app picked up the change made earlier', q('#brandTitle').textContent === 'Ops Hub');
+
+      // A team member (in-app guide, as if new tabs were blocked)
+      await logout(); await login('eng');
+      ok('Everyone gets the guide, including team members', !!q('#sideGuide') && !q('#sideGuide').closest('nav').hidden && q('#sideConfig').closest('nav').hidden);
+      window.open = () => null;
+      q('#sideGuide').click(); await tick();
+      ok('Team members are told Configuration is for administrators', ch('config').textContent.includes('only available') && !q('#view-guide [data-guide-go^="config:"]'));
+      ok('Their own roles are marked', qa('#g-roles .g-table tr.mine').length === 1 && ch('roles').textContent.includes('E. Ng'));
+      ok('Read-only viewing is explained', ch('roles').textContent.includes('read-only'));
+      ok('no JS errors', !(window.__errs || []).length);
+    }
+  } catch (e) { out.push('ERROR (phase ' + phase + ') ' + e.message + '\n' + e.stack); }
+  finish();
 });
 </script>

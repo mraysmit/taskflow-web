@@ -27,7 +27,7 @@ window.addEventListener('load', async () => {
     await login('achan', 'wrong');
     ok('Wrong password rejected', !q('#login').hidden && q('#loginErr').textContent.includes('don’t match'));
     await login('ACHAN');
-    ok('Sign in (username not case-sensitive)', q('#login').hidden && !q('.app').inert && q('#viewerName').textContent === 'A. Chan');
+    ok('Sign in (username not case-sensitive)', q('#login').hidden && !q('.app').inert && q('#sideFoot .sf-name').textContent === 'A. Chan');
     const st0 = store();
     ok('Passwords stored only as salted hashes', st0.config.people.every(p => p.passwordHash && p.salt && !('password' in p)) && !JSON.stringify(st0).includes('"demo"'));
     try {
@@ -60,7 +60,7 @@ window.addEventListener('load', async () => {
     q('#btnNew').click(); setv(q('#f_title'), 'Sneaky'); q('#form').requestSubmit(); await tick();
     ok('Read-only blocks saving', !store().items.some(i => i.title === 'Sneaky'));
     q('#roBanner [data-back-to-me]').click(); await tick();
-    ok('Back to my view', q('#roBanner').hidden && q('#viewerName').textContent === 'D. Patel');
+    ok('Back to my view', q('#roBanner').hidden && q('#sideFoot .sf-name').textContent === 'D. Patel' && !q('#sideFoot').textContent.includes('Viewing as'));
     await logout();
 
     // ---- Role queue ----

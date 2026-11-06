@@ -58,9 +58,11 @@
     flex-direction: column;
     overflow: auto;
   }
-  .brand-title { font-size: 23px; font-weight: 700; letter-spacing: -.01em; color: #f2f3f5; overflow-wrap: anywhere; }
-  .app-ver { display: inline-block; margin-left: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.1); color: #9aa0a8; font-size: 12px; font-weight: 700; letter-spacing: .02em; vertical-align: 4px; white-space: nowrap; }
-  .login-brand .app-ver { background: #e8eaee; color: #5a6069; vertical-align: 5px; }
+  .brand-title { font-size: 30px; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; color: #f2f3f5; overflow-wrap: anywhere; }
+  .app-ver { display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: rgba(255,255,255,.1); color: #9aa0a8; font-size: 10px; font-weight: 700; letter-spacing: .02em; vertical-align: 6px; white-space: nowrap; }
+  .login-brand .app-ver { background: #e3e6f4; color: #4a5180; margin-bottom: 8px !important; }
+  /* The version sits on its own line under the title. */
+  .brand-title .app-ver, .login-brand .app-ver { display: table; margin: 6px 0 0; vertical-align: baseline; line-height: 1.5; }
   .brand-sub { margin-top: 10px; font-size: 14px; line-height: 1.55; color: #9aa0a8; }
   .side-nav { display: flex; flex-direction: column; gap: 6px; margin-top: 40px; }
   .side-nav.admin { margin-top: 18px; padding-top: 14px; border-top: 1px solid #262930; }
@@ -75,6 +77,16 @@
   .side-item .n { font-size: 13px; font-weight: 600; color: #8b919a; }
   .side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 13px; line-height: 1.5; color: #8b919a; border-top: 1px solid #262930; }
   .side-foot b { color: #d9dce0; }
+  .sf-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7d838c; }
+  .side-foot .sf-name { display: block; margin-top: 2px; font-size: 15.5px; color: #f2f3f5; overflow-wrap: anywhere; }
+  .sf-team { font-size: 13px; color: #9aa0a8; }
+  .sf-roles .role-badge { margin: 6px 5px 0 0; padding: 2px 8px; background: #262a33; color: #c9cdf5; font-size: 11px; }
+  .sf-viewing { margin-top: 8px; padding: 6px 8px; border-radius: 8px; background: #3a2f12; color: #f5dc9a; font-size: 12.5px; }
+  .sf-viewing b { color: #fff; }
+  .sf-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .sf-btn { height: 32px; padding: 0 12px; border: 1px solid #3a3f48; border-radius: 9px; background: #20232a; color: #e6e8eb; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .sf-btn:hover { background: #2a2e36; }
+  .sf-btn:focus-visible { outline: 2px solid #8f95e6; outline-offset: 1px; }
   .side-demo { margin-top: 12px; }
   .side-sample { margin-top: 2px; }
   /* Data file status: quiet when saved, amber when it needs a click, red when saving is stuck. */
@@ -421,7 +433,7 @@
   /* Sign-in, roles, queues */
   .login { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: linear-gradient(160deg, #16181d 0%, #262a33 100%); overflow: auto; }
   .login-card { width: min(420px, 100%); background: var(--surface-2); border-radius: 18px; padding: 26px 26px 22px; box-shadow: 0 24px 70px rgba(0,0,0,.4); display: grid; gap: 14px; }
-  .login-brand { font-size: 26px; font-weight: 700; }
+  .login-brand { font-size: 34px; line-height: 1.15; font-weight: 800; color: #1b2a6b; }
   .login-card label > span { display: block; margin: 0 0 5px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .login-card .btn { width: 100%; }
   .login-hint { font-size: 13px; line-height: 1.55; color: var(--muted); border-top: 1px solid #e1e4e8; padding-top: 12px; }
@@ -490,8 +502,6 @@
   .login-start p { margin: 0; font-size: 14.5px; line-height: 1.5; }
   .login-start .btn { height: 48px; font-size: 16.5px; }
   .login-demo { background: transparent; border: 0; color: #343a8a; font-weight: 700; cursor: pointer; padding: 4px 0; text-align: left; font-size: 14px; }
-  .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .viewer-actions .btn { height: 32px; font-size: 13.5px; padding: 0 12px; }
   .side-label { margin: 34px 12px 8px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6c727b; }
   .side-label + .side-nav { margin-top: 0; }
 
@@ -512,9 +522,6 @@
     background: var(--surface-2); border: 1px solid #d9dce1; border-radius: 16px;
     margin-bottom: 16px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
   }
-  .viewer-body { padding: 12px 18px 16px; }
-  .pcard-head h3.viewer-name { font-size: 17px; }
-  .viewer-card p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: #2f343b; }
   .pcard-head {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 12px 16px; border-bottom: 1px solid #e1e4e8; border-radius: 16px 16px 0 0;
@@ -530,7 +537,7 @@
   .pcard.collapsed > .pcard-head { border-bottom: 0; border-radius: 16px; }
   .pcard.collapsed > .pcard-head .chev { transform: rotate(-90deg); }
   .pcard.collapsed > :not(.pcard-head) { display: none !important; }
-  .inbox { padding: 14px 14px 16px; min-height: 290px; }
+  .inbox { padding: 12px 14px 14px; max-height: 420px; overflow: auto; }
   .empty-box {
     border: 1px dashed #c9cdd3; background: #eff1f4; border-radius: 12px;
     padding: 16px 14px; text-align: center; font-size: 13.5px; color: #2f343b;
@@ -651,7 +658,6 @@
     .side-nav { flex-direction: row; flex-wrap: wrap; margin-top: 20px; }
     .side-nav.admin { margin-top: 10px; }
     .side-item { width: auto; }
-    .side-foot { display: none; }
     .main { border-right: 0; }
     .content { overflow: visible; }
     .topbar { position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
@@ -782,6 +788,17 @@
   .g-faq summary::marker { color: var(--c); }
   .g-faq p { margin: 0; padding: 0 14px 12px; }
   .g-none { padding: 30px; border-radius: 14px; background: #fff; text-align: center; color: #6b717b; }
+  .g-hero-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .g-back { height: 44px; padding: 0 16px; border: 1px solid rgba(255,255,255,.5); border-radius: 12px; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .g-back:hover { background: rgba(255,255,255,.24); }
+  .g-notice { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 90; padding: 10px 16px; border-radius: 10px; background: #1b1e24; color: #fff; font-size: 14px; box-shadow: 0 10px 30px rgba(10,12,16,.3); }
+  /* The guide in its own tab: no sidebar, panel or top bar, just the guide. */
+  body.guide-tab .sidebar, body.guide-tab .panel, body.guide-tab .topbar, body.guide-tab .hero,
+  body.guide-tab .col-grip, body.guide-tab .toasts, body.guide-tab #login { display: none !important; }
+  body.guide-tab .app { display: block; height: auto; }
+  body.guide-tab .main { border-right: 0; }
+  body.guide-tab .content { overflow: visible; padding: 24px max(18px, calc((100% - 1240px) / 2)) 40px; }
+  body.guide-tab .g-toc { top: 16px; max-height: calc(100vh - 32px); }
   @container (max-width: 820px) {
     .g-body { grid-template-columns: 1fr; }
     .g-toc { display: none; }
@@ -933,6 +950,11 @@
     <div class="panel-head"><h2 id="panelTitle">Operations Panel</h2><button class="unread-pill unread-link" id="panelUnread" type="button" title="Show the Action Inbox">0 unread alerts</button></div>
 
     <!-- Each section is an accordion panel: click its header to open or close it. -->
+    <div class="pcard" data-acc="inbox">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="inbox"><h3>Action Inbox</h3><span class="head-right"><span class="unread-pill" id="inboxUnread">0 unread</span><span class="chev" aria-hidden="true">▾</span></span></div>
+      <div class="inbox" id="inbox"></div>
+    </div>
+
     <div class="pcard" data-acc="activity">
       <div class="pcard-head" role="button" tabindex="0" aria-controls="activity"><h3>Recent Activity</h3><span class="head-right"><span>Latest events</span><span class="chev" aria-hidden="true">▾</span></span></div>
       <div class="activity" id="activity"></div>
@@ -965,20 +987,11 @@
       <datalist id="dlPeople"></datalist>
     </div>
 
-    <div class="pcard viewer-card" id="viewerCard" data-acc="viewer">
-      <div class="pcard-head" role="button" tabindex="0" aria-controls="viewerInfo"><h3 class="viewer-name" id="viewerName"></h3><span class="head-right"><span class="chev" aria-hidden="true">▾</span></span></div>
-      <div class="viewer-body" id="viewerInfo"></div>
-    </div>
-
     <div class="pcard" id="teamCard" data-acc="team" hidden>
       <div class="pcard-head" role="button" tabindex="0" aria-controls="teamMembers"><h3 id="teamCardTitle">My team</h3><span class="head-right"><span id="teamCardCount"></span><span class="chev" aria-hidden="true">▾</span></span></div>
       <div style="padding: 4px 18px 10px" id="teamMembers"></div>
     </div>
 
-    <div class="pcard" data-acc="inbox">
-      <div class="pcard-head" role="button" tabindex="0" aria-controls="inbox"><h3>Action Inbox</h3><span class="head-right"><span class="unread-pill" id="inboxUnread">0 unread</span><span class="chev" aria-hidden="true">▾</span></span></div>
-      <div class="inbox" id="inbox"></div>
-    </div>
   </aside>
   <div class="col-grip" role="separator" aria-orientation="vertical" aria-label="Resize the left sidebar" tabindex="0" title="Drag to resize · double-click to reset" data-grip="side"></div>
   <div class="col-grip" role="separator" aria-orientation="vertical" aria-label="Resize the Operations Panel" tabindex="0" title="Drag to resize · double-click to reset" data-grip="panel"></div>
@@ -1039,6 +1052,8 @@
   const CONFIG_VERSION = 7;
   // The app's version, shown beside its name in the sidebar and on the sign-in screen.
   const APP_VERSION = '1.0.0';
+  // index.html#guide is the User Guide in its own tab. That tab only reads the workspace; it never saves.
+  const GUIDE_TAB = location.hash === '#guide';
   const NOTE_COLOURS = ['popBg', 'popText', 'popAccent', 'msgAccent'];
   const NOTE_VARS = [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--msg-accent', 'msgAccent']];
   const SCOPES = [{ v: 'own', l: 'Their own work' }, { v: 'team', l: 'Their team’s work' }, { v: 'all', l: 'Everything' }];
@@ -2137,6 +2152,7 @@
     return null;
   }
   function save() {
+    if (GUIDE_TAB) return;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(S));
     } catch (e) {
@@ -2390,10 +2406,15 @@
       onOk: () => { if (r.empty) writeFile(true); else { adoptWorkspace(r.data, r.text, r.lastModified); toast(`Loaded the latest ${dataFile.name}.`); } },
     });
   }
-  function downloadBackup() {
+  // What a backup and a configuration export contain (the demo uses these without downloading anything).
+  function backupData() {
     const data = clone(S);
     delete data.page;
-    download('task-hub-backup.json', Object.assign({ app: 'task-hub', kind: 'backup' }, data));
+    return Object.assign({ app: 'task-hub', kind: 'backup' }, data);
+  }
+  const configData = () => ({ app: 'task-hub', kind: 'config', version: CONFIG_VERSION, config: clone(S.config) });
+  function downloadBackup() {
+    download('task-hub-backup.json', backupData());
     toast('Backup downloaded.');
   }
 
@@ -2703,7 +2724,8 @@
     const views = allViews();
     const sideViews = views.filter(v => v.sidebar);
     const cfgLink = (sec, text) => admin ? gGo('config:' + sec, text) : '';
-    const fileState = !fileApi() ? 'This browser can’t use a data file. Use Microsoft Edge or Google Chrome on a computer.'
+    const fileState = GUIDE_TAB ? 'The sidebar in the app shows whether a shared data file is in use and whether your changes are saved.'
+      : !fileApi() ? 'This browser can’t use a data file. Use Microsoft Edge or Google Chrome on a computer.'
       : dataFile.status === 'off' ? 'This browser is <b>not</b> using a data file at the moment: your work is kept in this browser only.'
       : `This browser is using the data file <b>${esc(dataFile.name)}</b>.`;
     return [
@@ -2715,19 +2737,19 @@
           <div class="g-tile" style="--c:#2f7a1e"><b>3 · Check your inbox</b>The Action Inbox on the right lists what needs your attention.</div>
         </div>
         <h4>Signing in and out</h4>
-        ${gSteps(['Open the app in your browser. The sign-in screen appears.', '<b>First time in this browser?</b> Click <b>▶ Load default workspace</b> to start from the ready-made workspace, or open your team’s shared data file.', 'Type your <b>username</b> and <b>password</b>, then click <b>Sign in</b>.', 'To finish, click <b>Log out</b> in the top-right card of the Operations Panel.'])}
+        ${gSteps(['Open the app in your browser. The sign-in screen appears.', '<b>First time in this browser?</b> Click <b>▶ Load default workspace</b> to start from the ready-made workspace, or open your team’s shared data file.', 'Type your <b>username</b> and <b>password</b>, then click <b>Sign in</b>.', 'To finish, click <b>Log out</b> at the bottom of the left sidebar, under your name.'])}
         ${gTip('note', 'Accounts are kept with the workspace data. Sign-in keeps people’s views apart on a shared computer, but it is not a security system: don’t store anything confidential.')}
         ${gTip('tip', `New here? The ${gGo('demo', 'automated demo')} plays through every feature for you, step by step, and puts your data back afterwards.`)}` },
 
       { id: 'layout', icon: '🧭', title: 'Finding your way around', color: '#0e9aa7', html: `
         <div class="g-map" aria-label="Screen layout">
-          <div class="g-map-side"><b>Sidebar</b><span>Board views</span><span>Configuration</span><span>User Guide</span><span>Run demo</span></div>
+          <div class="g-map-side"><b>Sidebar</b><span>Board views</span><span>Configuration</span><span>User Guide</span><span>You · Log out</span><span>Run demo · Load sample</span></div>
           <div class="g-map-main">
             <div class="g-map-top"><b>Top bar</b> search · New handoff</div>
             <div class="g-map-hero"><b>Page header</b> title · tabs: Posts, Files, Board, Notes, Team overview</div>
             <div class="g-map-board"><b>Board</b><span class="g-map-cols">${sts.map(s => `<i style="background:${esc(s.color)}"></i>`).join('')}</span>stat cards · filters · columns of cards</div>
           </div>
-          <div class="g-map-panel"><b>Operations Panel</b><span>You</span><span>Action Inbox</span><span>Recent Activity</span><span>Create or Edit</span></div>
+          <div class="g-map-panel"><b>Operations Panel</b><span>Action Inbox</span><span>Recent Activity</span><span>Create or Edit</span></div>
         </div>
         <dl class="g-dl">
           <dt>Sidebar</dt><dd>Saved <b>board views</b> such as ${sideViews.slice(0, 3).map(v => `“${esc(v.label)}”`).join(', ') || 'All work'}. The number next to each shows how many items it holds. Below them are Configuration (for administrators), this User Guide and the demo.</dd>
@@ -2960,7 +2982,10 @@
       root.innerHTML = `
         <div class="g-hero">
           <div class="g-hero-txt"><div class="g-hero-kicker">📘 User Guide</div><h1>Welcome to ${esc(g.appName)}</h1><p>Everything you need to hand work on smoothly, from your first sign-in to setting up the workspace.</p></div>
-          <label class="g-search"><span aria-hidden="true">🔎</span><input type="search" id="guideSearch" placeholder="Search the guide" autocomplete="off" aria-label="Search the guide"></label>
+          <div class="g-hero-tools">
+            ${GUIDE_TAB ? `<button class="g-back" type="button" data-guide-go="app">← Back to ${esc(g.appName)}</button>` : ''}
+            <label class="g-search"><span aria-hidden="true">🔎</span><input type="search" id="guideSearch" placeholder="Search the guide" autocomplete="off" aria-label="Search the guide"></label>
+          </div>
         </div>
         <div class="g-quick">${ch.map(x => `<button class="g-quick-tile" type="button" data-guide-jump="${x.id}" style="--c:${x.color}"><span aria-hidden="true">${x.icon}</span>${esc(x.title)}</button>`).join('')}</div>
         <div class="g-body">
@@ -2990,12 +3015,66 @@
     });
     $('.g-none', root).hidden = shown > 0;
   }
+  const GUIDE_GO = /^(config:[a-z]+|view:[\w-]+|new|demo|app)$/;
   function guideGo(go) {
+    if (!GUIDE_GO.test(String(go))) return;
+    if (GUIDE_TAB) {
+      // Ask the app tab to do it and bring it forward; opened on its own, go to the app and do it there.
+      const app = window.opener && !window.opener.closed ? window.opener : null;
+      if (app) {
+        try { app.postMessage({ taskhubGuide: go }, '*'); app.focus(); } catch (e) { /* ignore */ }
+        guideNotice(go === 'app' ? '' : 'Done in the app tab. Switch to it to see the result.');
+        return;
+      }
+      try { if (go !== 'app') sessionStorage.setItem(GUIDE_PENDING_KEY, go); } catch (e) { /* ignore */ }
+      location.href = location.href.split('#')[0];
+      return;
+    }
+    if (go === 'app') return;
     const [kind, arg] = go.split(':');
     if (kind === 'config') openConfig(arg);
     else if (kind === 'view') { const v = allViews().find(x => x.id === arg); if (v) applyView(v); else setPage('board'); }
     else if (kind === 'new') { resetForm(); focusForm(); }
     else if (kind === 'demo') openDemoPanel();
+  }
+  const GUIDE_PENDING_KEY = 'taskhub.guide-go';
+  function guideNotice(text) {
+    let n = $('#guideNotice');
+    if (!text) { if (n) n.remove(); return; }
+    if (!n) { n = document.createElement('div'); n.id = 'guideNotice'; n.className = 'g-notice'; n.setAttribute('role', 'status'); document.body.appendChild(n); }
+    n.textContent = text;
+    clearTimeout(n._t);
+    n._t = setTimeout(() => n.remove(), 4000);
+  }
+  // The sidebar's User Guide opens (or switches to) the guide tab; if pop-ups are blocked it shows here.
+  let guideWin = null;
+  function openGuideTab() {
+    guideWin = window.open(location.href.split('#')[0] + '#guide', 'taskhub-guide');
+    if (guideWin) { try { guideWin.focus(); } catch (e) { /* ignore */ } return; }
+    setPage('guide');
+    $('#content').scrollTop = 0;
+    toast('The browser blocked the new tab, so the guide is shown here.');
+  }
+  // Links clicked in the guide tab arrive here.
+  window.addEventListener('message', e => {
+    const go = e.data && e.data.taskhubGuide;
+    if (typeof go !== 'string' || !GUIDE_GO.test(go)) return;
+    let fromGuide = e.source && e.source === guideWin;
+    if (!fromGuide) { try { fromGuide = !!e.source && e.source !== window && e.source.opener === window; } catch (err) { fromGuide = false; } }
+    if (!fromGuide || !loggedIn()) return;
+    window.focus();
+    guideGo(go);
+  });
+  // The guide tab: just the guide, full width, kept up to date with the app tab.
+  function startGuideTab() {
+    document.body.classList.add('guide-tab');
+    const load = () => { S = loadState() || blankState(); S.page = 'guide'; guideSig = ''; };
+    load();
+    ['board', 'posts', 'files', 'notes', 'overview', 'config'].forEach(p => { $('#view-' + p).hidden = true; });
+    $('#view-guide').hidden = false;
+    const show = () => { renderGuide(); document.title = `${cfg().general.appName} · User Guide`; };
+    show();
+    window.addEventListener('storage', e => { if (e.key === STORE_KEY || e.key === null) { load(); show(); } });
   }
   function renderChrome() {
     const g = cfg().general;
@@ -3034,7 +3113,13 @@
     $('#sideGuide').classList.toggle('active', S.page === 'guide');
     $('#sideConfig').closest('nav').hidden = !canConfigure();
     const me = sessionId();
-    $('#sideFoot').innerHTML = `Signed in as <b>${esc(nameOf(me))}</b><br>${esc(teamNameOf(personTeam(me)) || 'No team')}${S.viewerId !== me ? `<br>Viewing as <b>${esc(viewerName())}</b>` : ''}`;
+    const viewing = S.viewerId !== me;
+    $('#sideFoot').innerHTML = `<div class="sf-label">Signed in as</div>
+      <b class="sf-name">${esc(nameOf(me))}</b>
+      <div class="sf-team">${esc(teamNameOf(personTeam(me)) || 'No team')}</div>
+      <div class="sf-roles">${rolesOf(me).map(r => `<span class="role-badge">${esc(r.name)}</span>`).join('') || '<span class="role-badge">No role</span>'}</div>
+      ${viewing ? `<div class="sf-viewing">Viewing as <b>${esc(viewerName())}</b>${readOnly() ? ' (read-only)' : ''}</div>` : ''}
+      <div class="sf-actions">${viewing ? '<button class="sf-btn" type="button" data-back-to-me>Back to my view</button>' : ''}<button class="sf-btn" type="button" data-logout>Log out</button></div>`;
   }
 
   function renderLists() {
@@ -3244,12 +3329,6 @@
     const unread = unreadFor(S.viewerId);
     const me = sessionId();
     const viewing = S.viewerId !== me;
-    $('#viewerName').textContent = viewerName();
-    $('#viewerInfo').innerHTML = `<div>${rolesOf(S.viewerId).map(r => `<span class="role-badge">${esc(r.name)}</span>`).join('') || '<span class="role-badge">No role</span>'}</div>
-      <p>${viewing
-        ? `You’re viewing as ${esc(viewerName())}${readOnly() ? ' (read-only)' : ''}. Signed in as <b>${esc(nameOf(me))}</b>.`
-        : viewableIds().length > 1 ? 'Switch “View as” to see what each team member sees.' : `${esc(teamNameOf(personTeam(me)) || 'No team')}`}</p>
-      <div class="viewer-actions">${viewing ? '<button class="btn" type="button" data-back-to-me>Back to my view</button>' : ''}<button class="btn" type="button" data-logout>Log out</button></div>`;
     renderTeamCard();
     $('#panelUnread').textContent = `${unread.length} unread ${unread.length === 1 ? 'alert' : 'alerts'}`;
     $('#panelUnread').classList.toggle('has', unread.length > 0);
@@ -3419,16 +3498,22 @@
   // Every pop-up and message is kept (per person, in this browser), so it can be read again after it has gone.
   const NOTE_LOG_KEY = 'taskhub.notifications';
   const NOTE_LOG_MAX = 50;
-  const noteLogAll = () => { try { return JSON.parse(localStorage.getItem(NOTE_LOG_KEY) || '{}') || {}; } catch (e) { return {}; } };
+  // While the demo runs, notifications are kept in memory instead, so they never reach your real history.
+  let demoNotes = null;
+  const noteLogAll = () => {
+    if (demo.running) return demoNotes || (demoNotes = {});
+    try { return JSON.parse(localStorage.getItem(NOTE_LOG_KEY) || '{}') || {}; } catch (e) { return {}; }
+  };
   const noteLog = () => (loggedIn() ? noteLogAll()[sessionId()] || [] : []);
   function saveNoteLog(list) {
     const all = noteLogAll();
+    if (demo.running) { all[sessionId()] = list.slice(0, NOTE_LOG_MAX); return; }
     all[sessionId()] = list.slice(0, NOTE_LOG_MAX);
     try { localStorage.setItem(NOTE_LOG_KEY, JSON.stringify(all)); } catch (e) { /* storage full or unavailable */ }
   }
   const noteCentreOpen = () => !$('#noteCentre').hidden;
   function recordNote(entry) {
-    if (!loggedIn() || demo.running) return;
+    if (!loggedIn()) return;
     saveNoteLog([Object.assign({ id: uid('nt'), time: Date.now(), seen: noteCentreOpen() }, entry), ...noteLog()]);
     renderNoteBell();
     if (noteCentreOpen()) renderNoteCentre();
@@ -5662,7 +5747,7 @@ ctx.person(name)      ctx.team(name)</pre>
         cfgDraft = clone(S.config); cfgRemap = emptyRemap(); cfgErrors = [];
         renderConfig(); toast('Changes discarded.'); break;
       case 'export-config':
-        download('task-hub-config.json', { app: 'task-hub', kind: 'config', version: CONFIG_VERSION, config: S.config });
+        download('task-hub-config.json', configData());
         toast(cfgDirty() ? 'Exported the saved configuration (unsaved changes not included).' : 'Configuration exported.'); break;
       case 'import-config': importMode = 'config'; $('#importInput').click(); break;
       case 'preview-pop': {
@@ -5697,9 +5782,15 @@ ctx.person(name)      ctx.team(name)</pre>
     e.target.value = '';
     if (!file) return;
     const r = new FileReader();
-    r.onload = () => {
+    r.onload = () => importText(r.result, file.name);
+    r.readAsText(file);
+  });
+  // Reads a chosen backup or configuration file (importMode says which was asked for).
+  function importText(text, fileName) {
+    const file = { name: fileName };
+    {
       let data;
-      try { data = JSON.parse(r.result); if (!data || typeof data !== 'object') throw new Error('bad'); } catch (err) { toast('That file is not valid JSON.'); return; }
+      try { data = JSON.parse(text); if (!data || typeof data !== 'object') throw new Error('bad'); } catch (err) { toast('That file is not valid JSON.'); return; }
       if (importMode === 'config') {
         cfgDraft = normalizeConfig(data.config || data);
         cfgErrors = [];
@@ -5729,9 +5820,8 @@ ctx.person(name)      ctx.team(name)</pre>
           toast('Workspace restored from backup.');
         },
       });
-    };
-    r.readAsText(file);
-  });
+    }
+  }
 
   const cv = $('#view-config');
   // Bound controls write on both input and change so every control type is covered.
@@ -5950,7 +6040,7 @@ ctx.person(name)      ctx.team(name)</pre>
     g.addEventListener('pointerdown', e => {
       if (e.button !== 0) return;
       e.preventDefault();
-      g.setPointerCapture(e.pointerId);
+      try { g.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
       g.classList.add('dragging');
       document.body.classList.add('col-resizing');
       const box = $('.app').getBoundingClientRect();
@@ -5986,7 +6076,7 @@ ctx.person(name)      ctx.team(name)</pre>
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
   });
-  $('#sideGuide').addEventListener('click', () => { if (S.page !== 'guide') { setPage('guide'); $('#content').scrollTop = 0; } });
+  $('#sideGuide').addEventListener('click', openGuideTab);
   $('#view-guide').addEventListener('input', e => { if (e.target.id === 'guideSearch') { guideQuery = e.target.value; filterGuide(); } });
   $('#view-guide').addEventListener('click', e => {
     const jump = e.target.closest('[data-guide-jump]');
@@ -6240,6 +6330,24 @@ ctx.person(name)      ctx.team(name)</pre>
     await dWait(380);
   }
   async function dSay(text) { dCaption(text); await dWait(900); }
+  // Drags an element sideways by dx pixels, moving the pointer with it.
+  async function dDrag(target, dx, what) {
+    const e = await dFind(target, what);
+    await dPoint(e);
+    const r = e.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 220);
+    const fire = (type, cx) => e.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, button: 0, buttons: type === 'pointerup' ? 0 : 1, clientX: cx, clientY: y, isPrimary: true }));
+    demoPointer.style.transition = 'none';
+    fire('pointerdown', x);
+    for (let i = 1; i <= 12; i++) {
+      const cx = x + dx * i / 12;
+      fire('pointermove', cx);
+      demoPointer.style.left = cx + 'px'; demoPointer.style.top = y + 'px';
+      await dWait(35);
+    }
+    fire('pointerup', x + dx);
+    await dWait(300);
+  }
   function dCheck(label, test) {
     let pass = false;
     let note = '';
@@ -6261,7 +6369,6 @@ ctx.person(name)      ctx.team(name)</pre>
   const dChip = sel => () => { const i = $(sel); return i && i.closest('label'); };
   async function dSignIn(username) {
     if (loggedIn()) {
-      setPanelOpen('viewer', true);
       await dClick('[data-logout]', 'Log out');
     }
     await dType('#loginUser', username, 'username');
@@ -6621,6 +6728,153 @@ ctx.person(name)      ctx.team(name)</pre>
       dCheck('B. Lee’s alert pops up in the new style', () => $('.toast.pop [data-t-open]') && $('#toasts').classList.contains('an-bounce'));
       await dWait(1500);
     } },
+    { id: 'bell', title: 'Messages, and the notifications window', run: async () => {
+      await dSignIn('achan');
+      $$('.toast').forEach(t => t.remove());
+      await dSay('Every action is confirmed by a message. A message about an item has Open item and Dismiss.');
+      await dClick(dCardBtn('OMD-001', 'Start'), 'Start on OMD-001');
+      const msg = () => $$('#toasts .toast.msg').find(t => t.textContent.includes('OMD-001'));
+      dCheck('A message card with Open item and Dismiss', () => msg() && msg().querySelector('[data-t-open]') && msg().querySelector('[data-t-close]'));
+      dCheck('Messages use the same card as alerts, with a green stripe', () => getComputedStyle(msg()).borderLeftColor === 'rgb(47, 122, 30)' && getComputedStyle(msg()).borderTopLeftRadius === '12px');
+      await dClick(() => msg() && msg().querySelector('[data-t-close]'), 'Dismiss');
+      await dSay('Missed one? The bell in the top bar keeps your last 50 alerts and messages.');
+      dCheck('The bell counts what you haven’t seen', () => !$('#bellCount').hidden && +$('#bellCount').textContent >= 1);
+      await dClick('#btnBell', 'the bell');
+      const entry = () => $$('#noteList .nc-item').find(x => x.textContent.includes('OMD-001'));
+      dCheck('The window lists the message, marked new', () => entry() && entry().classList.contains('new'));
+      dCheck('Opening it clears the count', () => $('#bellCount').hidden);
+      await dSay('Open item takes you straight to the card.');
+      await dClick(() => entry() && entry().querySelector('[data-nc-open]'), 'Open item');
+      dCheck('Back on the board, at the card', () => $('#noteCentre').hidden && dCard('OMD-001').classList.contains('flash'));
+    } },
+    { id: 'layout', title: 'Arrange the screen your way', run: async () => {
+      await dSignIn('achan');
+      await dSay('The app’s version is shown under its name.');
+      await dPoint(await dFind('.brand [data-app-version]', 'version'));
+      dCheck('Version shown under the title', () => /^v\d+\.\d+/.test($('.brand [data-app-version]').textContent));
+      const pw = () => Math.round($('.panel').getBoundingClientRect().width);
+      const sw = () => Math.round($('.sidebar').getBoundingClientRect().width);
+      const p0 = pw(), s0 = sw();
+      await dSay('Drag the edge of the Operations Panel to make it wider…');
+      await dDrag('.col-grip[data-grip="panel"]', -120, 'panel edge');
+      dCheck('The Operations Panel is wider', () => pw() >= p0 + 100);
+      await dSay('…or the sidebar’s edge. The widths are remembered in this browser.');
+      await dDrag('.col-grip[data-grip="side"]', 60, 'sidebar edge');
+      dCheck('The sidebar is wider', () => sw() >= s0 + 50);
+      await dSay('Double-click an edge to put it back.');
+      await dPoint(await dFind('.col-grip[data-grip="panel"]', 'panel edge'));
+      $('.col-grip[data-grip="panel"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await dPoint(await dFind('.col-grip[data-grip="side"]', 'sidebar edge'));
+      $('.col-grip[data-grip="side"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await dWait(300);
+      dCheck('Both are back to their usual widths', () => pw() === COLS.panel.def && sw() === COLS.side.def);
+      await dSay('The unread count beside the panel title opens the Action Inbox, even when it is folded.');
+      setPanelOpen('inbox', false);
+      await dClick('#panelUnread', 'unread alerts');
+      dCheck('The Action Inbox opens', () => !$('[data-acc="inbox"]').classList.contains('collapsed'));
+      await dSay('Who is signed in, their roles and Log out are at the bottom of the sidebar.');
+      await dPoint(await dFind('#sideFoot [data-logout]', 'Log out'));
+      dCheck('Log out is under your name', () => $('#sideFoot').textContent.includes('A. Chan') && !!$('#sideFoot [data-logout]'));
+      await dSay('Administrators reload the sample work with Load sample, under Run demo.');
+      await dPoint(await dFind('#btnSample', 'Load sample'));
+      dCheck('Load sample is in the sidebar, not the top bar', () => !!$('.sidebar #btnSample') && !$('.topbar #btnSample'));
+    } },
+    { id: 'guide', title: 'Find answers in the User Guide', run: async () => {
+      await dSignIn('eng');
+      await dSay('User Guide opens the guide in its own tab, beside your board. For the demo it is shown here.');
+      await dPoint(await dFind('#sideGuide', 'User Guide'));
+      setPage('guide');
+      $('#content').scrollTop = 0;
+      await dWait(400);
+      dCheck('The guide is written for this workspace and this person', () => $('.g-hero h1').textContent.includes(cfg().general.appName) && $$('#g-roles .g-table tr.mine').length === 1);
+      await dSay('Search narrows it to the chapters you need.');
+      await dType('#guideSearch', 'queue', 'Search the guide');
+      dCheck('Search narrows the chapters', () => !$('#g-queues').hidden && $('#g-keys').hidden);
+      await dClick(() => $$('[data-guide-jump="queues"]').find(isShown), 'Role queues');
+      dCheck('Jumps to the chapter', () => !$('#g-queues').hidden);
+      const s = $('#guideSearch'); s.value = ''; s.dispatchEvent(new Event('input', { bubbles: true }));
+      await dSay('Team members are told which parts only administrators can change.');
+      await dPoint(await dFind('#g-config', 'Configuration chapter'));
+      dCheck('The Configuration chapter says it is for administrators', () => $('#g-config').textContent.includes('only available'));
+      await dClick(() => $('#sideNav .side-item'), 'back to the board');
+      dCheck('Back on the board', () => !$('#view-board').hidden);
+    } },
+    { id: 'startover', title: 'Start again from the default workspace', run: async () => {
+      if (dataFile.status !== 'off') {
+        await dSay('Skipped: this browser is connected to a shared data file.');
+        dCheck('Skipped while a shared data file is in use', () => true);
+        return;
+      }
+      await dSignIn('achan');
+      await dSay('A. Chan adds a scratch item…');
+      await dClick('#btnNew', 'New handoff');
+      await dType('#f_title', 'Scratch item', 'title');
+      await dType('#f_owner', 'A. Chan', 'owner');
+      await dClick('#formSave', 'Save handoff');
+      dCheck('The scratch item is on the board', () => S.items.some(i => i.title === 'Scratch item'));
+      await dSay('…then starts again from default-workspace.js, from the sign-in screen.');
+      await dClick('[data-logout]', 'Log out');
+      await dClick('#loginForm .login-default', 'Start again from the default workspace');
+      dCheck('It asks first, with a backup ticked', () => dlg.open && $('#ldBackup').checked);
+      await dClick(() => $('#ldBackup') && $('#ldBackup').closest('label'), 'the backup tick');
+      await dClick('#dlgOk', 'Load default workspace');
+      await dWait(600);
+      dCheck('The default workspace is back, and everyone is signed out', () => !S.items.some(i => i.title === 'Scratch item') && S.items.length === 4 && !loggedIn());
+      await dSignIn('achan');
+      dCheck('Its accounts work straight away', () => loggedIn() && $$('#board .card').length === 4);
+    } },
+    { id: 'saveload', title: 'Save and load your workspace', run: async () => {
+      await dSignIn('achan');
+      await dSay('There is no Save button for your work: every change is saved as you go.');
+      await dClick(dCardBtn('OMD-001', 'Start'), 'Start on OMD-001');
+      dCheck('The change is saved straight away', () => JSON.parse(localStorage.getItem(STORE_KEY)).items.find(i => i.ref === 'OMD-001').statusId === 'progress');
+      await dSay('Saving, sharing and restoring are in Configuration → Import / export.');
+      await dClick('#sideConfig', 'Configuration');
+      await dClick('[data-cfg-nav="data"]', 'Import / export');
+      if (dataFile.status !== 'off') {
+        await dSay('This browser already saves to a shared data file. Its status is shown here and in the sidebar.');
+        dCheck('The data file in use is shown', () => $('#view-config').textContent.includes(dataFile.name));
+      } else if (fileApi()) {
+        await dSay('To share the board, save it to a data file, for example in a SharePoint folder synced with OneDrive. The browser asks where to save it, so the demo only points at it.');
+        await dPoint(await dFind('[data-file-cmd="new"]', 'Save to a new data file'));
+        await dSay('Colleagues open the same file, here or on the sign-in screen. After that every change is saved to it, and theirs arrive every few seconds.');
+        await dPoint(await dFind('[data-file-cmd="open"]', 'Open data file'));
+        dCheck('Save to a new data file and Open data file are offered', () => !!$('[data-file-cmd="new"]') && !!$('[data-file-cmd="open"]'));
+      }
+      await dSay('A backup holds everything. The demo makes one in memory instead of downloading a file.');
+      await dPoint(await dFind('[data-cfg-cmd="export-all"]', 'Download backup'));
+      const backup = JSON.stringify(backupData(), null, 2);
+      dCheck('The backup holds the whole workspace', () => { const b = JSON.parse(backup); return b.kind === 'backup' && b.items.length === S.items.length && b.config.people.length === S.config.people.length; });
+      await dSay('Now something goes wrong: the board is cleared…');
+      await dClick('#btnClear', 'Clear');
+      await dClick('#dlgOk', 'Clear board');
+      dCheck('The board is empty', () => S.items.length === 0);
+      await dSay('…so restore the backup. The browser would ask which file; the demo hands over the one it made.');
+      await dPoint(await dFind('[data-cfg-cmd="import-all"]', 'Restore from backup'));
+      importMode = 'all';
+      importText(backup, 'task-hub-backup.json');
+      await dWait(300);
+      dCheck('Restoring asks first', () => dlg.open && $('#dlgTitle').textContent.includes('Restore'));
+      await dClick('#dlgOk', 'Restore');
+      dCheck('Everything is back, including the item that was started', () => S.items.length === 4 && dItem('OMD-001').statusId === 'progress');
+      await dSay('The configuration can be exported on its own too, for example to copy it to another workspace.');
+      await dPoint(await dFind('[data-cfg-cmd="export-config"]', 'Export configuration'));
+      const exported = JSON.stringify(configData(), null, 2);
+      const original = JSON.parse(exported).config.general.appName;
+      await dClick('[data-cfg-nav="general"]', 'General');
+      await dType('[data-bind="general.appName"]', 'Scratch Hub', 'workspace name');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      dCheck('The workspace is renamed', () => cfg().general.appName === 'Scratch Hub');
+      await dSay('Importing the exported file puts it back. It loads into this screen first, so you can review it before saving.');
+      await dClick('[data-cfg-nav="data"]', 'Import / export');
+      await dPoint(await dFind('[data-cfg-cmd="import-config"]', 'Import configuration'));
+      importMode = 'config';
+      importText(exported, 'task-hub-config.json');
+      await dWait(300);
+      dCheck('Imported for review, not saved yet', () => cfgDraft && cfgDraft.general.appName === original && cfg().general.appName === 'Scratch Hub');
+      await dClick('[data-cfg-cmd="save"]', 'Save configuration');
+      dCheck('The original configuration is back', () => cfg().general.appName === original && $('#brandTitle').textContent === original);
+    } },
   ];
 
   function renderDemoResults() {
@@ -6756,6 +7010,11 @@ ctx.person(name)      ctx.team(name)</pre>
     S = demo.saved;
     panelClosed = demo.savedPanel;
     try { localStorage.setItem(PANEL_KEY, JSON.stringify(panelClosed)); localStorage.removeItem(DEMO_BACKUP_KEY); } catch (e) { /* ignore */ }
+    colWidths = demo.savedCols || {};
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(colWidths)); } catch (e) { /* ignore */ }
+    applyCols();
+    demoNotes = null;
+    if (noteCentreOpen()) openNoteCentre(false);
     cfgDraft = null; cfgRemap = emptyRemap(); cfgErrors = [];
     editingId = null; lastCustomSig = null;
     applyPanelState();
@@ -6771,6 +7030,8 @@ ctx.person(name)      ctx.team(name)</pre>
     // Set the real workspace aside; a backup copy survives even if the tab is closed mid-run.
     demo.saved = clone(S);
     demo.savedPanel = clone(panelClosed);
+    demo.savedCols = clone(colWidths);
+    demoNotes = null;
     try { localStorage.setItem(DEMO_BACKUP_KEY, JSON.stringify({ state: demo.saved, panel: demo.savedPanel, time: Date.now() })); } catch (e) { /* ignore */ }
     Object.assign(demo, { running: true, paused: false, stop: false, results: [], speed: +$('#demoSpeed', demoPanel).value });
     demoShield = document.createElement('div');
@@ -6805,7 +7066,7 @@ ctx.person(name)      ctx.team(name)</pre>
   document.addEventListener('click', e => { if (e.target.closest('[data-open-demo]')) openDemoPanel(); });
 
   // A demo interrupted by closing the tab leaves a backup: put the real data back before loading.
-  try {
+  if (!GUIDE_TAB) try {
     const b = JSON.parse(localStorage.getItem(DEMO_BACKUP_KEY) || 'null');
     if (b && b.state) {
       localStorage.setItem(STORE_KEY, JSON.stringify(b.state));
@@ -6817,13 +7078,22 @@ ctx.person(name)      ctx.team(name)</pre>
   } catch (e) { /* ignore */ }
 
   // ---------- boot ----------
-  S = loadState() || blankState();
-  fixViewer();
-  resetForm();
-  commit();
-  if (loggedIn()) popPendingForViewer();
-  if (location.hash === '#demo') openDemoPanel();
-  initDataFile();
+  if (GUIDE_TAB) {
+    startGuideTab();
+  } else {
+    S = loadState() || blankState();
+    fixViewer();
+    resetForm();
+    commit();
+    if (loggedIn()) popPendingForViewer();
+    if (location.hash === '#demo') openDemoPanel();
+    initDataFile();
+    // A guide link followed from a guide tab that had no app tab to talk to.
+    try {
+      const go = sessionStorage.getItem(GUIDE_PENDING_KEY);
+      if (go) { sessionStorage.removeItem(GUIDE_PENDING_KEY); if (loggedIn()) guideGo(go); }
+    } catch (e) { /* ignore */ }
+  }
 })();
 </script>
 </body>
