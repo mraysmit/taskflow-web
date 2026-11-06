@@ -1,0 +1,94 @@
+<!-- The User Guide: opening it from the sidebar, chapters written from the live configuration, search, links and what each role sees. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tick = () => wait(20);
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const logout = async () => { q('[data-logout]').click(); await tick(); };
+  const ch = id => q('#g-' + id);
+  const search = async v => { const s = q('#guideSearch'); s.value = v; s.dispatchEvent(new Event('input', { bubbles: true })); await tick(); };
+  const shown = () => qa('.g-ch').filter(s => !s.hidden).map(s => s.id.slice(2));
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  try {
+    await wait(200);
+    await login('achan');
+    const side = q('#sideGuide');
+    ok('Sidebar has a User Guide option', !!side && side.textContent.includes('User Guide') && !side.closest('nav').hidden);
+    side.click(); await tick();
+    ok('Opens the guide page', !q('#view-guide').hidden && q('#view-board').hidden && q('#hero').hidden);
+    ok('Sidebar highlights it and the tab title says so', side.classList.contains('active') && document.title.endsWith('User Guide'));
+    ok('Welcomes you by the workspace name', q('.g-hero h1').textContent === 'Welcome to Task Hub');
+    const ids = qa('.g-ch').map(s => s.id.slice(2));
+    ok('Has all the chapters, in order', ids.join() === 'start,layout,roles,board,cards,handoff,queues,verify,inbox,create,details,pages,data,config,demo,keys,faq');
+    ok('Contents list and quick tiles cover every chapter', qa('.g-toc a').length === ids.length && qa('.g-quick-tile').length === ids.length);
+
+    // Written from the live configuration
+    const cfg = store().config;
+    ok('Board chapter lists every column', cfg.statuses.every(s => ch('board').textContent.includes(s.name)));
+    ok('Verification column is described once, as waiting for checking', qa('#g-board .g-list li').filter(li => li.textContent.includes('Verification')).length === 1);
+    ok('Buttons table has one row per configured button', qa('#g-cards .g-actions tbody tr').length === cfg.actions.length);
+    ok('Roles table marks your own roles', qa('#g-roles .g-table tr.mine').length === 2 && ch('roles').textContent.includes('A. Chan'));
+    ok('Verification chapter shows the routes and their groups', ch('verify').textContent.includes('Two-group sign-off') && ch('verify').textContent.includes('Controls reviewers') && ch('verify').textContent.includes('Data stewards'));
+    ok('Role queues chapter names the queue roles', ch('queues').textContent.includes('Queue: Controls reviewers'));
+    ok('Notification sample uses the configured colours', getComputedStyle(q('#g-inbox .g-note-demo .toast.pop')).backgroundColor === 'rgb(255, 255, 255)');
+    ok('Data chapter says the browser isn’t using a data file', ch('data').textContent.includes('not using a data file'));
+
+    // Search
+    await search('queue');
+    ok('Search narrows the chapters', shown().includes('queues') && !shown().includes('keys') && q('.g-toc [data-guide-jump="keys"]').classList.contains('dim'));
+    await search('zzzqqq');
+    ok('No matches says so', shown().length === 0 && !q('.g-none').hidden);
+    await search('reconnect');
+    const faq = [...qa('#g-faq details')].find(d => d.textContent.includes('Reconnect'));
+    ok('Matching questions open their answers', faq && faq.open && [...qa('#g-faq details')].some(d => !d.open));
+    await search('');
+    ok('Clearing the search shows everything again', shown().length === ids.length && qa('#g-faq details').every(d => !d.open));
+    await search('reconnect');
+    q('.g-toc [data-guide-jump="keys"]').click(); await tick();
+    ok('Jumping to a hidden chapter clears the search', !ch('keys').hidden && q('#guideSearch').value === '' && shown().length === ids.length);
+
+    // Links that do things
+    q('#g-board [data-guide-go^="view:"]').click(); await tick();
+    ok('“Show the items assigned to me” opens that board view', !q('#view-board').hidden && q('#boardTitle').textContent.includes('Assigned to me'));
+    side.click(); await tick();
+    q('#g-inbox [data-guide-go="config:notifications"]').click(); await tick();
+    ok('Configuration links open the right section', !q('#view-config').hidden && q('[data-cfg-nav="notifications"]').classList.contains('active'));
+    side.click(); await tick();
+    q('#g-create [data-guide-go="new"]').click(); await tick();
+    ok('“Open a new form” opens the form', q('#formMode').textContent === 'New' && !q('[data-acc="form"]').classList.contains('collapsed'));
+    q('#g-demo [data-guide-go="demo"]').click(); await tick();
+    ok('The demo link opens the demo', !!q('.demo-panel') && !q('.demo-panel').hidden);
+    q('[data-demo="close"]').click(); await tick();
+
+    // Follows configuration changes
+    q('#sideConfig').click(); await tick();
+    q('[data-cfg-nav="general"]').click(); await tick();
+    const name = q('#view-config [data-bind="general.appName"]');
+    name.value = 'Ops Hub'; name.dispatchEvent(new Event('input', { bubbles: true })); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    side.click(); await tick();
+    ok('Follows a renamed workspace', q('.g-hero h1').textContent === 'Welcome to Ops Hub' && ch('start').textContent.includes('Ops Hub is a shared board'));
+    ok('Stays on the guide after a re-render', (window.dispatchEvent(new Event('resize')), !q('#view-guide').hidden));
+
+    // A team member
+    await logout(); await login('eng');
+    ok('Everyone gets the guide, including team members', !!q('#sideGuide') && !q('#sideGuide').closest('nav').hidden && q('#sideConfig').closest('nav').hidden);
+    q('#sideGuide').click(); await tick();
+    ok('Team members are told Configuration is for administrators', ch('config').textContent.includes('only available') && !q('#view-guide [data-guide-go^="config:"]'));
+    ok('Their own roles are marked', qa('#g-roles .g-table tr.mine').length === 1 && ch('roles').textContent.includes('E. Ng'));
+    ok('Read-only viewing is explained', ch('roles').textContent.includes('read-only'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

@@ -30,7 +30,8 @@ Everything the runner creates goes to `%TEMP%\taskhub-tests`: the test pages, a 
 | `roles` | Sign-in, roles, what each role sees, View as, role queues, People and Roles settings |
 | `inbox` | The Action Inbox: alerts, accept, decline, pick up, mark read, read-only viewing |
 | `verification` | Approval groups in order or at once, reject, withdraw, maker-checker, routes |
-| `notifications` | Position, animation and sound settings |
+| `notifications` | Position, animation, sound and colour settings |
+| `guide` | The User Guide: opening it, chapters written from the live configuration, search, links, what each role sees |
 | `data-file` | Saving to a data file, picking up a colleague's changes, conflicts, reconnecting after a restart (the browser's file access is replaced by an in-memory file, because headless Edge can't click file dialogs) |
 | `extensions` | Status flags, field types, custom conditions, script steps, email, webhooks, linked items |
 | `upgrade-v1`, `upgrade-v2`, `upgrade-v5` | Opening data saved by earlier versions |

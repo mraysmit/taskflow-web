@@ -93,6 +93,24 @@ window.addEventListener('load', async () => {
     ok('Sound off: preview pop-up is silent', window.__tones.length === 0);
     q('.toast.pop [data-t-close]').click(); await tick();
     ok('No animation removes at once', !q('.toast.pop'));
+    // Colours
+    ok('Colours start at the defaults', store().config.notifications.popBg === '#ffffff' && store().config.notifications.toastBg === '#1b1e24');
+    ok('Colours section has schemes and pickers', qa('.note-scheme').length === 5 && ['popBg', 'popText', 'popAccent', 'toastBg', 'toastText'].every(k => B('notifications.' + k) && B('notifications.' + k).type === 'color'));
+    q('[data-cfg-cmd="note-scheme:midnight"]').click(); await tick();
+    ok('A scheme fills in all five colours', B('notifications.popBg').value === '#1d2340' && B('notifications.toastBg').value === '#343a8a' && B('notifications.popAccent').value === '#7c8cff');
+    ok('The sample shows the scheme', q('[data-note-sample]').style.getPropertyValue('--pop-bg') === '#1d2340' && getComputedStyle(q('[data-note-sample] .toast.pop')).backgroundColor === 'rgb(29, 35, 64)');
+    ok('Contrast check passes for the scheme', q('[data-note-contrast]').textContent.includes('Easy to read'));
+    setv(B('notifications.popText'), '#262c50'); await tick();
+    ok('Low-contrast text is flagged as you pick it', q('[data-note-contrast]').textContent.includes('Hard to read') && q('[data-note-contrast]').textContent.includes('Pop-up text') && q('[data-note-sample]').style.getPropertyValue('--pop-fg') === '#262c50');
+    setv(B('notifications.popText'), '#eef0ff'); await tick();
+    q('[data-cfg-cmd="save"]').click(); await tick();
+    ok('Colours saved', store().config.notifications.popBg === '#1d2340' && store().config.notifications.popText === '#eef0ff');
+    qa('.toast').forEach(x => x.remove());
+    q('[data-cfg-cmd="preview-pop"]').click(); q('[data-cfg-cmd="preview-toast"]').click(); await tick();
+    const pc = getComputedStyle(q('#toasts .toast.pop')), tc = getComputedStyle(q('#toasts .toast:not(.pop)'));
+    ok('Real pop-ups use the chosen colours', pc.backgroundColor === 'rgb(29, 35, 64)' && pc.color === 'rgb(238, 240, 255)' && pc.borderLeftColor === 'rgb(124, 140, 255)');
+    ok('Real messages use the chosen colours', tc.backgroundColor === 'rgb(52, 58, 138)' && tc.color === 'rgb(255, 255, 255)');
+    qa('.toast').forEach(x => x.remove());
     window.__state = 'suspended';
     ok('no JS errors', !(window.__errs || []).length);
   } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
