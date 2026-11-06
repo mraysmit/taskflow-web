@@ -83,6 +83,7 @@ window.addEventListener('load', async () => {
   try {
     await wait(300);
     if (phase === '1') {
+      q('[data-load-default]').click(); await wait(300);
       await login('achan');
       ok('No data file yet: no status in the sidebar', side().hidden);
       q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);

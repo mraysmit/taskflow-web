@@ -20,6 +20,8 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 $app = [IO.File]::ReadAllText((Join-Path $here '..\index.html'), $utf8)
 $work = Join-Path $env:TEMP 'taskhub-tests'
 New-Item -ItemType Directory -Force $work | Out-Null
+# The app reads its default workspace from this file next to it.
+Copy-Item (Join-Path (Split-Path $here) 'default-workspace.js') (Join-Path $work 'default-workspace.js') -Force
 
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") |
   Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1

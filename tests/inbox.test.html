@@ -13,7 +13,7 @@ window.addEventListener('load', async () => {
   const unread = () => q('#inboxUnread').textContent;
   const msgs = () => qa('#inbox .alert-msg').map(m => m.textContent);
   try {
-    await wait(200);
+    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
     await login('achan');
     ok('Empty inbox shows a message', unread() === '0 unread' && q('#inbox').textContent.includes('No unread alerts'));
     // Send B. Lee a handoff request

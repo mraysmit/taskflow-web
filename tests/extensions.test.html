@@ -31,7 +31,7 @@ window.addEventListener('load', async () => {
     return i;
   };
   try {
-    await wait(200); const loginAs = async (u, p = 'demo') => { document.querySelector('#loginUser').value = u; document.querySelector('#loginPass').value = p; document.querySelector('#loginForm').requestSubmit(); await new Promise(r => setTimeout(r, 60)); }; await loginAs('achan');
+    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300); const loginAs = async (u, p = 'demo') => { document.querySelector('#loginUser').value = u; document.querySelector('#loginPass').value = p; document.querySelector('#loginForm').requestSubmit(); await new Promise(r => setTimeout(r, 60)); }; await loginAs('achan');
     // ---- Status flags ----
     await openCfg('extensions');
     addRow('extensions.flags'); await tick();

@@ -409,7 +409,7 @@
   .login { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: linear-gradient(160deg, #16181d 0%, #262a33 100%); overflow: auto; }
   .login-card { width: min(420px, 100%); background: var(--surface-2); border-radius: 18px; padding: 26px 26px 22px; box-shadow: 0 24px 70px rgba(0,0,0,.4); display: grid; gap: 14px; }
   .login-brand { font-size: 26px; font-weight: 700; }
-  .login-card label > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .login-card label > span { display: block; margin: 0 0 5px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .login-card .btn { width: 100%; }
   .login-hint { font-size: 13px; line-height: 1.55; color: var(--muted); border-top: 1px solid #e1e4e8; padding-top: 12px; }
   .login-hint code { background: #e9ebef; border-radius: 4px; padding: 1px 5px; color: var(--ink-2); }
@@ -426,7 +426,7 @@
   .vstage.cancelled { opacity: .55; }
   .hstate.recalled { background: #eceef1; color: #3d4148; }
   .queue-banner { margin-top: 12px; padding: 9px 11px; border-radius: 10px; background: #e6f1f6; border: 1px solid #c3dce8; color: #1d4a5e; font-size: 13.5px; line-height: 1.45; }
-  .member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #dde0e4; }
+  .member-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; border-bottom: 1px dashed #dde0e4; }
   .member-row:last-child { border-bottom: 0; }
   .member-row .grow { flex: 1; min-width: 0; }
   .member-row .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
@@ -470,9 +470,15 @@
   .demo-bubble:empty { display: none; }
   .demo-target { outline: 3px solid #b5141e !important; outline-offset: 2px; }
   .demo-shield { position: fixed; inset: 0; z-index: 125; cursor: progress; }
+  .login-fields { display: contents; }
+  .login-fields[hidden] { display: none; }
+  .login-start { display: grid; gap: 10px; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #eef0ff, #fdf0f4); border: 1px solid #dcdff5; }
+  .login-start .ls-title { font-size: 17px; font-weight: 800; }
+  .login-start p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+  .login-start .btn { height: 48px; font-size: 16.5px; }
   .login-demo { background: transparent; border: 0; color: #343a8a; font-weight: 700; cursor: pointer; padding: 4px 0; text-align: left; font-size: 14px; }
   .viewer-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .viewer-actions .btn { height: 36px; font-size: 14px; padding: 0 12px; }
+  .viewer-actions .btn { height: 32px; font-size: 13.5px; padding: 0 12px; }
   .side-label { margin: 34px 12px 8px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6c727b; }
   .side-label + .side-nav { margin-top: 0; }
 
@@ -483,22 +489,22 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 4px 14px; background: #eef0f3;
   }
-  .panel-head h2 { margin: 0; font-size: 19px; font-weight: 700; }
-  .unread-pill { font-size: 13.5px; font-weight: 700; }
+  .panel-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+  .unread-pill { font-size: 12.5px; font-weight: 700; }
   .unread-pill.has { color: var(--red); }
   .pcard {
     background: var(--surface-2); border: 1px solid #d9dce1; border-radius: 16px;
     margin-bottom: 16px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
   }
   .viewer-body { padding: 12px 18px 16px; }
-  .pcard-head h3.viewer-name { font-size: 22px; }
-  .viewer-card p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; color: #2f343b; }
+  .pcard-head h3.viewer-name { font-size: 17px; }
+  .viewer-card p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: #2f343b; }
   .pcard-head {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 15px 18px; border-bottom: 1px solid #e1e4e8; border-radius: 16px 16px 0 0;
+    padding: 12px 16px; border-bottom: 1px solid #e1e4e8; border-radius: 16px 16px 0 0;
   }
-  .pcard-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
-  .pcard-head span { font-size: 14px; font-weight: 700; }
+  .pcard-head h3 { margin: 0; font-size: 15.5px; font-weight: 700; }
+  .pcard-head span { font-size: 12.5px; font-weight: 700; }
   .head-right { display: inline-flex; align-items: center; gap: 10px; }
   /* Accordion behaviour */
   .pcard[data-acc] > .pcard-head { cursor: pointer; user-select: none; transition: background .12s; }
@@ -511,13 +517,13 @@
   .inbox { padding: 14px 14px 16px; min-height: 290px; }
   .empty-box {
     border: 1px dashed #c9cdd3; background: #eff1f4; border-radius: 12px;
-    padding: 18px 14px; text-align: center; font-size: 14.5px; color: #2f343b;
+    padding: 16px 14px; text-align: center; font-size: 13.5px; color: #2f343b;
   }
   .alert {
     background: #fff; border: 1px solid #e3d3d5; border-left: 4px solid var(--red);
     border-radius: 12px; padding: 12px 12px 12px 14px; margin-bottom: 10px;
   }
-  .alert-msg { font-size: 14.5px; font-weight: 700; line-height: 1.45; }
+  .alert-msg { font-size: 14px; font-weight: 600; line-height: 1.45; }
   .alert-meta { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
   .alert-actions { display: flex; gap: 8px; margin-top: 10px; }
 
@@ -527,19 +533,20 @@
   .form-grid label, .form-grid .cf-item { min-width: 0; }
   .form-grid .full { grid-column: 1 / -1; }
   .cf-wrap { display: contents; }
-  .form-grid label > span, .form-grid .cf-item > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
-  .form-grid .input, .form-grid .select { height: 46px; font-size: 17.5px; padding: 0 14px; }
+  .form-grid label > span, .form-grid .cf-item > span { display: block; margin: 0 0 5px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .form-grid .input, .form-grid .select { height: 38px; font-size: 15px; padding: 0 12px; border-radius: 10px; }
+  .form-grid .textarea { font-size: 15px; border-radius: 10px; }
   .form-grid .input::placeholder, .form-grid .textarea::placeholder { color: #4a4f57; }
   .form-actions { display: flex; gap: 10px; }
-  .form-actions .btn { flex: 1; height: 44px; font-size: 16px; }
+  .form-actions .btn { flex: 1; height: 38px; font-size: 14.5px; }
   .form-error { color: var(--red); font-size: 13.5px; font-weight: 700; }
 
   /* Capped so the feed doesn't push the handoff form far down the panel. */
   .activity { padding: 4px 18px 14px; max-height: 320px; overflow: auto; }
-  .act { padding: 13px 0; border-bottom: 1px dashed #dde0e4; }
+  .act { padding: 10px 0; border-bottom: 1px dashed #dde0e4; }
   .act:last-child { border-bottom: 0; }
-  .act-msg { font-size: 15.5px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
-  .act-meta { margin-top: 3px; font-size: 14px; color: #2a2e35; }
+  .act-msg { font-size: 14px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+  .act-meta { margin-top: 3px; font-size: 12px; color: var(--muted); }
   .act-meta .type { text-transform: uppercase; letter-spacing: .02em; }
 
   /* ---------- Toasts / dialog ---------- */
@@ -585,7 +592,7 @@
   dialog::backdrop { background: rgba(10,12,16,.45); }
   .dlg-head { padding: 16px 18px; border-bottom: 1px solid #e1e4e8; font-size: 18px; font-weight: 700; }
   .dlg-body { padding: 16px 18px; font-size: 15px; line-height: 1.55; display: grid; gap: 12px; }
-  .dlg-body label > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .dlg-body label > span { display: block; margin: 0 0 5px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .dlg-body .input, .dlg-body .select { font-size: 16px; }
   .dlg-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 0 18px 18px; }
   .dlg-foot .btn { height: 42px; font-size: 15.5px; }
@@ -879,21 +886,6 @@
     <div class="panel-head"><h2 id="panelTitle">Operations Panel</h2><span class="unread-pill" id="panelUnread">0 unread</span></div>
 
     <!-- Each section is an accordion panel: click its header to open or close it. -->
-    <div class="pcard viewer-card" id="viewerCard" data-acc="viewer">
-      <div class="pcard-head" role="button" tabindex="0" aria-controls="viewerInfo"><h3 class="viewer-name" id="viewerName"></h3><span class="head-right"><span class="chev" aria-hidden="true">▾</span></span></div>
-      <div class="viewer-body" id="viewerInfo"></div>
-    </div>
-
-    <div class="pcard" id="teamCard" data-acc="team" hidden>
-      <div class="pcard-head" role="button" tabindex="0" aria-controls="teamMembers"><h3 id="teamCardTitle">My team</h3><span class="head-right"><span id="teamCardCount"></span><span class="chev" aria-hidden="true">▾</span></span></div>
-      <div style="padding: 4px 18px 10px" id="teamMembers"></div>
-    </div>
-
-    <div class="pcard" data-acc="inbox">
-      <div class="pcard-head" role="button" tabindex="0" aria-controls="inbox"><h3>Action Inbox</h3><span class="head-right"><span class="unread-pill" id="inboxUnread">0 unread</span><span class="chev" aria-hidden="true">▾</span></span></div>
-      <div class="inbox" id="inbox"></div>
-    </div>
-
     <div class="pcard" data-acc="activity">
       <div class="pcard-head" role="button" tabindex="0" aria-controls="activity"><h3>Recent Activity</h3><span class="head-right"><span>Latest events</span><span class="chev" aria-hidden="true">▾</span></span></div>
       <div class="activity" id="activity"></div>
@@ -925,6 +917,21 @@
       <datalist id="dlTeams"></datalist>
       <datalist id="dlPeople"></datalist>
     </div>
+
+    <div class="pcard viewer-card" id="viewerCard" data-acc="viewer">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="viewerInfo"><h3 class="viewer-name" id="viewerName"></h3><span class="head-right"><span class="chev" aria-hidden="true">▾</span></span></div>
+      <div class="viewer-body" id="viewerInfo"></div>
+    </div>
+
+    <div class="pcard" id="teamCard" data-acc="team" hidden>
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="teamMembers"><h3 id="teamCardTitle">My team</h3><span class="head-right"><span id="teamCardCount"></span><span class="chev" aria-hidden="true">▾</span></span></div>
+      <div style="padding: 4px 18px 10px" id="teamMembers"></div>
+    </div>
+
+    <div class="pcard" data-acc="inbox">
+      <div class="pcard-head" role="button" tabindex="0" aria-controls="inbox"><h3>Action Inbox</h3><span class="head-right"><span class="unread-pill" id="inboxUnread">0 unread</span><span class="chev" aria-hidden="true">▾</span></span></div>
+      <div class="inbox" id="inbox"></div>
+    </div>
   </aside>
 </div>
 
@@ -934,13 +941,17 @@
       <div class="login-brand" id="loginBrand">Task Hub</div>
       <div class="muted" id="loginTag">Sign in to continue.</div>
     </div>
+    <div class="login-start" id="loginStart" hidden></div>
+    <div class="login-fields" id="loginFields">
     <label><span>Username</span><input class="input" id="loginUser" autocomplete="username" autocapitalize="off" spellcheck="false"></label>
     <label><span>Password</span><input class="input" type="password" id="loginPass" autocomplete="current-password"></label>
     <div class="form-error" id="loginErr" role="alert"></div>
     <button class="btn btn-red" type="submit">Sign in</button>
+    </div>
     <button class="login-demo" type="button" data-open-demo>▶ Watch an automated demo</button>
     <div class="login-file" id="loginFile" hidden></div>
     <div class="login-hint" id="loginHint"></div>
+    <button class="login-demo login-default" type="button" data-load-default hidden>↺ Start again from the default workspace…</button>
   </form>
 </div>
 
@@ -958,6 +969,9 @@
   </form>
 </dialog>
 
+<!-- The ready-made workspace, offered on the sign-in screen. It is plain JSON wrapped in TaskHubDefault( … ). -->
+<script>window.TaskHubDefault = data => { window.__taskhubDefault = data; };</script>
+<script src="default-workspace.js"></script>
 <script>
 (() => {
   'use strict';
@@ -1143,153 +1157,41 @@
     if (o.notifyNext !== false) steps.push({ type: 'notify', when: 'if:f_hasNext', who: 'nextOwner', personId: '', message: 'You are the next owner of {ref} "{title}" (set by {actor}).', onlyIfChanged: false });
     return steps;
   }
-  // Default handoff: the sender writes a handover note and offers the item; the current owner stays
-  // accountable until the next owner accepts it.
-  function offerHandoffSteps() {
-    return [
-      { type: 'confirm', when: 'unless:f_hasNext', message: 'No next owner is set, so this marks “{title}” as complete. If it needs verification, it goes to the verifying group first. To hand it off instead, use Set next first.' },
-      { type: 'setStatus', when: 'unless:f_hasNext', to: 'completed' },
-      { type: 'notify', when: 'unless:f_hasNext', who: 'owner', personId: '', message: '{ref} "{title}" was marked complete by {actor} (now {status}).', onlyIfChanged: false },
-      { type: 'handoverNote', when: 'if:f_hasNext', sections: 'Summary*, Open actions, Risks and watch-outs' },
-      { type: 'offer', when: 'if:f_hasNext' },
-    ];
-  }
-  const OFFER_ACTIONS = () => [
-    { id: 'a_accept', label: 'Accept', color: '#2f7a1e', outline: false, width: 'md', show: { statuses: ['*'], filterId: 'f_offerToMe' },
-      steps: [{ type: 'acceptOffer', when: '', land: 'assigned' }, { type: 'reason', when: '', prompt: 'Read-back or questions for the sender (optional)', required: false }, { type: 'route', when: '', useLead: true },
-        { type: 'notify', when: '', who: 'prevOwner', personId: '', message: '{actor} accepted the handoff of {ref} "{title}". {reason}', onlyIfChanged: false },
-        { type: 'notify', when: '', who: 'nextOwner', personId: '', message: 'You are next in line for {ref} "{title}", after {owner}.', onlyIfChanged: true }] },
-    { id: 'a_decline', label: 'Decline', color: '#9b111b', outline: false, width: 'md', show: { statuses: ['*'], filterId: 'f_offerToMe' },
-      steps: [{ type: 'reason', when: '', prompt: 'Why are you declining? The sender will see this.', required: true }, { type: 'declineOffer', when: '' },
-        { type: 'notify', when: '', who: 'owner', personId: '', message: '{actor} declined the handoff of {ref} "{title}": {reason}', onlyIfChanged: false }] },
-    { id: 'a_withdraw', label: 'Withdraw handoff', color: '#2e3394', outline: true, width: 'full', show: { statuses: ['*'], filterId: 'f_offerByMe' },
-      steps: [{ type: 'withdrawOffer', when: '' }] },
-  ];
-  const QUEUE_ACTIONS = () => [
-    { id: 'a_pickup', label: 'Pick up', color: '#2f7a1e', outline: false, width: 'full', show: { statuses: ['*'], filterId: 'f_myQueue' },
-      steps: [{ type: 'pickUp', when: '', land: '' }] },
-  ];
-  const QUEUE_FILTERS = () => [
-    { id: 'f_myQueue', name: 'In my queues',  match: 'all', count: 'items', conds: [{ subject: 'queue', op: 'inMine', value: '' }] },
-    { id: 'f_inQueue', name: 'In any queue',  match: 'all', count: 'items', conds: [{ subject: 'queue', op: 'inAny', value: '' }] },
-  ];
-  const DEFAULT_ROLES = () => [
-    { id: 'r_member',    name: 'Team member',          description: 'Works their own items.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: false },
-    { id: 'r_teamadmin', name: 'Team admin',           description: 'Oversees the work of everyone in their team.', sees: 'team', viewAs: 'team', actAs: false, configure: false, queue: false },
-    { id: 'r_sysadmin',  name: 'System administrator', description: 'Configures the workspace and can work as anyone.', sees: 'all', viewAs: 'all', actAs: true, configure: true, queue: false },
-    { id: 'r_reviewer',  name: 'Controls reviewers',   description: 'Picks up control reviews from the queue.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: true },
-    { id: 'r_steward',   name: 'Data stewards',        description: 'Picks up data ownership questions from the queue.', sees: 'own', viewAs: 'none', actAs: false, configure: false, queue: true },
-  ];
-  const OFFER_FILTERS = () => [
-    { id: 'f_noOffer',   name: 'No pending handoff, queue or verification', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'none', value: '' }, { subject: 'queue', op: 'none', value: '' }, { subject: 'approval', op: 'none', value: '' }] },
-    { id: 'f_offered',   name: 'Awaiting acceptance',         match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'pending', value: '' }] },
-    { id: 'f_offerToMe', name: 'Awaiting my acceptance',      match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'toViewer', value: '' }] },
-    { id: 'f_offerByMe', name: 'My handoffs awaiting others', match: 'all', count: 'items', conds: [{ subject: 'offer', op: 'byViewer', value: '' }] },
-  ];
-  // Verification: finishing an item can route it through one or more approval groups (roles) first.
-  const APPROVAL_FILTERS = () => [
-    { id: 'f_verifyMine',    name: 'Awaiting my verification',     match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'mine', value: '' }] },
-    { id: 'f_verifyPending', name: 'Waiting for verification',     match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'pending', value: '' }] },
-    { id: 'f_verifyByMe',    name: 'My items in verification',     match: 'all', count: 'items', conds: [{ subject: 'approval', op: 'byViewer', value: '' }] },
-    { id: 'f_high',          name: 'High priority',                match: 'all', count: 'items', conds: [{ subject: 'priority', op: 'in', value: ['pr1'] }] },
-  ];
-  const APPROVAL_ACTIONS = () => [
-    { id: 'a_approve', label: 'Approve', color: '#2f7a1e', outline: false, width: 'md', show: { statuses: ['*'], filterId: 'f_verifyMine' },
-      steps: [{ type: 'reason', when: '', prompt: 'Verification note (optional)', required: false }, { type: 'approve', when: '' }] },
-    { id: 'a_reject', label: 'Reject', color: '#9b111b', outline: false, width: 'md', show: { statuses: ['*'], filterId: 'f_verifyMine' },
-      steps: [{ type: 'reason', when: '', prompt: 'What needs fixing? The owner will see this.', required: true }, { type: 'reject', when: '' }] },
-    { id: 'a_recall', label: 'Withdraw from verification', color: '#2e3394', outline: true, width: 'full', show: { statuses: ['*'], filterId: 'f_verifyByMe' },
-      steps: [{ type: 'recallApproval', when: '' }] },
-  ];
-  const VERIFY_STATUS = () => ({ id: 'verify', name: 'Verification', color: '#7a4fc9', closed: false, hold: false });
-  const DEFAULT_APPROVALS = () => ({
-    enabled: true, holdStatusId: 'verify', appliesTo: ['*'], allowSelf: false, oneStagePerPerson: true, allowNone: false,
-    chains: [
-      { id: 'ap_dual', name: 'Two-group sign-off', filterId: 'f_high', order: 'sequence', stages: [{ roleId: 'r_reviewer' }, { roleId: 'r_steward' }] },
-      { id: 'ap_std',  name: 'Controls check',     filterId: '',       order: 'sequence', stages: [{ roleId: 'r_reviewer' }] },
-    ],
-  });
+  // ---------- the default workspace (default-workspace.js) ----------
+  // The ready-made workspace lives in its own file next to this page. It is read when the page opens, but
+  // only applied when someone asks for it ("Load default workspace"). Upgrades of data saved by older
+  // versions take the standard buttons, filters and roles they add from it too.
+  const defaultWorkspace = () => (window.__taskhubDefault && typeof window.__taskhubDefault === 'object' ? window.__taskhubDefault : null);
+  const defCfg = () => (defaultWorkspace() && defaultWorkspace().config) || {};
+  const NO_DEFAULT = 'The default workspace file (default-workspace.js) wasn’t found next to index.html.';
+  const defPick = (k, ids) => {
+    const list = Array.isArray(defCfg()[k]) ? defCfg()[k] : [];
+    return ids.map(id => list.find(x => x && x.id === id)).filter(Boolean).map(x => clone(x));
+  };
+  const OFFER_ACTIONS = () => defPick('actions', ['a_accept', 'a_decline', 'a_withdraw']);
+  const QUEUE_ACTIONS = () => defPick('actions', ['a_pickup']);
+  const QUEUE_FILTERS = () => defPick('filters', ['f_myQueue', 'f_inQueue']);
+  const OFFER_FILTERS = () => defPick('filters', ['f_noOffer', 'f_offered', 'f_offerToMe', 'f_offerByMe']);
+  const APPROVAL_FILTERS = () => defPick('filters', ['f_verifyMine', 'f_verifyPending', 'f_verifyByMe', 'f_high']);
+  const APPROVAL_ACTIONS = () => defPick('actions', ['a_approve', 'a_reject', 'a_recall']);
+  const VERIFY_STATUS = () => defPick('statuses', ['verify'])[0] || null;
+  const DEFAULT_ROLES = () => (Array.isArray(defCfg().roles) ? clone(defCfg().roles) : []);
+  const DEFAULT_APPROVALS = () => Object.assign(clone(BASE_CONFIG.approvals), defCfg().approvals ? clone(defCfg().approvals) : {});
+  const offerHandoffSteps = () => (defPick('actions', ['a_handoff'])[0] || {}).steps || null;
   const blockNotify = () => ({ type: 'notify', when: '', who: 'owner', personId: '', message: '{ref} "{title}" was blocked by {actor}. {reason}', onlyIfChanged: false });
   const nextNotify = () => ({ type: 'notify', when: '', who: 'nextOwner', personId: '', message: 'You are the next owner of {ref} "{title}" (set by {actor}).', onlyIfChanged: true });
 
-  // ---------- default configuration ----------
-  const DEFAULT_CONFIG = {
+  // ---------- technical fallbacks ----------
+  // What a setting is when the workspace doesn't say. No people, teams, roles, columns, buttons or items:
+  // those come from the workspace (the default workspace file, a shared data file, or the browser's copy).
+  const BASE_CONFIG = {
     version: CONFIG_VERSION,
     general: {
-      appName: 'Task Hub',
-      tagline: 'Handoff board with unread alerts for the next owner.',
-      boardTitle: 'Operations Handoff Board',
-      boardIntro: 'Click **Complete & handoff** on any item to transfer ownership. The next owner will receive an unread alert in the Action Inbox and, when viewing as that person, a pop-up notification.',
-      panelTitle: 'Operations Panel',
-      refPrefix: 'OMD-',
-      refDigits: 3,
-      initialStatusId: 'assigned',
-      allowDrag: true,
-      loginHint: true,
+      appName: 'Task Hub', tagline: '', boardTitle: 'Board', boardIntro: '', panelTitle: 'Operations Panel',
+      refPrefix: '', refDigits: 3, initialStatusId: '', allowDrag: true, loginHint: true,
       modules: { posts: true, files: true, notes: true, overview: true },
     },
-    teams: [
-      { id: 't1', name: 'Operations Design', color: '#343a8a', bg: '#e4e4f7', leadId: 'p1', nextTeamId: 't2' },
-      { id: 't2', name: 'Data Governance',   color: '#343a8a', bg: '#e4e4f7', leadId: 'p2', nextTeamId: 't3' },
-      { id: 't3', name: 'Controls',          color: '#343a8a', bg: '#e4e4f7', leadId: 'p3', nextTeamId: 't4' },
-      { id: 't4', name: 'Operations',        color: '#343a8a', bg: '#e4e4f7', leadId: 'p4', nextTeamId: 't5' },
-      { id: 't5', name: 'Implementation',    color: '#343a8a', bg: '#e4e4f7', leadId: 'p7', nextTeamId: '' },
-    ],
-    // `password` here is only a seed: normalisation replaces it with a salted hash.
-    people: [
-      { id: 'p1', name: 'A. Chan',  teamId: 't1', role: '', active: true, username: 'achan',  password: 'demo', roleIds: ['r_member', 'r_sysadmin'] },
-      { id: 'p2', name: 'B. Lee',   teamId: 't2', role: '', active: true, username: 'blee',   password: 'demo', roleIds: ['r_member', 'r_steward'] },
-      { id: 'p3', name: 'C. Wong',  teamId: 't3', role: '', active: true, username: 'cwong',  password: 'demo', roleIds: ['r_member', 'r_reviewer'] },
-      { id: 'p4', name: 'D. Patel', teamId: 't4', role: '', active: true, username: 'dpatel', password: 'demo', roleIds: ['r_member', 'r_teamadmin', 'r_reviewer'] },
-      { id: 'p5', name: 'E. Ng',    teamId: 't4', role: '', active: true, username: 'eng',    password: 'demo', roleIds: ['r_member'] },
-      { id: 'p6', name: 'F. Ho',    teamId: 't4', role: '', active: true, username: 'fho',    password: 'demo', roleIds: ['r_member'] },
-      { id: 'p7', name: 'G. Lim',   teamId: 't5', role: '', active: true, username: 'glim',   password: 'demo', roleIds: ['r_member'] },
-    ],
-    roles: DEFAULT_ROLES(),
-    priorities: [
-      { id: 'pr1', name: 'High',   fg: '#9f1d26', bg: '#f5d6d9', dueDays: 1 },
-      { id: 'pr2', name: 'Medium', fg: '#6a5100', bg: '#f6edc1', dueDays: 3 },
-      { id: 'pr3', name: 'Low',    fg: '#2a4c9a', bg: '#dbe6fb', dueDays: 5 },
-    ],
-    statuses: [
-      { id: 'assigned',  name: 'Assigned',    color: '#3a3fd4', closed: false, hold: false },
-      { id: 'progress',  name: 'In Progress', color: '#c9610d', closed: false, hold: false },
-      { id: 'blocked',   name: 'Blocked',     color: '#cf232b', closed: false, hold: true },
-      VERIFY_STATUS(),
-      { id: 'completed', name: 'Completed',   color: '#2f9d45', closed: true,  hold: false },
-    ],
-    filters: [
-      { id: 'f_all',      name: 'All items',               match: 'all', count: 'items',  conds: [] },
-      { id: 'f_open',     name: 'Open items',              match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }] },
-      { id: 'f_mine',     name: 'Assigned to me',          match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }, { subject: 'owner', op: 'isViewer', value: '' }] },
-      { id: 'f_next',     name: 'Coming to me next',       match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }, { subject: 'nextOwner', op: 'isViewer', value: '' }] },
-      { id: 'f_myTeam',   name: 'My team’s open items',    match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }, { subject: 'team', op: 'viewerTeam', value: '' }] },
-      { id: 'f_overdue',  name: 'Overdue',                 match: 'all', count: 'items',  conds: [{ subject: 'due', op: 'overdue', value: '' }] },
-      { id: 'f_dueSoon',  name: 'Due soon',                match: 'all', count: 'items',  conds: [{ subject: 'due', op: 'withinDays', value: 2 }] },
-      { id: 'f_blocked',  name: 'Blocked',                 match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'hold', value: '' }] },
-      { id: 'f_closed',   name: 'Closed',                  match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'closed', value: '' }] },
-      { id: 'f_unrouted', name: 'Open with no next owner', match: 'all', count: 'items',  conds: [{ subject: 'state', op: 'open', value: '' }, { subject: 'nextOwner', op: 'empty', value: '' }, { subject: 'queue', op: 'nextNone', value: '' }] },
-      { id: 'f_alerts',   name: 'With unread alerts',      match: 'all', count: 'alerts', conds: [{ subject: 'alerts', op: 'hasUnread', value: '' }] },
-      { id: 'f_hasNext',  name: 'Has a next owner',        match: 'any', count: 'items',  conds: [{ subject: 'nextOwner', op: 'set', value: '' }, { subject: 'queue', op: 'nextSet', value: '' }] },
-      { id: 'f_gov',      name: 'Involves Data Governance', match: 'all', count: 'items', conds: [{ subject: 'anyTeam', op: 'is', value: 't2' }] },
-      { id: 'f_impl',     name: 'Involves Implementation', match: 'all', count: 'items',  conds: [{ subject: 'anyTeam', op: 'is', value: 't5' }] },
-      ...OFFER_FILTERS(),
-      ...QUEUE_FILTERS(),
-      ...APPROVAL_FILTERS(),
-    ],
-    actions: [
-      ...APPROVAL_ACTIONS(),
-      ...QUEUE_ACTIONS(),
-      ...OFFER_ACTIONS(),
-      { id: 'a_start',   label: 'Start',              color: '#2e3394', outline: false, width: 'sm', show: { statuses: ['assigned', 'blocked'], filterId: 'f_noOffer' },    steps: [{ type: 'setStatus', when: '', to: 'progress' }] },
-      { id: 'a_pause',   label: 'Pause',              color: '#2e3394', outline: false, width: 'sm', show: { statuses: ['progress'], filterId: 'f_noOffer' },               steps: [{ type: 'setStatus', when: '', to: 'assigned' }] },
-      { id: 'a_handoff', label: 'Complete & handoff', color: '#2f7a1e', outline: false, width: 'lg', show: { statuses: ['assigned', 'progress', 'blocked'], filterId: 'f_noOffer' }, steps: offerHandoffSteps() },
-      { id: 'a_block',   label: 'Block',              color: '#6a2b0a', outline: false, width: 'md', show: { statuses: ['assigned', 'progress'], filterId: '' },            steps: [{ type: 'reason', when: '', prompt: 'Reason (optional)', required: false }, { type: 'setStatus', when: '', to: 'blocked' }, blockNotify()] },
-      { id: 'a_unblock', label: 'Unblock',            color: '#2e3394', outline: false, width: 'md', show: { statuses: ['blocked'], filterId: '' },                         steps: [{ type: 'setStatus', when: '', to: '__prev' }] },
-      { id: 'a_setnext', label: 'Set next',           color: '#2e3394', outline: true,  width: 'md', show: { statuses: ['assigned', 'progress', 'blocked'], filterId: 'f_noOffer' }, steps: [{ type: 'pickNext', when: '' }, nextNotify()] },
-      { id: 'a_edit',    label: 'Edit',               color: '#2e3394', outline: true,  width: 'md', show: { statuses: ['*'], filterId: '' },                               steps: [{ type: 'edit', when: '' }] },
-      { id: 'a_delete',  label: 'Delete',             color: '#9b111b', outline: false, width: 'md', show: { statuses: ['*'], filterId: '' },                               steps: [{ type: 'delete', when: '' }] },
-    ],
+    teams: [], people: [], roles: [], priorities: [], statuses: [], filters: [], actions: [],
     fields: {
       labels: {
         title: 'Task title', ref: 'Reference', priority: 'Priority', team: 'Current team', owner: 'Current owner',
@@ -1298,30 +1200,14 @@
       custom: [],
     },
     card: { fields: ['owner', 'nextOwner', 'nextTeam', 'due'], showRef: true, showPriority: true, showTeam: true, showDesc: true },
-    stats: [
-      { id: 'st1', filterId: 'f_open',    label: 'Open items',     sub: 'Everything not complete', visible: true },
-      { id: 'st2', filterId: 'f_mine',    label: 'Assigned to me', sub: 'Based on current viewer', visible: true },
-      { id: 'st3', filterId: 'f_overdue', label: 'Overdue',        sub: 'Past due and still open', visible: true },
-      { id: 'st4', filterId: 'f_blocked', label: 'Blocked',        sub: 'Needs intervention',      visible: true },
-      { id: 'st5', filterId: 'f_alerts',  label: 'Unread alerts',  sub: 'For the current viewer',  visible: true },
-    ],
-    // Board views: saved filters of the one board. The sidebar and the Focus dropdown both list them.
-    views: [
-      { id: 'bv_all',     label: 'All work',               filterId: '',            count: 'f_open', sidebar: true },
-      { id: 'bv_mine',    label: 'Assigned to me',         filterId: 'f_mine',      count: 'match',  sidebar: true },
-      { id: 'bv_accept',  label: 'Awaiting my acceptance', filterId: 'f_offerToMe', count: 'match',  sidebar: true },
-      { id: 'bv_next',    label: 'Coming to me next',      filterId: 'f_next',      count: 'match',  sidebar: true },
-      { id: 'bv_blocked', label: 'Blocked',                filterId: 'f_blocked',   count: 'match',  sidebar: true },
-      { id: 'bv_overdue', label: 'Overdue',                filterId: 'f_overdue',   count: 'match',  sidebar: false },
-      { id: 'bv_alerts',  label: 'With unread alerts',     filterId: 'f_alerts',    count: 'match',  sidebar: false },
-    ],
+    stats: [], views: [],
     notifications: {
       assigned: true, next: true, comments: true, popups: true, popupSeconds: 9, toastSeconds: 4,
       position: 'top', align: 'right', animation: 'slide', animMs: 300, reduceMotion: true,
       sound: true, soundFor: 'alerts', tone: 'bell', volume: 50,
       popBg: '#ffffff', popText: '#15171a', popAccent: '#b5141e', toastBg: '#1b1e24', toastText: '#f2f3f5',
     },
-    approvals: DEFAULT_APPROVALS(),
+    approvals: { enabled: false, holdStatusId: '', appliesTo: ['*'], allowSelf: false, oneStagePerPerson: true, allowNone: false, chains: [] },
     extensions: { scriptsEnabled: false, flags: [], fieldTypes: [], conditions: [], steps: [] },
   };
 
@@ -1358,10 +1244,10 @@
     version: 3,
     items: [], activity: [], alerts: [], posts: [], files: [], notes: [],
     removed: { people: {}, teams: {} },
-    viewerId: 'p1',
+    viewerId: '',
     filters: { teamId: 'all', priorityId: 'all', focus: '' },
     viewId: '', search: '', page: 'board', session: null,
-    config: normalizeConfig(DEFAULT_CONFIG),
+    config: normalizeConfig(BASE_CONFIG),
   });
 
   let S = null;
@@ -1839,7 +1725,7 @@
     const n = c.notifications || {};
     const catOf = s => s.category;
     out.statuses = (c.statuses || []).map(s => (has(s, 'category') ? { id: s.id, name: s.name, color: s.color, closed: catOf(s) === 'done', hold: catOf(s) === 'blocked' } : s));
-    out.filters = Array.isArray(c.filters) ? c.filters : clone(DEFAULT_CONFIG.filters);
+    out.filters = Array.isArray(c.filters) ? c.filters : clone(defCfg().filters || []);
     if (Number.isFinite(+g.dueSoonDays)) { const ds = out.filters.find(f => f.id === 'f_dueSoon'); if (ds) ds.conds[0].value = +g.dueSoonDays; }
     const metricMap = { all: 'f_all', open: 'f_open', mine: 'f_mine', next: 'f_next', myTeam: 'f_myTeam', overdue: 'f_overdue', dueSoon: 'f_dueSoon', blocked: 'f_blocked', done: 'f_closed', unrouted: 'f_unrouted', alerts: 'f_alerts' };
     const metricFilter = key => {
@@ -1916,7 +1802,7 @@
     const views = Array.isArray(c.views) ? c.views : [];
     const oldDefault = views.length === 5 && ['v1', 'v2', 'v3', 'v4', 'v5'].every((id, i) => views[i] && views[i].id === id) && views[0].label === 'Posts' && views[3].label === 'Team Overview';
     let next;
-    if (oldDefault) next = clone(DEFAULT_CONFIG.views);
+    if (oldDefault) next = clone(defCfg().views || []);
     else {
       next = views.filter(v => v && v.kind !== 'page').map(v => ({ id: v.id, label: v.label, filterId: v.filterId || '', count: v.count || 'match', sidebar: true }));
       const fo = c.focus && Array.isArray(c.focus.options) ? c.focus.options : [];
@@ -1931,7 +1817,7 @@
     // Switch to accept/decline only where the old default handoff is still in place.
     const ho = out.actions.find(a => a.id === 'a_handoff');
     if (ho && JSON.stringify(ho.steps) === JSON.stringify(handoffSteps())) {
-      ho.steps = offerHandoffSteps();
+      ho.steps = offerHandoffSteps() || ho.steps;
       ho.show = Object.assign({}, ho.show, { filterId: ho.show && ho.show.filterId ? ho.show.filterId : 'f_noOffer' });
       ['a_start', 'a_pause', 'a_setnext'].forEach(id => { const a = out.actions.find(x => x.id === id); if (a && a.show && !a.show.filterId) a.show.filterId = 'f_noOffer'; });
     }
@@ -1952,7 +1838,7 @@
     out.roles = Array.isArray(c.roles) && c.roles.length ? c.roles : DEFAULT_ROLES();
     const taken = new Set();
     out.people = (Array.isArray(c.people) ? c.people : []).map(p => {
-      const def = DEFAULT_CONFIG.people.find(d => d.id === p.id && d.name === p.name);
+      const def = (defCfg().people || []).find(d => d.id === p.id && d.name === p.name);
       const base = String(p.username || (def && def.username) || String(p.name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '') || 'user');
       let u = base;
       for (let n = 2; taken.has(u); n++) u = base + n;
@@ -1969,7 +1855,7 @@
     // Queue-aware versions of the default filters, only where they're still the defaults.
     const upgradeFilter = (id, oldConds) => {
       const f = out.filters.find(x => x.id === id);
-      const nf = DEFAULT_CONFIG.filters.find(x => x.id === id);
+      const nf = (defCfg().filters || []).find(x => x.id === id);
       if (f && nf && JSON.stringify(f.conds) === JSON.stringify(oldConds)) Object.assign(f, { match: nf.match, conds: clone(nf.conds), name: nf.name });
     };
     upgradeFilter('f_hasNext', [{ subject: 'nextOwner', op: 'set', value: '' }]);
@@ -1990,14 +1876,14 @@
     APPROVAL_FILTERS().forEach(f => { if (!out.filters.some(x => x.id === f.id)) out.filters.push(f); });
     const no = out.filters.find(x => x.id === 'f_noOffer');
     if (no && JSON.stringify(no.conds) === JSON.stringify([{ subject: 'offer', op: 'none', value: '' }, { subject: 'queue', op: 'none', value: '' }])) {
-      const nf = OFFER_FILTERS()[0];
-      Object.assign(no, { name: nf.name, conds: nf.conds });
+      const nf = OFFER_FILTERS().find(x => x.id === 'f_noOffer');
+      if (nf) Object.assign(no, { name: nf.name, conds: nf.conds });
     }
     out.actions = Array.isArray(c.actions) ? c.actions : [];
     APPROVAL_ACTIONS().reverse().forEach(a => { if (!out.actions.some(x => x.id === a.id)) out.actions.unshift(a); });
     const a = DEFAULT_APPROVALS();
     if (Array.isArray(out.statuses) && out.statuses.length) {
-      if (!out.statuses.some(s => s.id === 'verify')) {
+      if (!out.statuses.some(s => s.id === 'verify') && VERIFY_STATUS()) {
         const at = out.statuses.findIndex(s => s && s.closed);
         out.statuses.splice(at < 0 ? out.statuses.length : at, 0, VERIFY_STATUS());
       }
@@ -2017,13 +1903,13 @@
     if (c.version === 3 || (c.focus && typeof c.focus === 'object') || (Array.isArray(c.views) && c.views.some(v => v && v.kind))) c = upgradeV3(c);
     if (c.version === 4 || (Object.keys(c).length && !Array.isArray(c.roles))) c = upgradeV4(c);
     if (Object.keys(c).length && !(c.approvals && typeof c.approvals === 'object')) c = upgradeV5(c);
-    const d = clone(DEFAULT_CONFIG);
+    const d = clone(BASE_CONFIG);
     const list = (k, fix) => (Array.isArray(c[k]) ? c[k] : d[k]).filter(x => x && typeof x === 'object').map(fix);
     const str = v => String(v ?? '').trim();
     const out = { version: CONFIG_VERSION };
     out.general = Object.assign(d.general, c.general || {});
     if (beforeRename && out.general.appName === 'Design Hub') out.general.appName = 'Task Hub';
-    out.general.modules = Object.assign(clone(DEFAULT_CONFIG.general.modules), (c.general && c.general.modules) || {});
+    out.general.modules = Object.assign(clone(BASE_CONFIG.general.modules), (c.general && c.general.modules) || {});
     out.general.allowDrag = out.general.allowDrag !== false;
     out.teams = list('teams', t => ({ id: str(t.id) || uid('t'), name: str(t.name), color: t.color || '#343a8a', bg: t.bg || tint(t.color || '#343a8a', 0.86), leadId: t.leadId || '', nextTeamId: t.nextTeamId || '' }));
     out.people = list('people', p => {
@@ -2082,12 +1968,11 @@
       })),
     };
     out.card = Object.assign(d.card, c.card || {});
-    if (!Array.isArray(out.card.fields)) out.card.fields = clone(DEFAULT_CONFIG.card.fields);
+    if (!Array.isArray(out.card.fields)) out.card.fields = clone(BASE_CONFIG.card.fields);
     out.stats = list('stats', s => ({ id: str(s.id) || uid('st'), filterId: s.filterId || '', label: str(s.label), sub: str(s.sub), visible: s.visible !== false }));
     out.views = list('views', v => ({ id: str(v.id) || uid('v'), label: str(v.label), filterId: v.filterId || '', count: v.count || 'match', sidebar: v.sidebar !== false }));
-    if (!out.views.length) out.views = clone(DEFAULT_CONFIG.views);
     out.notifications = Object.assign(d.notifications, c.notifications || {});
-    NOTE_COLOURS.forEach(k => { if (!/^#[0-9a-f]{6}$/i.test(String(out.notifications[k] || ''))) out.notifications[k] = DEFAULT_CONFIG.notifications[k]; });
+    NOTE_COLOURS.forEach(k => { if (!/^#[0-9a-f]{6}$/i.test(String(out.notifications[k] || ''))) out.notifications[k] = BASE_CONFIG.notifications[k]; });
     const ac = c.approvals && typeof c.approvals === 'object' ? c.approvals : d.approvals;
     out.approvals = {
       enabled: ac.enabled !== false, holdStatusId: str(ac.holdStatusId),
@@ -2098,11 +1983,6 @@
         stages: (Array.isArray(ch.stages) ? ch.stages : []).filter(s => s && typeof s === 'object').map(s => ({ roleId: String(s.roleId || '') })),
       })),
     };
-    if (!out.teams.length) out.teams = clone(DEFAULT_CONFIG.teams);
-    if (!out.people.length) out.people = clone(DEFAULT_CONFIG.people);
-    if (!out.priorities.length) out.priorities = clone(DEFAULT_CONFIG.priorities);
-    if (!out.statuses.some(s => !s.closed)) out.statuses.unshift(clone(DEFAULT_CONFIG.statuses[0]));
-    if (!out.statuses.some(s => s.closed)) out.statuses.push(clone(DEFAULT_CONFIG.statuses.find(s => s.closed)));
     return fixRefs(out);
   }
 
@@ -2140,11 +2020,11 @@
   function migrateV1(old) {
     const s = blankState();
     const oc = old.config || {};
-    const c = clone(DEFAULT_CONFIG);
+    const c = Object.assign(clone(BASE_CONFIG), clone(defCfg()));
     if (Array.isArray(oc.teams)) {
       c.teams = oc.teams.map(t => {
         const name = typeof t === 'string' ? t : t.name;
-        const def = DEFAULT_CONFIG.teams.find(x => x.name === name);
+        const def = (defCfg().teams || []).find(x => x.name === name);
         return Object.assign(def ? clone(def) : { color: '#343a8a', bg: '#e4e4f7', leadId: '', nextTeamId: '' }, { id: (t.id && String(t.id)) || (def && def.id) || uid('t'), name });
       });
     }
@@ -2161,7 +2041,7 @@
       if (!p) { p = { id: uid('p'), name, teamId: '', role: '', active: true }; c.people.push(p); }
       return p.id;
     };
-    if (Array.isArray(oc.priorities)) c.priorities = oc.priorities.map(p => { const def = DEFAULT_CONFIG.priorities.find(x => x.name === p.name); return { id: String(p.id || uid('pr')), name: p.name, fg: p.fg, bg: p.bg, dueDays: def ? def.dueDays : 3 }; });
+    if (Array.isArray(oc.priorities)) c.priorities = oc.priorities.map(p => { const def = (defCfg().priorities || []).find(x => x.name === p.name); return { id: String(p.id || uid('pr')), name: p.name, fg: p.fg, bg: p.bg, dueDays: def ? def.dueDays : 3 }; });
     const priorityId = name => { let p = c.priorities.find(x => x.name === name); if (!p && name) { p = { id: uid('pr'), name, fg: '#3d4148', bg: '#eceef1', dueDays: 3 }; c.priorities.push(p); } return p ? p.id : c.priorities[0].id; };
     if (Array.isArray(oc.statuses)) c.statuses = oc.statuses.map(st => ({ id: st.key, name: st.label, color: st.color, closed: st.key === 'completed', hold: st.key === 'blocked' }));
     if (Array.isArray(oc.focus)) {
@@ -2531,49 +2411,92 @@
     if (S.page === 'config' && !canConfigure()) { S.page = 'board'; cfgDraft = null; }
   }
 
-  // ---------- sample data ----------
-  function sampleState(prev) {
-    const s = blankState();
+  // ---------- default workspace ----------
+  // Builds a workspace from default-workspace.js. Dates there are relative ("dueInDays", "minutesAgo"),
+  // so the sample is always current. With `prev`, the current configuration is kept and only what the
+  // sample needs (its teams, people, priorities, columns and filters) is added to it.
+  function defaultState(prev) {
+    const src = defaultWorkspace();
+    if (!src) return null;
+    const now = Date.now(), today = todayISO();
+    const when = o => (o && Number.isFinite(+o.minutesAgo) ? now - +o.minutesAgo * 60e3 : (o && +o.time) || now);
+    const timed = (x, prefix) => {
+      const y = clone(x);
+      if (!y.id) y.id = uid(prefix);
+      y.time = when(x);
+      delete y.minutesAgo;
+      return y;
+    };
+    const items = (Array.isArray(src.items) ? src.items : []).map(raw => {
+      const it = clone(raw);
+      if (has(it, 'dueInDays')) { it.due = Number.isFinite(+it.dueInDays) ? addDays(today, +it.dueInDays) : ''; delete it.dueInDays; }
+      it.created = it.updated = when(raw);
+      delete it.minutesAgo;
+      it.history = (Array.isArray(it.history) ? it.history : []).map(h => timed(h, 'h'));
+      it.comments = (Array.isArray(it.comments) ? it.comments : []).map(c => timed(c, 'cm'));
+      return Object.assign({ id: uid('i'), prevStatusId: '', blockReason: '' }, it);
+    });
+    let config = src.config || {};
     if (prev) {
-      s.config = normalizeConfig(prev.config);
-      ['teams', 'people', 'priorities', 'statuses', 'filters'].forEach(k => DEFAULT_CONFIG[k].forEach(x => { if (!s.config[k].some(y => y.id === x.id)) s.config[k].push(clone(x)); }));
-      s.config = normalizeConfig(s.config);
-      s.viewerId = prev.viewerId;
-      s.session = prev.session;
+      const keep = normalizeConfig(prev.config);
+      ['teams', 'people', 'priorities', 'statuses', 'filters'].forEach(k => (Array.isArray(config[k]) ? config[k] : []).forEach(x => { if (!keep[k].some(y => y.id === x.id)) keep[k].push(clone(x)); }));
+      config = keep;
     }
-    const t = todayISO();
-    const now = Date.now();
-    const g = s.config.general;
-    const ref = n => (g.refPrefix || '') + String(n).padStart(Math.max(1, g.refDigits | 0), '0');
-    const mk = o => itemDefaults(Object.assign({ id: uid('i'), created: now, updated: now, prevStatusId: '', blockReason: '' }, o));
-    s.items = [
-      mk({ ref: ref(1), title: 'Custody model data ownership review', priorityId: 'pr1', statusId: 'assigned', teamId: 't1', ownerId: 'p1', nextTeamId: 't2', nextOwnerId: 'p2', due: t,
-        desc: 'Validate in-scope processes, ownership boundaries and required handoff points before the design pack is passed on.' }),
-      mk({ ref: ref(2), title: 'Maker-checker exception routing', priorityId: 'pr2', statusId: 'progress', teamId: 't3', ownerId: 'p3', nextTeamId: 't4', nextOwnerId: 'p4', due: addDays(t, 2),
-        desc: 'Review maker-checker steps, unresolved exceptions and evidence requirements for each handoff.' }),
-      mk({ ref: ref(3), title: 'Reconciliation ownership clarification', priorityId: 'pr3', statusId: 'blocked', prevStatusId: 'progress', teamId: 't4', ownerId: 'p5', nextTeamId: 't4', nextOwnerId: 'p6', due: addDays(t, 1),
-        desc: 'Blocked pending clarification on duplicate ownership in reconciliations.' }),
-      mk({ ref: ref(4), title: 'Implementation readiness note', priorityId: 'pr2', statusId: 'completed', teamId: 't5', ownerId: 'p7', nextTeamId: '', nextOwnerId: '', due: addDays(t, -1),
-        desc: 'Readiness note issued and archived.' }),
-    ];
-    s.activity = [
-      { id: uid('ac'), msg: `${ref(2)} moved to In Progress by C. Wong.`, type: 'STATUS', time: now, itemId: s.items[1].id },
-      { id: uid('ac'), msg: 'Sample board loaded.', type: 'CREATE', time: now },
-    ];
-    s.items.forEach(it => it.history.push({ time: now - 60e3, type: 'CREATE', text: `${it.ref} created (sample board).`, actorId: it.ownerId }));
-    s.items[1].history.unshift({ time: now, type: 'STATUS', text: `${ref(2)} moved to In Progress by C. Wong.`, actorId: 'p3' });
-    s.posts = [
-      { id: uid('po'), authorId: 'p3', text: 'Maker-checker evidence checklist is in Files. Please flag any gaps before the Operations handoff.', itemId: s.items[1].id, time: now - 3600e3 },
-      { id: uid('po'), authorId: 'p1', text: `Design pack v2 for the custody model is ready for governance review once ${ref(1)} is handed off to B. Lee.`, itemId: s.items[0].id, time: now - 7200e3 },
-    ];
-    s.files = [
-      { id: uid('fi'), name: 'custody-model-design-pack-v2.pdf', size: 482113, type: 'application/pdf', byId: 'p1', itemId: s.items[0].id, time: now - 7000e3 },
-      { id: uid('fi'), name: 'maker-checker-evidence-checklist.xlsx', size: 38211, type: '', byId: 'p3', itemId: s.items[1].id, time: now - 3500e3 },
-    ];
-    s.notes = [
-      { id: uid('no'), authorId: 'p1', title: 'Handoff conventions', body: 'Set the next owner and next team before completing an item. Completing without a next owner closes the item.', time: now - 9000e3 },
-    ];
+    const s = normalizeState({
+      config, items,
+      activity: (Array.isArray(src.activity) ? src.activity : []).map(a => timed(a, 'ac')),
+      alerts: (Array.isArray(src.alerts) ? src.alerts : []).map(a => timed(a, 'al')),
+      posts: (Array.isArray(src.posts) ? src.posts : []).map(a => timed(a, 'po')),
+      files: (Array.isArray(src.files) ? src.files : []).map(a => timed(a, 'fi')),
+      notes: (Array.isArray(src.notes) ? src.notes : []).map(a => timed(a, 'no')),
+    });
+    if (prev) { s.viewerId = prev.viewerId; s.session = prev.session; }
     return s;
+  }
+  // The one-click start on the sign-in screen.
+  // Available at any time, from the sign-in screen and from Import / export. Replacing a workspace that
+  // has people or work in it asks first and offers a backup; a shared data file is let go, never overwritten.
+  function loadDefaultWorkspace() {
+    const hasWork = cfg().people.length > 0 || S.items.length > 0;
+    if (!hasWork) { applyDefaultWorkspace(); return; }
+    const usingFile = dataFile.status !== 'off';
+    modal({
+      title: 'Load the default workspace?',
+      html: `<div>The people, settings and work saved in this browser are replaced by the default workspace from <code>default-workspace.js</code>. Everyone will need to sign in again.</div>
+        ${usingFile ? `<div>This browser will also stop using the data file <b>${esc(dataFile.name)}</b>. The file itself is not changed.</div>` : ''}
+        <label class="chk"><input type="checkbox" id="ldBackup" checked> Download a backup of the current workspace first</label>`,
+      ok: 'Load default workspace',
+      onOk: body => {
+        if ($('#ldBackup', body).checked) downloadBackup();
+        if (usingFile) disconnectFile();
+        applyDefaultWorkspace();
+      },
+    });
+  }
+  async function applyDefaultWorkspace() {
+    $$('[data-load-default]').forEach(b => { b.disabled = true; });
+    const src = await readDefaultWorkspace();
+    const next = src && defaultState();
+    $$('[data-load-default]').forEach(b => { b.disabled = false; });
+    if (!next) { toast(NO_DEFAULT); renderLogin(); return; }
+    S = next;
+    cfgDraft = null; cfgRemap = emptyRemap(); cfgErrors = []; lastCustomSig = null;
+    resetForm();
+    commit();
+    toast('Default workspace loaded. Sign in to start.');
+    setTimeout(() => $('#loginUser').focus(), 0);
+  }
+  document.addEventListener('click', e => { if (e.target.closest('[data-load-default]')) loadDefaultWorkspace(); });
+  // Reads default-workspace.js again, so edits to it are picked up without reloading the page.
+  function readDefaultWorkspace() {
+    return new Promise(resolve => {
+      const el = document.createElement('script');
+      const done = () => { el.remove(); resolve(defaultWorkspace()); };
+      el.src = `default-workspace.js?t=${Date.now()}`;
+      el.onload = done;
+      el.onerror = done;
+      document.head.appendChild(el);
+    });
   }
 
   // ---------- board filtering ----------
@@ -2736,7 +2659,7 @@
           <div class="g-tile" style="--c:#2f7a1e"><b>3 · Check your inbox</b>The Action Inbox on the right lists what needs your attention.</div>
         </div>
         <h4>Signing in and out</h4>
-        ${gSteps(['Open the app in your browser. The sign-in screen appears.', 'Type your <b>username</b> and <b>password</b>, then click <b>Sign in</b>.', 'To finish, click <b>Log out</b> in the top-right card of the Operations Panel.'])}
+        ${gSteps(['Open the app in your browser. The sign-in screen appears.', '<b>First time in this browser?</b> Click <b>▶ Load default workspace</b> to start from the ready-made workspace, or open your team’s shared data file.', 'Type your <b>username</b> and <b>password</b>, then click <b>Sign in</b>.', 'To finish, click <b>Log out</b> in the top-right card of the Operations Panel.'])}
         ${gTip('note', 'Accounts are kept with the workspace data. Sign-in keeps people’s views apart on a shared computer, but it is not a security system: don’t store anything confidential.')}
         ${gTip('tip', `New here? The ${gGo('demo', 'automated demo')} plays through every feature for you, step by step, and puts your data back afterwards.`)}` },
 
@@ -2958,6 +2881,7 @@
         </tbody></table></div>` },
 
       { id: 'faq', icon: '❓', title: 'Questions and answers', color: '#ad1457', html: `
+        <details class="g-faq"><summary>Where do the people, teams and sample work come from?</summary><p>Nothing is built into the app. The ready-made workspace is in <code>default-workspace.js</code>, next to <code>index.html</code>: plain JSON that anyone can edit. It is loaded only when you click <b>Load default workspace</b>; after that your workspace lives in this browser or in the shared data file. To start again, use <b>↺ Start again from the default workspace</b> on the sign-in screen, or <b>Load default workspace…</b> in Configuration → Import / export.</p></details>
         <details class="g-faq"><summary>I can’t see an item a colleague mentioned.</summary><p>You may only see your own or your team’s work. Check the filters and search are cleared (<b>Reset filters</b>), then ask your team admin.</p></details>
         <details class="g-faq"><summary>Why is there no Complete button on my item?</summary><p>Buttons only appear when they make sense. An item waiting for acceptance, in a queue, or in verification shows the buttons for that stage instead.</p></details>
         <details class="g-faq"><summary>I finished an item but it went to ${esc(hold ? hold.name : 'Verification')}, not ${esc(closed[0] ? closed[0].name : 'Completed')}.</summary><p>It needs checking by another group first. See <a href="#g-verify" data-guide-jump="verify">Verification</a>.</p></details>
@@ -3069,7 +2993,22 @@
     if (!show) return;
     const g = cfg().general;
     $('#loginBrand').textContent = g.appName;
-    $('#loginTag').textContent = 'Sign in to continue.';
+    // No accounts means no workspace yet: offer the default workspace instead of a sign-in nobody can use.
+    const empty = !cfg().people.length;
+    $('#loginFields').hidden = empty;
+    $('#loginStart').hidden = !empty;
+    $('.login-default').hidden = empty;
+    $('#loginTag').textContent = empty ? 'Let’s get you started.' : 'Sign in to continue.';
+    if (empty) {
+      $('#loginStart').innerHTML = `<div class="ls-title">👋 Welcome! No workspace is loaded yet.</div>
+        <p>Start with the ready-made <b>default workspace</b>: teams, people, roles and sample work you can try out, then change to suit your team.</p>
+        <button class="btn btn-red" type="button" data-load-default>▶ Load default workspace</button>
+        ${defaultWorkspace() ? '' : `<p class="form-error">${esc(NO_DEFAULT)}</p>`}
+        ${fileApi() ? '<p class="muted">Or open your team’s shared data file below.</p>' : ''}`;
+      $('#loginHint').innerHTML = ''; $('#loginHint').hidden = true;
+      return;
+    }
+    $('#loginHint').hidden = false;
     const demo = g.loginHint ? cfg().people.filter(p => p.active && p.passwordHash && hashPassword(p.salt, 'demo') === p.passwordHash) : [];
     const note = 'Accounts are stored in this browser, so sign-in keeps people’s views apart on a shared device but is not real security.';
     $('#loginHint').innerHTML = demo.length
@@ -3380,7 +3319,7 @@
     const box = $('#toasts');
     box.className = `toasts pos-${n.position === 'top' ? 'top' : 'bottom'} al-${['left', 'center'].includes(n.align) ? n.align : 'right'} an-${noteAnim(n)}`;
     box.style.setProperty('--nd', noteMs(n) + 'ms');
-    [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--toast-bg', 'toastBg'], ['--toast-fg', 'toastText']].forEach(([v, k]) => box.style.setProperty(v, n[k] || DEFAULT_CONFIG.notifications[k]));
+    [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--toast-bg', 'toastBg'], ['--toast-fg', 'toastText']].forEach(([v, k]) => box.style.setProperty(v, n[k] || BASE_CONFIG.notifications[k]));
     // Newest sits nearest the edge it comes from: top of the stack when dropping down, bottom when rising up.
     if (n.position === 'top') box.prepend(el); else box.appendChild(el);
   }
@@ -4472,7 +4411,7 @@
     { id: 'berry',    name: 'Berry',    popBg: '#fbe8f1', popText: '#4a0d2c', popAccent: '#c2185b', toastBg: '#7a1240', toastText: '#ffffff' },
   ];
   const noteSampleVars = n => [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--toast-bg', 'toastBg'], ['--toast-fg', 'toastText']]
-    .map(([v, k]) => `${v}:${esc(n[k] || DEFAULT_CONFIG.notifications[k])}`).join(';');
+    .map(([v, k]) => `${v}:${esc(n[k] || BASE_CONFIG.notifications[k])}`).join(';');
   // WCAG contrast ratio between two hex colours.
   function contrast(a, b) {
     const lum = hex => {
@@ -4838,7 +4777,7 @@
       const L = d.fields.labels;
       const cardOpts = cardFieldOptions(d);
       return section('Built-in field labels', 'Rename the standard fields. Labels are used in the form, on cards, in filters and in the board filter bar.', `
-          <div class="gen-grid">${BUILTIN_FIELDS.map(k => cell(DEFAULT_CONFIG.fields.labels[k], inp(`fields.labels.${k}`, L[k], { rerender: true }))).join('')}</div>`) +
+          <div class="gen-grid">${BUILTIN_FIELDS.map(k => cell(BASE_CONFIG.fields.labels[k], inp(`fields.labels.${k}`, L[k], { rerender: true }))).join('')}</div>`) +
         section('Custom fields', 'Extra fields in the Create or Edit form, in this order. They are searchable, can be tested in filters, set by button steps and shown on cards.', `
           ${d.fields.custom.map((f, i) => {
             const base = fieldBase(f, d);
@@ -5112,6 +5051,10 @@ ctx.person(name)      ctx.team(name)</pre>
         <div class="data-actions">
           <button class="btn" type="button" data-cfg-cmd="export-all">Download backup</button>
           <button class="btn" type="button" data-cfg-cmd="import-all">Restore from backup…</button>
+        </div>`) +
+      section('Default workspace', 'Start again from the ready-made workspace in <code>default-workspace.js</code>, next to index.html. You’re asked to confirm, and can download a backup of the current workspace first.', `
+        <div class="data-actions">
+          <button class="btn" type="button" data-load-default>Load default workspace…</button>
         </div>`);
     },
   };
@@ -5410,7 +5353,7 @@ ctx.person(name)      ctx.team(name)</pre>
       if (!a.steps.length) add('workflow', `Button “${nm}” has no steps.`);
       validateSteps(d, a.steps, `Button “${nm}”`, 'workflow', add);
     });
-    BUILTIN_FIELDS.forEach(k => { d.fields.labels[k] = String(d.fields.labels[k] || '').trim(); if (!d.fields.labels[k]) add('fields', `The built-in “${DEFAULT_CONFIG.fields.labels[k]}” field needs a label.`); });
+    BUILTIN_FIELDS.forEach(k => { d.fields.labels[k] = String(d.fields.labels[k] || '').trim(); if (!d.fields.labels[k]) add('fields', `The built-in “${BASE_CONFIG.fields.labels[k]}” field needs a label.`); });
     d.fields.custom.forEach(f => {
       const base = fieldBase(f, d);
       if ((base === 'select' || base === 'multiselect') && !fieldOptions(f, d).length) add('fields', `Field “${f.label || '(unnamed)'}” needs at least one option.`);
@@ -5608,7 +5551,8 @@ ctx.person(name)      ctx.team(name)</pre>
         break;
       }
       case 'defaults':
-        cfgDraft = normalizeConfig(DEFAULT_CONFIG); cfgErrors = [];
+        if (!defaultWorkspace()) { toast(NO_DEFAULT); break; }
+        cfgDraft = normalizeConfig(defCfg()); cfgErrors = [];
         renderConfig(); toast('Default configuration loaded. Review it, then Save.'); break;
       case 'export-all': downloadBackup(); break;
       case 'import-all': importMode = 'all'; $('#importInput').click(); break;
@@ -5869,7 +5813,9 @@ ctx.person(name)      ctx.team(name)</pre>
 
   $('#btnSample').addEventListener('click', () => {
     const go = () => {
-      S = sampleState(S);
+      const next = defaultState(S);
+      if (!next) { toast(NO_DEFAULT); return; }
+      S = next;
       cfgDraft = null;
       cfgRemap = emptyRemap();
       lastCustomSig = null;
@@ -6590,7 +6536,7 @@ ctx.person(name)      ctx.team(name)</pre>
   function demoSetData() {
     if (dlg.open) dlg.close();
     $$('.toast').forEach(t => t.remove());
-    S = sampleState();
+    S = defaultState();
     cfgDraft = null; cfgRemap = emptyRemap(); cfgErrors = [];
     editingId = null; lastCustomSig = null;
     resetFilters();
@@ -6613,6 +6559,7 @@ ctx.person(name)      ctx.team(name)</pre>
     if (demo.running) return;
     const chosen = $$('.demo-list input:checked', demoPanel).map(i => DEMOS.find(d => d.id === i.value));
     if (!chosen.length) { dCaption('Tick at least one scenario.'); return; }
+    if (!defaultWorkspace()) { dCaption(NO_DEFAULT); return; }
     // Set the real workspace aside; a backup copy survives even if the tab is closed mid-run.
     demo.saved = clone(S);
     demo.savedPanel = clone(panelClosed);
@@ -6662,7 +6609,7 @@ ctx.person(name)      ctx.team(name)</pre>
   } catch (e) { /* ignore */ }
 
   // ---------- boot ----------
-  S = loadState() || sampleState();
+  S = loadState() || blankState();
   fixViewer();
   resetForm();
   commit();

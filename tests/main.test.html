@@ -24,7 +24,7 @@ window.addEventListener('load', async () => {
   const downloads = []; HTMLAnchorElement.prototype.click = function () { downloads.push(this.download); };
   const sideCount = label => { const b = qa('#sideNav .side-item').find(x => x.firstElementChild.textContent === label); return b ? (b.querySelector('.n') || {}).textContent : null; };
   try {
-    await wait(200); const loginAs = async (u, p = 'demo') => { document.querySelector('#loginUser').value = u; document.querySelector('#loginPass').value = p; document.querySelector('#loginForm').requestSubmit(); await new Promise(r => setTimeout(r, 60)); }; await loginAs('achan');
+    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300); const loginAs = async (u, p = 'demo') => { document.querySelector('#loginUser').value = u; document.querySelector('#loginPass').value = p; document.querySelector('#loginForm').requestSubmit(); await new Promise(r => setTimeout(r, 60)); }; await loginAs('achan');
     // ---------- board basics ----------
     ok('4 sample cards in 5 columns (incl. Verification)', qa('#board .card').length === 4 && qa('.col').length === 5);
     ok('stats 3,1,0,1,0', statVals() === '3,1,0,1,0');

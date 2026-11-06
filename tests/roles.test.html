@@ -20,7 +20,7 @@ window.addEventListener('load', async () => {
   const login = async (u, p = 'demo') => { q('#loginUser').value = u; q('#loginPass').value = p; q('#loginForm').requestSubmit(); await wait(60); };
   const logout = async () => { q('[data-logout]').click(); await tick(); };
   try {
-    await wait(200);
+    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
     // ---- Sign-in screen ----
     ok('Sign-in screen shown first', !q('#login').hidden && q('.app').inert);
     ok('Demo accounts listed', q('#loginHint').textContent.includes('achan') && q('#loginHint').textContent.includes('dpatel') && q('#loginHint').textContent.includes('not real security'));

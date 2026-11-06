@@ -20,7 +20,7 @@ The script prints one line per suite and a total. It exits with code 0 when ever
 
 ## How it works
 
-Each `*.test.html` file holds a `<script>` that drives the real app: it signs in, clicks buttons, fills in forms and records `PASS` / `FAIL` lines. The runner copies `index.html`, injects the suite (before the app for files marked `<!-- inject: early -->`, which seed old saved data), opens the copy in headless Edge and reads the results back from Edge's log.
+Each `*.test.html` file holds a `<script>` that drives the real app: it signs in, clicks buttons, fills in forms and records `PASS` / `FAIL` lines. The runner copies `index.html` and `default-workspace.js`, injects the suite (before the app for files marked `<!-- inject: early -->`, which seed old saved data), opens the copy in headless Edge and reads the results back from Edge's log.
 
 Everything the runner creates goes to `%TEMP%\taskhub-tests`: the test pages, a separate browser profile per suite, and a screenshot of each suite's results (`<suite>.png`). Your project folder and your own browser data are not touched. With `-Keep`, you can open a test page in Edge to watch the suite run.
 
@@ -31,6 +31,7 @@ Everything the runner creates goes to `%TEMP%\taskhub-tests`: the test pages, a 
 | `inbox` | The Action Inbox: alerts, accept, decline, pick up, mark read, read-only viewing |
 | `verification` | Approval groups in order or at once, reject, withdraw, maker-checker, routes |
 | `notifications` | Position, animation, sound and colour settings |
+| `startup` | A fresh browser starts empty; one click loads `default-workspace.js`; relative dates, hashed passwords; a missing file |
 | `guide` | The User Guide: opening it, chapters written from the live configuration, search, links, what each role sees |
 | `data-file` | Saving to a data file, picking up a colleague's changes, conflicts, reconnecting after a restart (the browser's file access is replaced by an in-memory file, because headless Edge can't click file dialogs) |
 | `extensions` | Status flags, field types, custom conditions, script steps, email, webhooks, linked items |

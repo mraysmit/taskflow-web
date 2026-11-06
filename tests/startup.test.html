@@ -1,0 +1,97 @@
+<!-- inject: early -->
+<!-- Start-up: nothing built in. A fresh browser starts empty and the sign-in screen offers the default workspace (default-workspace.js) with one click. Phase 2 hides the file to check what happens when it is missing. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+const phase = sessionStorage.getItem('phase') || '1';
+if (phase === '1') { try { localStorage.clear(); } catch (e) {} }
+// Phase 2: behave as if default-workspace.js were not next to index.html.
+if (phase === '2') Object.defineProperty(window, '__taskhubDefault', { configurable: true, get: () => undefined, set: () => {} });
+window.addEventListener('load', async () => {
+  const out = JSON.parse(sessionStorage.getItem('out') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2') || 'null');
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const day = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  try {
+    await wait(200);
+    if (phase === '1') {
+      const s0 = store();
+      ok('A fresh browser starts with an empty workspace', s0 && s0.items.length === 0 && s0.config.people.length === 0 && s0.config.teams.length === 0 && s0.config.roles.length === 0 && s0.config.statuses.length === 0 && s0.config.actions.length === 0);
+      ok('The default workspace file is read but not applied', !!window.__taskhubDefault && window.__taskhubDefault.config.people.length === 7);
+      ok('Sign-in fields are replaced by the welcome card', q('#loginFields').hidden && !q('#loginStart').hidden && q('#loginStart').textContent.includes('No workspace is loaded yet'));
+      ok('One button loads the default workspace', !!q('#loginStart [data-load-default]') && q('#loginTag').textContent.includes('started'));
+      ok('No demo accounts are listed before loading', q('#loginHint').textContent === '');
+      ok('The shared data file is still offered', !q('#loginFile').hidden && !!q('#loginFile [data-file-cmd="open"]'));
+
+      q('[data-load-default]').click(); await wait(300);
+      const s = store(), c = s.config;
+      ok('One click loads it: people, teams, roles, columns and buttons', c.people.length === 7 && c.teams.length === 5 && c.roles.length === 5 && c.statuses.length === 5 && c.actions.length === 15 && c.filters.length === 24);
+      ok('…and the sample work', s.items.length === 4 && s.posts.length === 2 && s.files.length === 2 && s.notes.length === 1);
+      ok('Sign-in appears, with the demo accounts listed', !q('#loginFields').hidden && q('#loginStart').hidden && q('#loginHint').textContent.includes('achan'));
+      ok('Passwords from the file are stored only as hashes', c.people.every(p => !('password' in p) && p.passwordHash && p.salt));
+      const by = ref => s.items.find(i => i.ref === ref);
+      ok('Due dates count from today', by('OMD-001').due === day(0) && by('OMD-002').due === day(2) && by('OMD-004').due === day(-1));
+      ok('Times count back from now', s.posts.every(p => p.time < Date.now() && p.time > Date.now() - 3 * 3600e3) && by('OMD-002').history.length === 2);
+      ok('Records stay linked by id', s.posts.some(p => p.itemId === by('OMD-002').id) && s.files.every(f => s.items.some(i => i.id === f.itemId)));
+      ok('The blocked sample remembers where it came from', by('OMD-003').statusId === 'blocked' && by('OMD-003').prevStatusId === 'progress');
+
+      q('#loginUser').value = 'achan'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300);
+      ok('Signing in works with the loaded accounts', q('#login').hidden && q('#sideFoot').textContent.includes('A. Chan'));
+      ok('The board shows the sample work', qa('#board .card').length >= 1 && qa('#board .col').length === 5);
+      q('#btnClear').click(); await wait(20); if (q('#dlg').open) q('#dlgOk').click(); await wait(50);
+      ok('Clear empties the work but keeps the people', store().items.length === 0 && store().config.people.length === 7);
+      q('#btnSample').click(); await wait(20); if (q('#dlg').open) q('#dlgOk').click(); await wait(50);
+      ok('Load sample brings the sample work back from the file', store().items.length === 4);
+
+      // Starting again, from Import / export while signed in
+      q('#btnNew').click(); q('#f_title').value = 'My own item'; q('#f_owner').value = 'A. Chan'; q('#form').requestSubmit(); await wait(50);
+      ok('Own work added', store().items.some(i => i.title === 'My own item'));
+      q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+      const again = q('#view-config [data-load-default]');
+      ok('Import / export offers the default workspace', !!again && again.textContent.includes('Load default workspace'));
+      const downloads = []; const realClick = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = function () { if (this.download) downloads.push(this.download); else realClick.call(this); };
+      again.click(); await wait(20);
+      ok('It asks first and offers a backup', q('#dlg').open && q('#dlgTitle').textContent.includes('default workspace') && q('#ldBackup').checked);
+      q('#dlg button[value="cancel"]').click(); await wait(20);
+      ok('Cancel keeps your workspace', store().items.some(i => i.title === 'My own item') && !!store().session);
+      again.click(); await wait(20); q('#dlgOk').click(); await wait(300);
+      ok('Confirming downloads a backup, loads the default and signs everyone out', downloads.includes('task-hub-backup.json') && store().items.length === 4 && !store().items.some(i => i.title === 'My own item') && !store().session && !q('#login').hidden);
+      // …and from the sign-in screen
+      const link = q('#loginForm .login-default');
+      ok('The sign-in screen always offers to start again', !!link && !link.hidden && !q('#loginFields').hidden);
+      q('#loginUser').value = 'blee'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300);
+      q('[data-logout]').click(); await wait(20);
+      link.click(); await wait(20);
+      q('#ldBackup').checked = false; q('#dlgOk').click(); await wait(300);
+      ok('Without the backup tick, nothing is downloaded', downloads.length === 1 && store().items.length === 4);
+      HTMLAnchorElement.prototype.click = realClick;
+
+      sessionStorage.setItem('out', JSON.stringify(out)); sessionStorage.setItem('phase', '2');
+      localStorage.clear();
+      location.reload();
+      return;
+    }
+    // Phase 2: default-workspace.js missing
+    ok('Without the file, the app still starts empty', store() && store().config.people.length === 0 && q('#loginFields').hidden);
+    ok('…and says the file wasn’t found', q('#loginStart').textContent.includes('default-workspace.js') && q('#loginStart').textContent.includes('found'));
+    q('[data-load-default]').click(); await wait(300);
+    ok('Clicking load explains instead of loading nothing', store().config.people.length === 0 && qa('.toast').some(t => t.textContent.includes('default-workspace.js')));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  finish();
+});
+</script>

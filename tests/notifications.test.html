@@ -25,7 +25,7 @@ window.addEventListener('load', async () => {
   const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
   const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
   try {
-    await wait(200);
+    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
     await login('achan');
     const n0 = store().config.notifications;
     ok('Defaults: top, right, slide, bell on for alerts', n0.position === 'top' && n0.align === 'right' && n0.animation === 'slide' && n0.sound === true && n0.soundFor === 'alerts' && n0.tone === 'bell' && n0.volume === 50);

@@ -22,7 +22,7 @@ window.addEventListener('load', async () => {
   const unread = pid => store().alerts.filter(a => a.toId === pid && !a.read);
   const toasts = () => qa('.toast').map(t => t.textContent).join(' | ');
   try {
-    await wait(200);
+    await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
     await login('achan');
     const c0 = store().config;
     ok('Defaults: Verification column and two routes', c0.statuses.map(s => s.id).join() === 'assigned,progress,blocked,verify,completed' && c0.approvals.holdStatusId === 'verify' && c0.approvals.chains.map(c => c.name).join('|') === 'Two-group sign-off|Controls check');
