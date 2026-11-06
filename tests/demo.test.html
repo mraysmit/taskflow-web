@@ -25,9 +25,9 @@ window.addEventListener('load', async () => {
       else if (l.startsWith('✗')) out.push(`FAIL ${scenario} › ${l.slice(1).trim()}`);
       else if (!/checks passed/.test(l)) scenario = l.replace(/\s*— stopped$/, '');
     });
-    const st = JSON.parse(localStorage.getItem('designhub.v2'));
+    const st = JSON.parse(localStorage.getItem('taskhub.v2'));
     ok('Your own data restored afterwards', st.items.some(i => i.title === 'MY REAL ITEM') && st.session && st.session.userId === 'p1' && !st.config.statuses.some(s => s.name === 'Review'));
-    ok('Demo backup cleared', !localStorage.getItem('designhub.demo-backup'));
+    ok('Demo backup cleared', !localStorage.getItem('taskhub.demo-backup'));
     ok('no JS errors', !(window.__errs || []).length);
   } catch (e) { out.push('ERROR ' + e.message + ' ' + e.stack); }
   if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));

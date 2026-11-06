@@ -22,7 +22,7 @@ The script prints one line per suite and a total. It exits with code 0 when ever
 
 Each `*.test.html` file holds a `<script>` that drives the real app: it signs in, clicks buttons, fills in forms and records `PASS` / `FAIL` lines. The runner copies `index.html`, injects the suite (before the app for files marked `<!-- inject: early -->`, which seed old saved data), opens the copy in headless Edge and reads the results back from Edge's log.
 
-Everything the runner creates goes to `%TEMP%\designhub-tests`: the test pages, a separate browser profile per suite, and a screenshot of each suite's results (`<suite>.png`). Your project folder and your own browser data are not touched. With `-Keep`, you can open a test page in Edge to watch the suite run.
+Everything the runner creates goes to `%TEMP%\taskhub-tests`: the test pages, a separate browser profile per suite, and a screenshot of each suite's results (`<suite>.png`). Your project folder and your own browser data are not touched. With `-Keep`, you can open a test page in Edge to watch the suite run.
 
 | Suite | Covers |
 |---|---|

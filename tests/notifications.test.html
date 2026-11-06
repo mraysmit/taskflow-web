@@ -18,7 +18,7 @@ window.addEventListener('load', async () => {
   const setv = (el, v, ev = 'input') => { el.value = v; el.dispatchEvent(new Event(ev, { bubbles: true })); if (ev === 'input') el.dispatchEvent(new Event('change', { bubbles: true })); };
   const B = path => q(`#view-config [data-bind="${path}"]`);
   const nav = s => q(`[data-cfg-nav="${s}"]`).click();
-  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
   const box = () => q('#toasts');
   const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
   const logout = async () => { q('[data-logout]').click(); await tick(); };

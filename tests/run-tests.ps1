@@ -1,9 +1,9 @@
 <#
-  Runs the Design Hub test suites in headless Microsoft Edge. Nothing else to install.
+  Runs the Task Hub test suites in headless Microsoft Edge. Nothing else to install.
 
   Each *.test.html file is a script that is injected into a copy of ../index.html (before the app for
   files marked "inject: early", which seed old saved data; otherwise after it). Copies, browser
-  profiles and a screenshot of each suite's results go to %TEMP%\designhub-tests, so the project
+  profiles and a screenshot of each suite's results go to %TEMP%\taskhub-tests, so the project
   folder and your own browser data are untouched.
 
   Usage (from the project folder):
@@ -18,7 +18,7 @@ $Suites = @($Suites | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $here = $PSScriptRoot
 $utf8 = New-Object System.Text.UTF8Encoding $false
 $app = [IO.File]::ReadAllText((Join-Path $here '..\index.html'), $utf8)
-$work = Join-Path $env:TEMP 'designhub-tests'
+$work = Join-Path $env:TEMP 'taskhub-tests'
 New-Item -ItemType Directory -Force $work | Out-Null
 
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") |

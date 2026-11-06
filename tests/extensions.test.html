@@ -16,7 +16,7 @@ window.addEventListener('load', async () => {
   const nav = s => q(`[data-cfg-nav="${s}"]`).click();
   const addRow = list => q(`#view-config [data-op="add"][data-list="${list}"]`).click();
   const lastIdx = sel => qa(sel).length - 1;
-  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
   const errsShown = () => (q('.cfg-errors') ? q('.cfg-errors').textContent : '');
   const save = async name => { q('[data-cfg-cmd="save"]').click(); await wait(25); if (q('.cfg-errors')) out.push(`FAIL save (${name}) blocked: ${errsShown()}`); };
   const openCfg = async s => { if (q('#view-config').hidden) q('#sideConfig').click(); nav(s); await tick(); };

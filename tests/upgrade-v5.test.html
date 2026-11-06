@@ -9,11 +9,12 @@ try {
     { id: 'r_member', name: 'Team member', sees: 'own', viewAs: 'none' }, { id: 'r_sysadmin', name: 'System administrator', sees: 'all', viewAs: 'all', actAs: true, configure: true },
     { id: 'r_reviewer', name: 'Controls reviewers', sees: 'own', viewAs: 'none', queue: true },
   ];
+  localStorage.setItem('designhub.demo-size', JSON.stringify({ w: 400, h: 500 }));
   localStorage.setItem('designhub.v2', JSON.stringify({
     version: 3, viewerId: 'p1', page: 'board', session: { userId: 'p1', time: now },
     config: {
       version: 5,
-      general: { appName: 'Old Hub', initialStatusId: 'assigned' },
+      general: { appName: 'Design Hub', initialStatusId: 'assigned' },
       teams: [{ id: 't1', name: 'Ops' }],
       people: [
         { id: 'p1', name: 'A. Chan', teamId: 't1', username: 'achan', password: 'demo', roleIds: ['r_member', 'r_sysadmin'] },
@@ -42,18 +43,20 @@ window.addEventListener('load', async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   try {
     await wait(300);
-    const s = JSON.parse(localStorage.getItem('designhub.v2'));
+    const s = JSON.parse(localStorage.getItem('taskhub.v2'));
     const c = s.config;
-    ok('saved as config v6', c.version === 6);
+    ok('saved as config v7', c.version === 7);
     ok('Verification column added before the closing one', c.statuses.map(x => x.id).join() === 'assigned,progress,verify,done');
     ok('Routes kept only for groups that exist', c.approvals.chains.map(x => x.name).join('|') === 'Controls check' && c.approvals.holdStatusId === 'verify');
     ok('Approve / Reject / Withdraw buttons added first', c.actions.slice(0, 3).map(a => a.id).join() === 'a_approve,a_reject,a_recall' && c.actions[3].id === 'a_done');
     ok('Verification filters added', ['f_verifyMine', 'f_verifyPending', 'f_verifyByMe', 'f_high'].every(id => c.filters.some(f => f.id === id)));
     ok('Default “no pending” filter gains the verification condition', c.filters.find(f => f.id === 'f_noOffer').conds.some(x => x.subject === 'approval'));
     ok('Items kept', s.items.length === 1 && s.items[0].title === 'Old item');
+    ok('Data saved under the old Design Hub names moves to the new ones', !Object.keys(localStorage).some(k => k.startsWith('designhub.')) && JSON.parse(localStorage.getItem('taskhub.demo-size')).w === 400);
+    ok('The old default name becomes Task Hub', c.general.appName === 'Task Hub' && q('#brandTitle').textContent === 'Task Hub' && document.title.startsWith('Task Hub'));
     const b = qa('#board .card [data-action]').find(x => x.textContent === 'Finish');
     b.click(); await wait(50);
-    const s2 = JSON.parse(localStorage.getItem('designhub.v2'));
+    const s2 = JSON.parse(localStorage.getItem('taskhub.v2'));
     ok('Their own “Finish” button now goes through verification', s2.items[0].statusId === 'verify' && s2.items[0].approvals[0].stages[0].roleId === 'r_reviewer');
     ok('Reviewer alerted', s2.alerts.some(a => a.toId === 'p3' && a.kind === 'approval'));
     ok('no JS errors', !(window.__errs || []).length && !window.__seedErr);

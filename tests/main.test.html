@@ -19,7 +19,7 @@ window.addEventListener('load', async () => {
   const addRow = list => q(`#view-config [data-op="add"][data-list="${list}"]`).click();
   const saveCfg = async () => { q('[data-cfg-cmd="save"]').click(); await wait(20); };
   const tick = () => wait(10);
-  const store = () => JSON.parse(localStorage.getItem('designhub.v2'));
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
   const board = async () => { q('#tabs [data-tab="board"]').click(); await tick(); };
   const downloads = []; HTMLAnchorElement.prototype.click = function () { downloads.push(this.download); };
   const sideCount = label => { const b = qa('#sideNav .side-item').find(x => x.firstElementChild.textContent === label); return b ? (b.querySelector('.n') || {}).textContent : null; };
@@ -106,7 +106,7 @@ window.addEventListener('load', async () => {
     tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
     ok('Drag to Completed goes to Verification', !!q('.col[data-status="verify"] #' + card('OMD-002').id) && !!card('OMD-002').querySelector('.verify-banner'));
     qa('#sideNav .side-item').find(b => b.textContent.includes('Assigned to me')).click(); await tick();
-    const mineOpen = JSON.parse(localStorage.getItem('designhub.v2')).items.filter(i => i.ownerId === 'p1' && i.statusId !== 'completed').length;
+    const mineOpen = JSON.parse(localStorage.getItem('taskhub.v2')).items.filter(i => i.ownerId === 'p1' && i.statusId !== 'completed').length;
     ok('Board view filters and the title names it', qa('#board .card').length === mineOpen && qa('#board .card').every(c => fieldVal(c.querySelector('.card-ref').textContent, 'Current owner') === 'A. Chan') && q('#boardTitle').textContent.includes('Assigned to me') && q('#fFocus').value === 'bv_mine');
     setv(q('#fFocus'), 'bv_all', 'change'); ok('Focus dropdown switches view and sidebar follows', qa('#sideNav .side-item.active')[0].textContent.includes('All work'));
     qa('.stat')[1].click(); ok('Stat click selects matching view', q('#fFocus').value === 'bv_mine');
@@ -300,14 +300,14 @@ window.addEventListener('load', async () => {
     q('[data-cfg-cmd="discard"]').click(); await tick();
     // Data
     nav('data'); q('[data-cfg-cmd="export-config"]').click(); q('[data-cfg-cmd="export-all"]').click();
-    ok('Exports', downloads.includes('design-hub-config.json') && downloads.includes('design-hub-backup.json'));
+    ok('Exports', downloads.includes('task-hub-config.json') && downloads.includes('task-hub-backup.json'));
     q('[data-cfg-cmd="defaults"]').click(); await tick(); ok('Defaults loaded into draft', !q('#cfgBar').classList.contains('clean'));
     q('[data-cfg-cmd="discard"]').click(); await tick();
     for (const t of ['posts', 'files', 'notes', 'board']) { q(`#tabs [data-tab="${t}"]`).click(); await tick(); ok('tab ' + t, !q('#view-' + t).hidden); }
     q('#sideConfig').click(); nav('general'); B('general.modules.files').click(); await saveCfg();
     ok('Module toggle hides tab', !q('#tabs [data-tab="files"]'));
     const saved = store();
-    ok('Persisted config v6 with ids', saved.config.version === 6 && saved.items.every(i => 'ownerId' in i && 'statusId' in i));
+    ok('Persisted config v7 with ids', saved.config.version === 7 && saved.items.every(i => 'ownerId' in i && 'statusId' in i));
     ok('no JS errors', !(window.__errs || []).length);
   } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
   if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));

@@ -28,9 +28,9 @@ window.addEventListener('load', () => setTimeout(() => {
     ok('owner + next owner names', c.textContent.includes('C. Wong') && c.textContent.includes('Z. Person'));
     ok('viewer migrated', q('#viewerName').textContent === 'C. Wong');
     ok('alert migrated', q('#inboxUnread').textContent === '1 unread');
-    ok('unknown person added to config', JSON.parse(localStorage.getItem('designhub.v2')).config.people.some(p => p.name === 'Z. Person' && p.username === 'zperson'));
-    const s = JSON.parse(localStorage.getItem('designhub.v2'));
-    ok('saved in current format', s && s.version === 3 && s.config.version === 6 && s.items[0].ownerId === 'p3');
+    ok('unknown person added to config', JSON.parse(localStorage.getItem('taskhub.v2')).config.people.some(p => p.name === 'Z. Person' && p.username === 'zperson'));
+    const s = JSON.parse(localStorage.getItem('taskhub.v2'));
+    ok('saved in current format', s && s.version === 3 && s.config.version === 7 && s.items[0].ownerId === 'p3');
   } catch (e) { out.push('ERROR ' + e.message); }
   localStorage.clear();
   const pre = document.createElement('pre'); pre.textContent = out.join('\n');

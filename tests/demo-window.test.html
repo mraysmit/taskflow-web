@@ -18,7 +18,7 @@ window.addEventListener('load', async () => {
   const key = (k, shift) => q('.demo-grip.tr').dispatchEvent(new KeyboardEvent('keydown', { key: k, shiftKey: !!shift, bubbles: true }));
   try {
     await wait(200);
-    localStorage.removeItem('designhub.demo-size');
+    localStorage.removeItem('taskhub.demo-size');
     q('#loginUser').value = 'achan'; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300);
     q('[data-open-demo]').click(); await wait(50);
     const b0 = box();
@@ -48,7 +48,7 @@ window.addEventListener('load', async () => {
     key('ArrowRight'); key('ArrowUp', true);
     b = box();
     ok('Arrow keys resize (Shift for bigger steps)', Math.round(b.width) === 420 && Math.round(b.height) === 560);
-    const saved = JSON.parse(localStorage.getItem('designhub.demo-size'));
+    const saved = JSON.parse(localStorage.getItem('taskhub.demo-size'));
     ok('The size is remembered', Math.round(saved.w) === 420 && Math.round(saved.h) === 560);
 
     q('[data-demo="min"]').click(); await wait(20);
@@ -62,7 +62,7 @@ window.addEventListener('load', async () => {
     ok('Reopening keeps the chosen size', Math.round(box().width) === 420 && Math.round(box().height) === 560);
 
     q('.demo-grip.tr').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await wait(20);
-    ok('Double-click resets to the default size', Math.round(box().width) === 370 && !localStorage.getItem('designhub.demo-size'));
+    ok('Double-click resets to the default size', Math.round(box().width) === 370 && !localStorage.getItem('taskhub.demo-size'));
     await drag('.demo-grip.r', 80, 0);
     key('Enter');
     ok('Enter on the corner also resets', Math.round(box().width) === 370);

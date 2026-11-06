@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Design Hub · Operations Handoff Board</title>
+<title>Task Hub · Operations Handoff Board</title>
 <style>
   :root {
     --bg: #e8eaee;
@@ -620,7 +620,7 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-title" id="brandTitle">Design Hub</div>
+      <div class="brand-title" id="brandTitle">Task Hub</div>
       <div class="brand-sub" id="brandSub"></div>
     </div>
     <div class="side-label">Board views</div>
@@ -787,7 +787,7 @@
 <div class="login" id="login" hidden>
   <form class="login-card" id="loginForm" novalidate>
     <div>
-      <div class="login-brand" id="loginBrand">Design Hub</div>
+      <div class="login-brand" id="loginBrand">Task Hub</div>
       <div class="muted" id="loginTag">Sign in to continue.</div>
     </div>
     <label><span>Username</span><input class="input" id="loginUser" autocomplete="username" autocapitalize="off" spellcheck="false"></label>
@@ -818,10 +818,18 @@
 (() => {
   'use strict';
 
-  const STORE_KEY = 'designhub.v2';
-  const LEGACY_KEY = 'designhub.handoff.v1';
+  const STORE_KEY = 'taskhub.v2';
+  const LEGACY_KEY = 'taskhub.handoff.v1';
+  // The app used to be called Design Hub: move anything this browser saved under the old names.
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('designhub.')).forEach(k => {
+      const nk = 'taskhub.' + k.slice('designhub.'.length);
+      if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+      localStorage.removeItem(k);
+    });
+  } catch (e) { /* storage unavailable */ }
   const MAX_FILE_BYTES = 750 * 1024;
-  const CONFIG_VERSION = 6;
+  const CONFIG_VERSION = 7;
   const SCOPES = [{ v: 'own', l: 'Their own work' }, { v: 'team', l: 'Their team’s work' }, { v: 'all', l: 'Everything' }];
   const VIEW_AS = [{ v: 'none', l: 'Nobody' }, { v: 'team', l: 'Their team' }, { v: 'all', l: 'Anyone' }];
   const RANK = { own: 0, none: 0, team: 1, all: 2 };
@@ -1063,7 +1071,7 @@
   const DEFAULT_CONFIG = {
     version: CONFIG_VERSION,
     general: {
-      appName: 'Design Hub',
+      appName: 'Task Hub',
       tagline: 'Handoff board with unread alerts for the next owner.',
       boardTitle: 'Operations Handoff Board',
       boardIntro: 'Click **Complete & handoff** on any item to transfer ownership. The next owner will receive an unread alert in the Action Inbox and, when viewing as that person, a pop-up notification.',
@@ -1857,6 +1865,7 @@
 
   function normalizeConfig(input) {
     let c = input && typeof input === 'object' ? clone(input) : {};
+    const beforeRename = !(c.version >= 7);
     const legacy = c.version === 2 || (Array.isArray(c.statuses) && c.statuses.some(s => s && has(s, 'category'))) || Array.isArray(c.focus) || (Array.isArray(c.actions) && c.actions.some(a => a && has(a, 'kind')));
     if (legacy) c = upgradeV2(c);
     if (c.version === 3 || (c.focus && typeof c.focus === 'object') || (Array.isArray(c.views) && c.views.some(v => v && v.kind))) c = upgradeV3(c);
@@ -1867,6 +1876,7 @@
     const str = v => String(v ?? '').trim();
     const out = { version: CONFIG_VERSION };
     out.general = Object.assign(d.general, c.general || {});
+    if (beforeRename && out.general.appName === 'Design Hub') out.general.appName = 'Task Hub';
     out.general.modules = Object.assign(clone(DEFAULT_CONFIG.general.modules), (c.general && c.general.modules) || {});
     out.general.allowDrag = out.general.allowDrag !== false;
     out.teams = list('teams', t => ({ id: str(t.id) || uid('t'), name: str(t.name), color: t.color || '#343a8a', bg: t.bg || tint(t.color || '#343a8a', 0.86), leadId: t.leadId || '', nextTeamId: t.nextTeamId || '' }));
@@ -2064,8 +2074,8 @@
   // this browser's copy stays as a cache. Who is signed in, the viewer and filters belong to this browser only,
   // so they are never written to the file. Each save first checks the file hasn't been changed by someone else.
   const LOCAL_ONLY = ['session', 'viewerId', 'filters', 'viewId', 'search', 'page'];
-  const FILE_DIRTY_KEY = 'designhub.file-dirty';
-  const JSON_TYPES = [{ description: 'Design Hub data', accept: { 'application/json': ['.json'] } }];
+  const FILE_DIRTY_KEY = 'taskhub.file-dirty';
+  const JSON_TYPES = [{ description: 'Task Hub data', accept: { 'application/json': ['.json'] } }];
   const fileApi = () => typeof window.showOpenFilePicker === 'function' && typeof window.showSaveFilePicker === 'function';
   // status: off · reconnect (needs permission) · ok · saving · changed (newer file) · conflict · error
   const dataFile = { handle: null, name: '', status: 'off', lastText: '', lastModified: 0, savedAt: 0, error: '', writing: false, again: false, timer: 0, poll: 0 };
@@ -2073,12 +2083,12 @@
   function workspaceText() {
     const data = clone(S);
     LOCAL_ONLY.forEach(k => { delete data[k]; });
-    return JSON.stringify(Object.assign({ app: 'design-hub', kind: 'workspace' }, data), null, 2);
+    return JSON.stringify(Object.assign({ app: 'task-hub', kind: 'workspace' }, data), null, 2);
   }
   // The file handle is remembered in IndexedDB, so the same file can be reopened next time.
-  function idbHandles(mode, fn) {
+  function idbHandles(mode, fn, name = 'taskhub') {
     return new Promise((resolve, reject) => {
-      const open = indexedDB.open('designhub', 1);
+      const open = indexedDB.open(name, 1);
       open.onupgradeneeded = () => open.result.createObjectStore('handles');
       open.onerror = () => reject(open.error);
       open.onsuccess = () => {
@@ -2091,9 +2101,17 @@
     });
   }
   const rememberHandle = h => idbHandles('readwrite', st => (h ? st.put(h, 'data') : st.delete('data'))).catch(() => {});
-  const recallHandle = () => idbHandles('readonly', st => st.get('data')).catch(() => null);
+  async function recallHandle() {
+    const h = await idbHandles('readonly', st => st.get('data')).catch(() => null);
+    if (h) return h;
+    // A file remembered before the rename to Task Hub: move it across and drop the old database.
+    const old = await idbHandles('readonly', st => st.get('data'), 'designhub').catch(() => null);
+    if (old) await rememberHandle(old);
+    try { if (indexedDB.deleteDatabase) indexedDB.deleteDatabase('designhub'); } catch (e) { /* ignore */ }
+    return old || null;
+  }
   // The file's modified time when this browser last read or wrote it, so a restart can tell whether it changed since.
-  const FILE_SYNC_KEY = 'designhub.file-sync';
+  const FILE_SYNC_KEY = 'taskhub.file-sync';
   const saveSync = () => { try { localStorage.setItem(FILE_SYNC_KEY, JSON.stringify({ lm: dataFile.lastModified })); } catch (e) { /* ignore */ } };
   const loadSync = () => { try { return JSON.parse(localStorage.getItem(FILE_SYNC_KEY) || '{}').lm || 0; } catch (e) { return 0; } };
   const setDirtyOffline = on => { try { if (on) localStorage.setItem(FILE_DIRTY_KEY, '1'); else localStorage.removeItem(FILE_DIRTY_KEY); } catch (e) { /* ignore */ } };
@@ -2209,7 +2227,7 @@
     if (!text.trim()) return { empty: true, lastModified: f.lastModified };
     let data;
     try { data = JSON.parse(text); } catch (e) { throw new Error(`${h.name} is not valid JSON.`); }
-    if (!isWorkspace(data)) throw new Error(`${h.name} is not a Design Hub data file.`);
+    if (!isWorkspace(data)) throw new Error(`${h.name} is not a Task Hub data file.`);
     return { data, text, lastModified: f.lastModified };
   }
 
@@ -2237,7 +2255,7 @@
   async function newDataFile() {
     if (!fileApi()) { toast('This browser can’t save to a file. Use Microsoft Edge or Google Chrome, or use Download backup.'); return; }
     let h;
-    try { h = await window.showSaveFilePicker({ suggestedName: 'design-hub-data.json', types: JSON_TYPES }); } catch (e) { return; }
+    try { h = await window.showSaveFilePicker({ suggestedName: 'task-hub-data.json', types: JSON_TYPES }); } catch (e) { return; }
     connectFile(h, '', 0);
     await writeFile(true);
     if (dataFile.status === 'ok') toast(`Saved this workspace to ${h.name}. Changes are now saved there automatically.`);
@@ -2294,7 +2312,7 @@
   function downloadBackup() {
     const data = clone(S);
     delete data.page;
-    download('design-hub-backup.json', Object.assign({ app: 'design-hub', kind: 'backup' }, data));
+    download('task-hub-backup.json', Object.assign({ app: 'task-hub', kind: 'backup' }, data));
     toast('Backup downloaded.');
   }
 
@@ -3745,7 +3763,7 @@
   }
   // ---------- panel accordion ----------
   // Which sections are closed is a per-browser convenience, kept apart from workspace data.
-  const PANEL_KEY = 'designhub.panel';
+  const PANEL_KEY = 'taskhub.panel';
   let panelClosed = {};
   try { panelClosed = JSON.parse(localStorage.getItem(PANEL_KEY) || '{}') || {}; } catch (e) { panelClosed = {}; }
   function applyPanelState() {
@@ -5033,7 +5051,7 @@ ctx.person(name)      ctx.team(name)</pre>
         cfgDraft = clone(S.config); cfgRemap = emptyRemap(); cfgErrors = [];
         renderConfig(); toast('Changes discarded.'); break;
       case 'export-config':
-        download('design-hub-config.json', { app: 'design-hub', kind: 'config', version: CONFIG_VERSION, config: S.config });
+        download('task-hub-config.json', { app: 'task-hub', kind: 'config', version: CONFIG_VERSION, config: S.config });
         toast(cfgDirty() ? 'Exported the saved configuration (unsaved changes not included).' : 'Configuration exported.'); break;
       case 'import-config': importMode = 'config'; $('#importInput').click(); break;
       case 'preview-pop': {
@@ -5440,7 +5458,7 @@ ctx.person(name)      ctx.team(name)</pre>
   // Drives the real UI in plain JavaScript: a visible pointer moves to each control, clicks or types,
   // and checks are recorded as it goes. Your own data is set aside first and restored afterwards.
   // =====================================================================
-  const DEMO_BACKUP_KEY = 'designhub.demo-backup';
+  const DEMO_BACKUP_KEY = 'taskhub.demo-backup';
   const DEMO_STOP = new Error('Demo stopped');
   const demo = { running: false, paused: false, stop: false, speed: 1, results: [], saved: null, savedPanel: null };
   let demoPanel = null;
@@ -5915,7 +5933,7 @@ ctx.person(name)      ctx.team(name)</pre>
   }
 
   // The demo window's size is a per-browser convenience, remembered apart from workspace data.
-  const DEMO_SIZE_KEY = 'designhub.demo-size';
+  const DEMO_SIZE_KEY = 'taskhub.demo-size';
   function setDemoSize(size) {
     if (!size) {
       demoPanel.classList.remove('sized');

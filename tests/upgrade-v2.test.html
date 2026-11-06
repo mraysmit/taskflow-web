@@ -5,7 +5,7 @@
 try {
   localStorage.clear();
   const now = Date.now();
-  localStorage.setItem('designhub.v2', JSON.stringify({
+  localStorage.setItem('taskhub.v2', JSON.stringify({
     version: 2, viewerId: 'p1', page: 'board', filters: { teamId: 'all', priorityId: 'all', focus: 'mine' }, viewFilter: {}, viewId: '', search: '',
     removed: { people: {}, teams: {} },
     config: {
@@ -57,8 +57,8 @@ window.addEventListener('load', () => setTimeout(() => {
     q('#dlg button[value="cancel"]').click();
     [...card('OMD-001').querySelectorAll('[data-action]')].find(b => b.textContent === 'Pass on').click();
     ok('handoff converted', card('OMD-001').textContent.includes('B. Lee'));
-    const s = JSON.parse(localStorage.getItem('designhub.v2'));
-    ok('saved as config v6', s.config.version === 6 && !('workflow' in s.config) && s.config.statuses.find(x => x.id === 'blocked').hold === true && s.config.statuses.find(x => x.id === 'completed').closed === true);
+    const s = JSON.parse(localStorage.getItem('taskhub.v2'));
+    ok('saved as config v7', s.config.version === 7 && !('workflow' in s.config) && s.config.statuses.find(x => x.id === 'blocked').hold === true && s.config.statuses.find(x => x.id === 'completed').closed === true);
     ok('dueSoon days carried over', s.config.filters.find(f => f.id === 'f_dueSoon').conds[0].value === 4);
   } catch (e) { out.push('ERROR ' + e.message + ' ' + e.stack); }
   localStorage.clear();

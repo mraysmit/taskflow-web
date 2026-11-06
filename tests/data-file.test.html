@@ -89,9 +89,9 @@ window.addEventListener('load', async () => {
       ok('Import / export explains the data file', q('#view-config').textContent.includes('Not using a data file') && !!q('[data-file-cmd="new"]'));
       q('[data-file-cmd="new"]').click(); await wait(200);
       const d1 = D.data();
-      ok('“Save to a new data file” writes the whole workspace', D.get().name === 'design-hub-data.json' && d1.kind === 'workspace' && d1.items.length === 4 && d1.config.people.length === 7);
+      ok('“Save to a new data file” writes the whole workspace', D.get().name === 'task-hub-data.json' && d1.kind === 'workspace' && d1.items.length === 4 && d1.config.people.length === 7);
       ok('Browser-only things are not in the file', !('session' in d1) && !('viewerId' in d1) && !('filters' in d1));
-      ok('Sidebar shows the file and that it’s saved', !side().hidden && side().textContent.includes('design-hub-data.json') && side().textContent.includes('Saved'));
+      ok('Sidebar shows the file and that it’s saved', !side().hidden && side().textContent.includes('task-hub-data.json') && side().textContent.includes('Saved'));
 
       q('#tabs [data-tab="board"]').click(); await wait(20);
       q('#btnNew').click(); setv(q('#f_title'), 'Saved to the file'); q('#form').requestSubmit(); await wait(700);
@@ -132,7 +132,7 @@ window.addEventListener('load', async () => {
       q('[data-demo="close"]').click();
 
       q('[data-logout]').click(); await wait(700);
-      ok('Sign-in screen names the data file', q('#loginFile').textContent.includes('design-hub-data.json'));
+      ok('Sign-in screen names the data file', q('#loginFile').textContent.includes('task-hub-data.json'));
       // While this browser is closed, a colleague adds work. Then the browser restarts without permission.
       colleague(d => d.items.push(Object.assign({}, d.items[0], { id: 'i_away', ref: 'OMD-091', title: 'Added while you were away' })));
       sessionStorage.setItem('perm', 'prompt');
@@ -143,7 +143,7 @@ window.addEventListener('load', async () => {
     }
 
     // ---- Phase 2: after a restart ----
-    ok('After a restart the sign-in screen offers Reconnect', !!q('#loginFile [data-file-cmd="reconnect"]') && q('#loginFile').textContent.includes('design-hub-data.json'));
+    ok('After a restart the sign-in screen offers Reconnect', !!q('#loginFile [data-file-cmd="reconnect"]') && q('#loginFile').textContent.includes('task-hub-data.json'));
     q('#loginFile [data-file-cmd="reconnect"]').click(); await wait(300);
     ok('Reconnect asks permission and loads the latest file', window.__asked === 1 && q('#loginFile').textContent.includes('Data file:'));
     await login('achan');
@@ -199,7 +199,7 @@ window.addEventListener('load', async () => {
 
     D.write('{ not json');
     await wait(6000);
-    const kept = JSON.parse(localStorage.getItem('designhub.v2'));
+    const kept = JSON.parse(localStorage.getItem('taskhub.v2'));
     ok('A half-synced (broken) file is ignored, not loaded', kept.items.length > 0 && !side().classList.contains('bad') && !side().classList.contains('warn'));
     q('[data-file-cmd="reload"]').click(); await wait(200);
     ok('Reloading a broken file reports an error instead of wiping the board', side().classList.contains('bad') && q('#view-config').textContent.includes('not valid JSON'));
