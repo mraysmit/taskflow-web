@@ -1,0 +1,81 @@
+<!-- Layout: Load sample at the bottom of the sidebar, the version beside the title, and resizing both side columns by drag and keyboard. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const sideW = () => Math.round(q('.sidebar').getBoundingClientRect().width);
+  const panelW = () => Math.round(q('.panel').getBoundingClientRect().width);
+  const drag = async (sel, dx) => {
+    const g = q(sel), r = g.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + 200;
+    const ev = (type, cx) => g.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, button: 0, buttons: 1, clientX: cx, clientY: y, isPrimary: true }));
+    ev('pointerdown', x); await wait(10);
+    ev('pointermove', x + dx / 2); ev('pointermove', x + dx); await wait(10);
+    ev('pointerup', x + dx); await wait(10);
+  };
+  const key = (sel, k, shift) => q(sel).dispatchEvent(new KeyboardEvent('keydown', { key: k, shiftKey: !!shift, bubbles: true }));
+  const saved = () => JSON.parse(localStorage.getItem('taskhub.layout') || '{}');
+  try {
+    await wait(200);
+    localStorage.removeItem('taskhub.layout');
+    ok('Sign-in screen shows the version beside the name', /^v\d+\.\d+\.\d+$/.test(q('#login [data-app-version]').textContent));
+    q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+
+    // Version
+    const ver = q('.brand [data-app-version]');
+    ok('The version appears next to the title', !!ver && /^v\d+\.\d+\.\d+$/.test(ver.textContent) && ver.previousElementSibling && ver.previousElementSibling.id === 'brandTitle');
+    ok('The title itself is unchanged', q('#brandTitle').textContent === 'Task Hub');
+
+    // Load sample
+    const sample = q('#btnSample');
+    ok('Load sample is no longer in the top bar', !q('.topbar #btnSample'));
+    ok('Load sample is at the bottom of the left sidebar', !!sample && sample.closest('.sidebar') && sample === q('.sidebar').lastElementChild && !sample.hidden);
+    sample.click(); await wait(20);
+    ok('It still asks before replacing the work', q('#dlg').open && q('#dlgTitle').textContent.includes('sample'));
+    q('#dlg button[value="cancel"]').click(); await wait(20);
+
+    // Resizing
+    ok('Both columns start at their default widths', sideW() === 236 && panelW() === 368);
+    ok('Each has a resize handle', !!q('.col-grip[data-grip="side"]') && !!q('.col-grip[data-grip="panel"]') && q('.col-grip[data-grip="side"]').getAttribute('role') === 'separator');
+    await drag('.col-grip[data-grip="side"]', 80);
+    ok('Dragging the sidebar edge widens it', sideW() === 316 && panelW() === 368);
+    await drag('.col-grip[data-grip="panel"]', -100);
+    ok('Dragging the panel edge left widens the Operations Panel', panelW() === 468 && sideW() === 316);
+    ok('The handles follow the edges', Math.abs(q('.col-grip[data-grip="side"]').getBoundingClientRect().left + 5 - 316) <= 1 && Math.abs(q('.col-grip[data-grip="panel"]').getBoundingClientRect().right - 5 - (q('.app').getBoundingClientRect().right - 468)) <= 1);
+    ok('The widths are remembered', saved().side === 316 && saved().panel === 468);
+    await drag('.col-grip[data-grip="side"]', -2000);
+    ok('The sidebar can’t be made too narrow', sideW() === 180);
+    await drag('.col-grip[data-grip="panel"]', -3000);
+    ok('The panel can’t squeeze the board below its minimum', panelW() <= 680 && q('.app').getBoundingClientRect().width - sideW() - panelW() >= 420);
+    key('.col-grip[data-grip="side"]', 'ArrowRight'); key('.col-grip[data-grip="side"]', 'ArrowRight', true);
+    ok('Arrow keys resize the sidebar (Shift for bigger steps)', sideW() === 180 + 16 + 48);
+    const p0 = panelW();
+    key('.col-grip[data-grip="panel"]', 'ArrowRight');
+    ok('Arrow right makes the panel narrower', panelW() === p0 - 16);
+    q('.col-grip[data-grip="side"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await wait(10);
+    key('.col-grip[data-grip="panel"]', 'Enter');
+    ok('Double-click or Enter puts them back', sideW() === 236 && panelW() === 368 && !('side' in saved()) && !('panel' in saved()));
+    ok('The board still fits between them', q('.main').getBoundingClientRect().width >= 420);
+
+    // Members don't get Load sample
+    await drag('.col-grip[data-grip="side"]', 40);
+    q('[data-logout]').click(); await wait(20);
+    await login('eng');
+    ok('Team members don’t see Load sample', q('#btnSample').hidden);
+    ok('A chosen width stays after signing in again', sideW() === 276);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

@@ -34,10 +34,20 @@
   [hidden] { display: none !important; }
 
   .app {
+    position: relative;
     display: grid;
-    grid-template-columns: 236px minmax(0, 1fr) 368px;
+    grid-template-columns: var(--side-w, 236px) minmax(0, 1fr) var(--panel-w, 368px);
     height: 100vh;
   }
+  /* Drag handles on the inner edges of both side columns. */
+  .col-grip { position: absolute; top: 0; bottom: 0; z-index: 20; width: 10px; cursor: col-resize; touch-action: none; }
+  .col-grip[data-grip="side"] { left: calc(var(--side-w, 236px) - 5px); }
+  .col-grip[data-grip="panel"] { right: calc(var(--panel-w, 368px) - 5px); }
+  .col-grip::after { content: ''; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; background: transparent; transition: background .12s; }
+  .col-grip:hover::after, .col-grip:focus-visible::after, .col-grip.dragging::after { background: #5257c9; }
+  .col-grip:focus-visible { outline: none; }
+  body.col-resizing { cursor: col-resize; user-select: none; }
+  body.col-resizing iframe, body.col-resizing .main { pointer-events: none; }
 
   /* ---------- Sidebar ---------- */
   .sidebar {
@@ -49,6 +59,8 @@
     overflow: auto;
   }
   .brand-title { font-size: 23px; font-weight: 700; letter-spacing: -.01em; color: #f2f3f5; overflow-wrap: anywhere; }
+  .app-ver { display: inline-block; margin-left: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.1); color: #9aa0a8; font-size: 12px; font-weight: 700; letter-spacing: .02em; vertical-align: 4px; white-space: nowrap; }
+  .login-brand .app-ver { background: #e8eaee; color: #5a6069; vertical-align: 5px; }
   .brand-sub { margin-top: 10px; font-size: 14px; line-height: 1.55; color: #9aa0a8; }
   .side-nav { display: flex; flex-direction: column; gap: 6px; margin-top: 40px; }
   .side-nav.admin { margin-top: 18px; padding-top: 14px; border-top: 1px solid #262930; }
@@ -64,6 +76,7 @@
   .side-foot { margin-top: auto; padding: 16px 12px 0; font-size: 13px; line-height: 1.5; color: #8b919a; border-top: 1px solid #262930; }
   .side-foot b { color: #d9dce0; }
   .side-demo { margin-top: 12px; }
+  .side-sample { margin-top: 2px; }
   /* Data file status: quiet when saved, amber when it needs a click, red when saving is stuck. */
   .side-file { margin-top: auto; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #2c3038; background: #1d2026; color: #aeb4bd; border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 12.5px; line-height: 1.4; cursor: pointer; overflow-wrap: anywhere; }
   .side-file b { color: #e6e8eb; font-weight: 600; }
@@ -492,6 +505,9 @@
   .panel-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
   .unread-pill { font-size: 12.5px; font-weight: 700; }
   .unread-pill.has { color: var(--red); }
+  .unread-link { border: 0; background: none; padding: 4px 6px; margin-right: -6px; border-radius: 8px; font-family: inherit; color: inherit; cursor: pointer; }
+  .unread-link:hover { background: #e2e5ea; text-decoration: underline; }
+  .unread-link:focus-visible { outline: 2px solid #5257c9; outline-offset: 1px; }
   .pcard {
     background: var(--surface-2); border: 1px solid #d9dce1; border-radius: 16px;
     margin-bottom: 16px; box-shadow: 0 1px 2px rgba(15,20,30,.05);
@@ -558,21 +574,44 @@
   .toasts.pos-top { top: 80px; bottom: auto; --dy: -28px; }
   .toasts.al-left { align-items: flex-start; }
   .toasts.al-center { align-items: center; }
+  /* Alerts and messages share one card; only the stripe differs (alerts: needs action, messages: done). */
+  /* Tinted with the stripe colour and lifted with a strong shadow, so they stand out from the light page. */
   .toast {
+    --accent: var(--msg-accent, #2f7a1e);
     pointer-events: auto; width: 340px; max-width: calc(100vw - 32px);
-    background: var(--toast-bg, #1b1e24); color: var(--toast-fg, #f2f3f5); border-radius: 12px; padding: 12px 14px;
-    font-size: 14.5px; line-height: 1.45; box-shadow: 0 10px 30px rgba(10,12,16,.28);
+    background: color-mix(in srgb, var(--accent) 11%, var(--pop-bg, #fff)); color: var(--pop-fg, var(--ink));
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-left: 6px solid var(--accent);
+    border-radius: 12px; padding: 12px 14px 10px; font-size: 14px; line-height: 1.45;
+    box-shadow: 0 16px 40px rgba(10,12,16,.34), 0 3px 10px rgba(10,12,16,.16);
     animation: toastSlideIn var(--nd) ease-out both;
   }
+  .toast .t-title { font-weight: 700; font-size: 14.5px; margin-bottom: 3px; }
+  .toast .t-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+  .toast .t-actions .btn-sm { padding: 6px 11px; font-size: 13px; }
   .toasts.an-bounce .toast { animation: toastSlideIn var(--nd) cubic-bezier(.34,1.7,.5,1) both; }
   .toasts.an-fade .toast { animation: toastFadeIn var(--nd) ease-out both; }
   .toasts.an-none .toast { animation: none; }
   .toasts .toast.out { animation: toastSlideOut var(--nd) ease-in forwards; pointer-events: none; }
   .toasts.an-fade .toast.out { animation: toastFadeOut var(--nd) ease-in forwards; }
   .toasts.an-none .toast.out { animation: none; opacity: 0; }
-  .toast.pop { background: var(--pop-bg, #fff); color: var(--pop-fg, var(--ink)); border: 1px solid rgba(20,22,26,.14); border-left: 5px solid var(--pop-accent, var(--red)); padding: 14px 14px 12px; }
-  .toast.pop .t-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
-  .toast.pop .t-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .toast.pop { --accent: var(--pop-accent, var(--red)); }
+  .bell-wrap { position: relative; }
+  .btn.bell { position: relative; width: 48px; padding: 0; font-size: 18px; }
+  .bell-count { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11.5px; font-weight: 800; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px #eceef1; }
+  .bell-count[hidden] { display: none; }
+  .note-centre { position: absolute; top: calc(100% + 8px); right: 0; z-index: 55; width: 380px; max-width: calc(100vw - 32px); max-height: min(70vh, 560px); display: flex; flex-direction: column; background: var(--surface-2, #fff); border: 1px solid #d3d7dc; border-radius: 14px; box-shadow: 0 18px 50px rgba(10,12,16,.25); }
+  .nc-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #e1e4e8; }
+  .nc-head h2 { margin: 0; font-size: 15.5px; }
+  .nc-list { overflow: auto; padding: 10px; display: grid; gap: 8px; }
+  .nc-item { --accent: var(--msg-accent, #2f7a1e); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; align-items: start; padding: 9px 10px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-left: 4px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, #fff); font-size: 13.5px; line-height: 1.4; }
+  .nc-item.is-alert { --accent: var(--pop-accent, var(--red)); }
+  .nc-item.new { background: color-mix(in srgb, var(--accent) 14%, #fff); }
+  .nc-item.new .nc-meta::after { content: ' · New'; color: var(--accent); font-weight: 700; }
+  .nc-ico { font-size: 14px; line-height: 1.4; }
+  .nc-title { font-weight: 700; }
+  .nc-text { overflow-wrap: anywhere; }
+  .nc-meta { margin-top: 2px; font-size: 12px; color: var(--muted); }
+  .nc-item .btn-sm { padding: 5px 9px; font-size: 12.5px; white-space: nowrap; }
   .note-schemes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .note-scheme { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px 7px 9px; border: 1px solid rgba(20,22,26,.16); border-left: 5px solid; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
   .note-scheme:hover { box-shadow: 0 2px 8px rgba(10,12,16,.16); }
@@ -607,6 +646,7 @@
   }
   @media (max-width: 1080px) {
     .app { display: block; height: auto; }
+    .col-grip { display: none; }
     .sidebar { padding-bottom: 16px; }
     .side-nav { flex-direction: row; flex-wrap: wrap; margin-top: 20px; }
     .side-nav.admin { margin-top: 10px; }
@@ -765,7 +805,7 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-title" id="brandTitle">Task Hub</div>
+      <div class="brand-title"><span id="brandTitle">Task Hub</span> <span class="app-ver" data-app-version></span></div>
       <div class="brand-sub" id="brandSub"></div>
     </div>
     <div class="side-label">Board views</div>
@@ -779,6 +819,7 @@
     <button class="side-file" id="sideFile" type="button" hidden></button>
     <div class="side-foot" id="sideFoot"></div>
     <button class="side-item side-demo" type="button" data-open-demo><span>Run demo</span><span class="n" aria-hidden="true">▶</span></button>
+    <button class="side-item side-sample" id="btnSample" type="button" title="Replace the work on the board with the sample work from default-workspace.js"><span>Load sample</span><span class="n" aria-hidden="true">⟲</span></button>
   </aside>
 
   <!-- Main -->
@@ -788,7 +829,13 @@
         <span class="search-ico" aria-hidden="true">🔎</span>
         <input id="search" type="search" placeholder="Search task, ref, team or owner" autocomplete="off" aria-label="Search">
       </label>
-      <button class="btn" id="btnSample" type="button">Load sample</button>
+      <div class="bell-wrap">
+        <button class="btn bell" id="btnBell" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="noteCentre" aria-label="Notifications" title="Notifications"><span aria-hidden="true">🔔</span><span class="bell-count" id="bellCount" hidden>0</span></button>
+        <section class="note-centre" id="noteCentre" hidden aria-label="Notifications">
+          <div class="nc-head"><h2>Notifications</h2><button class="btn-sm b-plain" type="button" id="noteClear">Clear all</button></div>
+          <div class="nc-list" id="noteList"></div>
+        </section>
+      </div>
       <button class="btn" id="btnClear" type="button">Clear</button>
       <button class="btn btn-red" id="btnNew" type="button">New handoff</button>
     </header>
@@ -883,7 +930,7 @@
 
   <!-- Right panel -->
   <aside class="panel">
-    <div class="panel-head"><h2 id="panelTitle">Operations Panel</h2><span class="unread-pill" id="panelUnread">0 unread</span></div>
+    <div class="panel-head"><h2 id="panelTitle">Operations Panel</h2><button class="unread-pill unread-link" id="panelUnread" type="button" title="Show the Action Inbox">0 unread alerts</button></div>
 
     <!-- Each section is an accordion panel: click its header to open or close it. -->
     <div class="pcard" data-acc="activity">
@@ -933,12 +980,14 @@
       <div class="inbox" id="inbox"></div>
     </div>
   </aside>
+  <div class="col-grip" role="separator" aria-orientation="vertical" aria-label="Resize the left sidebar" tabindex="0" title="Drag to resize · double-click to reset" data-grip="side"></div>
+  <div class="col-grip" role="separator" aria-orientation="vertical" aria-label="Resize the Operations Panel" tabindex="0" title="Drag to resize · double-click to reset" data-grip="panel"></div>
 </div>
 
 <div class="login" id="login" hidden>
   <form class="login-card" id="loginForm" novalidate>
     <div>
-      <div class="login-brand" id="loginBrand">Task Hub</div>
+      <div class="login-brand"><span id="loginBrand">Task Hub</span> <span class="app-ver" data-app-version></span></div>
       <div class="muted" id="loginTag">Sign in to continue.</div>
     </div>
     <div class="login-start" id="loginStart" hidden></div>
@@ -988,7 +1037,10 @@
   } catch (e) { /* storage unavailable */ }
   const MAX_FILE_BYTES = 750 * 1024;
   const CONFIG_VERSION = 7;
-  const NOTE_COLOURS = ['popBg', 'popText', 'popAccent', 'toastBg', 'toastText'];
+  // The app's version, shown beside its name in the sidebar and on the sign-in screen.
+  const APP_VERSION = '1.0.0';
+  const NOTE_COLOURS = ['popBg', 'popText', 'popAccent', 'msgAccent'];
+  const NOTE_VARS = [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--msg-accent', 'msgAccent']];
   const SCOPES = [{ v: 'own', l: 'Their own work' }, { v: 'team', l: 'Their team’s work' }, { v: 'all', l: 'Everything' }];
   const VIEW_AS = [{ v: 'none', l: 'Nobody' }, { v: 'team', l: 'Their team' }, { v: 'all', l: 'Anyone' }];
   const RANK = { own: 0, none: 0, team: 1, all: 2 };
@@ -1205,7 +1257,7 @@
       assigned: true, next: true, comments: true, popups: true, popupSeconds: 9, toastSeconds: 4,
       position: 'top', align: 'right', animation: 'slide', animMs: 300, reduceMotion: true,
       sound: true, soundFor: 'alerts', tone: 'bell', volume: 50,
-      popBg: '#ffffff', popText: '#15171a', popAccent: '#b5141e', toastBg: '#1b1e24', toastText: '#f2f3f5',
+      popBg: '#ffffff', popText: '#15171a', popAccent: '#b5141e', msgAccent: '#2f7a1e',
     },
     approvals: { enabled: false, holdStatusId: '', appliesTo: ['*'], allowSelf: false, oneStagePerPerson: true, allowNone: false, chains: [] },
     extensions: { scriptsEnabled: false, flags: [], fieldTypes: [], conditions: [], steps: [] },
@@ -1973,6 +2025,8 @@
     out.views = list('views', v => ({ id: str(v.id) || uid('v'), label: str(v.label), filterId: v.filterId || '', count: v.count || 'match', sidebar: v.sidebar !== false }));
     out.notifications = Object.assign(d.notifications, c.notifications || {});
     NOTE_COLOURS.forEach(k => { if (!/^#[0-9a-f]{6}$/i.test(String(out.notifications[k] || ''))) out.notifications[k] = BASE_CONFIG.notifications[k]; });
+    // Messages used to have their own dark box; they now share the alert card.
+    delete out.notifications.toastBg; delete out.notifications.toastText;
     const ac = c.approvals && typeof c.approvals === 'object' ? c.approvals : d.approvals;
     out.approvals = {
       enabled: ac.enabled !== false, holdStatusId: str(ac.holdStatusId),
@@ -2574,6 +2628,8 @@
   function render() {
     renderLogin();
     renderFileStatus();
+    renderNoteBell();
+    if (!loggedIn() && noteCentreOpen()) openNoteCentre(false);
     if (!loggedIn()) return;
     fixViewer();
     cleanFilters();
@@ -2678,6 +2734,7 @@
           <dt>Top bar</dt><dd>Search by task, reference, team or owner. Press ${gKey('/')} anywhere to jump to the search box. <b>New handoff</b> opens an empty form.</dd>
           <dt>Tabs</dt><dd>Switch between the Board and the team pages: Posts, Files, Notes and Team overview (your administrator can turn pages off).</dd>
           <dt>Operations Panel</dt><dd>Each card can be folded: click its header (or press ${gKey('Enter')} on it). Your choice is remembered.</dd>
+          <dt>Resizing</dt><dd>Drag the inner edge of the sidebar or the Operations Panel to make it wider or narrower. Double-click the edge to put it back. Widths are remembered in this browser.</dd>
         </dl>` },
 
       { id: 'roles', icon: '🪪', title: 'You, your roles and what you see', color: '#7a4fc9', html: `
@@ -2786,10 +2843,12 @@
           <li><b>Recent Activity</b>, under the inbox, is the running log of what everyone did.</li>
         </ul>
         <h4>Pop-ups and sounds</h4>
-        <p>When you sign in, or view as someone, with new alerts, they pop up ${n.position === 'top' ? 'from the top' : 'from the bottom'} of the screen${n.sound ? ` with a ${esc(n.tone)} sound` : ''}. Short messages such as “Saved” confirm what you just did.</p>
+        <p>When you sign in, or view as someone, with new alerts, they pop up ${n.position === 'top' ? 'from the top' : 'from the bottom'} of the screen${n.sound ? ` with a ${esc(n.tone)} sound` : ''}. Messages such as “Saved” confirm what you just did. Both use the same card: a red stripe means an alert that needs you, a green stripe a message. Each has <b>Dismiss</b>, and <b>Open item</b> when it is about an item.</p>
+        <h4>Reading them again</h4>
+        <p>Missed one? Click the <b>🔔 bell</b> in the top bar. It lists your last 50 alerts and messages, newest first, with a red count of the ones you haven’t seen yet. <b>Open item</b> takes you to the card; <b>Clear all</b> empties the list. Each person has their own list in this browser.</p>
         <div class="g-note-demo" style="${noteSampleVars(n)}">
-          <div class="toast pop"><div class="t-title">🔔 New alert for ${esc(nameOf(me))}</div><div>An item was handed off to you.</div></div>
-          <div class="toast">Saved.</div>
+          <div class="toast pop"><div class="t-title">🔔 New alert for ${esc(nameOf(me))}</div><div>An item was handed off to you.</div><div class="t-actions"><span class="btn-sm b-indigo">Open item</span><span class="btn-sm b-plain">Dismiss</span></div></div>
+          <div class="toast msg"><div class="t-text">Saved.</div><div class="t-actions"><span class="btn-sm b-plain">Dismiss</span></div></div>
         </div>
         ${gTip('note', 'Browsers only play sound after you have clicked or typed on the page.')}
         ${admin ? gTip('admin', `Position, animation, sound and <b>colours</b> are all set in ${gGo('config:notifications', 'Configuration → Notifications')}`) : ''}` },
@@ -3192,7 +3251,9 @@
         : viewableIds().length > 1 ? 'Switch “View as” to see what each team member sees.' : `${esc(teamNameOf(personTeam(me)) || 'No team')}`}</p>
       <div class="viewer-actions">${viewing ? '<button class="btn" type="button" data-back-to-me>Back to my view</button>' : ''}<button class="btn" type="button" data-logout>Log out</button></div>`;
     renderTeamCard();
-    for (const el of [$('#panelUnread'), $('#inboxUnread')]) {
+    $('#panelUnread').textContent = `${unread.length} unread ${unread.length === 1 ? 'alert' : 'alerts'}`;
+    $('#panelUnread').classList.toggle('has', unread.length > 0);
+    for (const el of [$('#inboxUnread')]) {
       el.textContent = `${unread.length} unread`;
       el.classList.toggle('has', unread.length > 0);
     }
@@ -3319,15 +3380,19 @@
     const box = $('#toasts');
     box.className = `toasts pos-${n.position === 'top' ? 'top' : 'bottom'} al-${['left', 'center'].includes(n.align) ? n.align : 'right'} an-${noteAnim(n)}`;
     box.style.setProperty('--nd', noteMs(n) + 'ms');
-    [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--toast-bg', 'toastBg'], ['--toast-fg', 'toastText']].forEach(([v, k]) => box.style.setProperty(v, n[k] || BASE_CONFIG.notifications[k]));
+    NOTE_VARS.forEach(([v, k]) => box.style.setProperty(v, n[k] || BASE_CONFIG.notifications[k]));
     // Newest sits nearest the edge it comes from: top of the stack when dropping down, bottom when rising up.
     if (n.position === 'top') box.prepend(el); else box.appendChild(el);
   }
-  function toast(msg, n = noteCfg()) {
+  function toast(msg, n = noteCfg(), o = {}) {
     const el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = msg;
+    el.className = 'toast msg';
+    el.innerHTML = `<div class="t-text">${esc(msg)}</div>
+      <div class="t-actions">${o.itemId ? '<button class="btn-sm b-indigo" type="button" data-t-open>Open item</button>' : ''}<button class="btn-sm b-plain" type="button" data-t-close>Dismiss</button></div>`;
+    if (o.itemId) $('[data-t-open]', el).onclick = () => { dismiss(el, n); showItem(o.itemId); };
+    $('[data-t-close]', el).onclick = () => dismiss(el, n);
     placeToast(el, n);
+    if (!o.preview) recordNote({ kind: 'msg', text: msg, itemId: o.itemId || '' });
     if (n.sound && n.soundFor === 'all') chime(n);
     setTimeout(() => dismiss(el, n), Math.max(1, +n.toastSeconds || 4) * 1000);
   }
@@ -3337,7 +3402,7 @@
     setTimeout(() => el.remove(), noteMs(n));
   }
 
-  function popCard(title, text, onOpen, n) {
+  function popCard(title, text, onOpen, n, meta = {}) {
     const el = document.createElement('div');
     el.className = 'toast pop';
     el.innerHTML = `<div class="t-title">🔔 ${esc(title)}</div><div>${esc(text)}</div>
@@ -3346,8 +3411,72 @@
     $('[data-t-close]', el).onclick = () => dismiss(el, n);
     placeToast(el, n);
     setTimeout(() => dismiss(el, n), (+n.popupSeconds || 9) * 1000);
+    if (!meta.preview) recordNote({ kind: 'alert', title, text, alertId: meta.alertId || '', itemId: meta.itemId || '' });
   }
-  const popAlert = (a, n = noteCfg()) => popCard(`New alert for ${nameOf(a.toId)}`, alertText(a), () => openAlert(a.id), n);
+  const popAlert = (a, n = noteCfg()) => popCard(`New alert for ${nameOf(a.toId)}`, alertText(a), () => openAlert(a.id), n, { alertId: a.id, itemId: a.itemId });
+
+  // ---------- notification history ----------
+  // Every pop-up and message is kept (per person, in this browser), so it can be read again after it has gone.
+  const NOTE_LOG_KEY = 'taskhub.notifications';
+  const NOTE_LOG_MAX = 50;
+  const noteLogAll = () => { try { return JSON.parse(localStorage.getItem(NOTE_LOG_KEY) || '{}') || {}; } catch (e) { return {}; } };
+  const noteLog = () => (loggedIn() ? noteLogAll()[sessionId()] || [] : []);
+  function saveNoteLog(list) {
+    const all = noteLogAll();
+    all[sessionId()] = list.slice(0, NOTE_LOG_MAX);
+    try { localStorage.setItem(NOTE_LOG_KEY, JSON.stringify(all)); } catch (e) { /* storage full or unavailable */ }
+  }
+  const noteCentreOpen = () => !$('#noteCentre').hidden;
+  function recordNote(entry) {
+    if (!loggedIn() || demo.running) return;
+    saveNoteLog([Object.assign({ id: uid('nt'), time: Date.now(), seen: noteCentreOpen() }, entry), ...noteLog()]);
+    renderNoteBell();
+    if (noteCentreOpen()) renderNoteCentre();
+  }
+  function renderNoteBell() {
+    const b = $('#btnBell');
+    b.hidden = !loggedIn();
+    const n = noteLog().filter(x => !x.seen).length;
+    $('#bellCount').textContent = n > 99 ? '99+' : String(n);
+    $('#bellCount').hidden = n === 0;
+    b.setAttribute('aria-label', n ? `Notifications, ${n} new` : 'Notifications');
+  }
+  function renderNoteCentre() {
+    $('#noteCentre').style.cssText = noteSampleVars(noteCfg());
+    const list = noteLog();
+    $('#noteList').innerHTML = list.length ? list.map(x => `<div class="nc-item ${x.kind === 'alert' ? 'is-alert' : 'is-msg'}${x.seen ? '' : ' new'}">
+        <span class="nc-ico" aria-hidden="true">${x.kind === 'alert' ? '🔔' : '✓'}</span>
+        <div class="nc-main">
+          ${x.title ? `<div class="nc-title">${esc(x.title)}</div>` : ''}
+          <div class="nc-text">${esc(x.text)}</div>
+          <div class="nc-meta">${x.kind === 'alert' ? 'Alert' : 'Message'} · ${fmtTime(x.time)}</div>
+        </div>
+        ${x.itemId ? `<button class="btn-sm b-indigo" type="button" data-nc-open="${esc(x.id)}">Open item</button>` : ''}
+      </div>`).join('') : '<div class="empty-box">No notifications yet. Pop-ups and messages you see appear here, so you can read them again.</div>';
+    $('#noteClear').disabled = !list.length;
+  }
+  function openNoteCentre(open) {
+    $('#noteCentre').hidden = !open;
+    $('#btnBell').setAttribute('aria-expanded', String(open));
+    if (open) {
+      renderNoteCentre();
+      // Opening the list counts as seeing everything in it.
+      if (noteLog().some(x => !x.seen)) saveNoteLog(noteLog().map(x => Object.assign(x, { seen: true })));
+      renderNoteBell();
+    }
+  }
+  $('#btnBell').addEventListener('click', e => { e.stopPropagation(); openNoteCentre(!noteCentreOpen()); });
+  $('#noteClear').addEventListener('click', () => { saveNoteLog([]); renderNoteCentre(); renderNoteBell(); });
+  $('#noteList').addEventListener('click', e => {
+    const b = e.target.closest('[data-nc-open]');
+    if (!b) return;
+    const x = noteLog().find(y => y.id === b.dataset.ncOpen);
+    if (!x) return;
+    openNoteCentre(false);
+    if (x.alertId && S.alerts.some(a => a.id === x.alertId)) openAlert(x.alertId); else showItem(x.itemId);
+  });
+  document.addEventListener('click', e => { if (noteCentreOpen() && !e.target.closest('#noteCentre')) openNoteCentre(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && noteCentreOpen()) { openNoteCentre(false); $('#btnBell').focus(); } });
 
   // Sounds are synthesised with Web Audio, so no audio files are needed. Each partial is [frequency ratio, loudness, seconds to fade].
   const TONES = {
@@ -3955,8 +4084,8 @@
     commit();
     flashCard(it.id);
     if (openEditor) { fillForm(it); focusForm(); return; }
-    if (parts.length) toast(`${it.ref} ${parts.join('; ')}.${sent ? ` ${plural(sent, 'alert')} sent.` : ''}`);
-    else if (!sent) toast(`${a.label}: nothing changed on ${it.ref}.`);
+    if (parts.length) toast(`${it.ref} ${parts.join('; ')}.${sent ? ` ${plural(sent, 'alert')} sent.` : ''}`, undefined, { itemId: it.id });
+    else if (!sent) toast(`${a.label}: nothing changed on ${it.ref}.`, undefined, { itemId: it.id });
   }
 
   function openAlert(alertId) {
@@ -4036,6 +4165,12 @@
   // Accept/Decline straight from the Action Inbox run the same configured buttons as on the card.
   const offerAction = (it, stepType) => cfg().actions.find(a => actionVisible(a, it) && a.steps.some(s => s.type === stepType));
 
+  // Shows an item on the board, clearing the filters only if they hide it.
+  function showItem(id) {
+    if (!getItem(id)) { toast('That item no longer exists.'); return; }
+    setPage('board', () => { if (!visibleItems().some(i => i.id === id)) resetFilters(); });
+    flashCard(id);
+  }
   function gotoItem(id) {
     if (!getItem(id)) { toast('That item no longer exists.'); return; }
     setPage('board', resetFilters);
@@ -4331,11 +4466,11 @@
       id = it.id;
       log(`${it.ref} updated by ${viewerName()}.`, 'EDIT', it);
       if (moved) log(`${it.ref} moved to ${statusName(it.statusId)} by ${viewerName()}.`, 'STATUS', it);
-      if (gparts.length) { log(`${it.ref} ${gparts.join('; ')} by ${viewerName()}.`, gtype, it); toast(`${it.ref} ${gparts.join('; ')}.`); }
+      if (gparts.length) { log(`${it.ref} ${gparts.join('; ')} by ${viewerName()}.`, gtype, it); toast(`${it.ref} ${gparts.join('; ')}.`, undefined, { itemId: it.id }); }
       if (it.ownerId !== before.ownerId) notifyKind('assigned', it.ownerId, it);
       if (it.queueId && it.queueId !== before.queueId) notifyQueue(it.queueId, it, queueAlert(it));
       if (it.nextOwnerId && it.nextOwnerId !== before.nextOwnerId) notifyKind('next', it.nextOwnerId, it);
-      toast(`${it.ref} updated.`);
+      toast(`${it.ref} updated.`, undefined, { itemId: it.id });
     } else {
       const now = Date.now();
       const it = itemDefaults(Object.assign({ id: uid('i'), created: now, updated: now, statusId: cfg().general.initialStatusId, prevStatusId: '', blockReason: '', createdBy: S.viewerId }, d, { fields: custom }));
@@ -4349,7 +4484,7 @@
       notifyKind('assigned', it.ownerId, it);
       if (it.queueId) notifyQueue(it.queueId, it, queueAlert(it));
       if (it.nextOwnerId) notifyKind('next', it.nextOwnerId, it);
-      toast(`${it.ref} created.`);
+      toast(`${it.ref} created.`, undefined, { itemId: it.id });
     }
     if (added.length) toast(`Added ${added.join(', ')} to Configuration.`);
     resetForm();
@@ -4404,13 +4539,13 @@
   const chk = (path, val, text, o = {}) => `<label class="chk"><input type="checkbox" ${bind(path, o.rerender)}${val ? ' checked' : ''}${o.disabled ? ' disabled' : ''}> ${esc(text)}</label>`;
   // Ready-made colour schemes for notifications.
   const NOTE_SCHEMES = [
-    { id: 'classic',  name: 'Classic',  popBg: '#ffffff', popText: '#15171a', popAccent: '#b5141e', toastBg: '#1b1e24', toastText: '#f2f3f5' },
-    { id: 'midnight', name: 'Midnight', popBg: '#1d2340', popText: '#eef0ff', popAccent: '#7c8cff', toastBg: '#343a8a', toastText: '#ffffff' },
-    { id: 'sunshine', name: 'Sunshine', popBg: '#fff6d6', popText: '#3d2c00', popAccent: '#e0a100', toastBg: '#6a5100', toastText: '#fff6d6' },
-    { id: 'mint',     name: 'Mint',     popBg: '#e3f6ea', popText: '#0f3d22', popAccent: '#2f9d45', toastBg: '#1f6b34', toastText: '#ffffff' },
-    { id: 'berry',    name: 'Berry',    popBg: '#fbe8f1', popText: '#4a0d2c', popAccent: '#c2185b', toastBg: '#7a1240', toastText: '#ffffff' },
+    { id: 'classic',  name: 'Classic',  popBg: '#ffffff', popText: '#15171a', popAccent: '#b5141e', msgAccent: '#2f7a1e' },
+    { id: 'midnight', name: 'Midnight', popBg: '#1d2340', popText: '#eef0ff', popAccent: '#ff6b8a', msgAccent: '#4cd39a' },
+    { id: 'sunshine', name: 'Sunshine', popBg: '#fff6d6', popText: '#3d2c00', popAccent: '#d9480f', msgAccent: '#5a8f00' },
+    { id: 'mint',     name: 'Mint',     popBg: '#e3f6ea', popText: '#0f3d22', popAccent: '#c2185b', msgAccent: '#0b7dda' },
+    { id: 'berry',    name: 'Berry',    popBg: '#fbe8f1', popText: '#4a0d2c', popAccent: '#c2185b', msgAccent: '#7a4fc9' },
   ];
-  const noteSampleVars = n => [['--pop-bg', 'popBg'], ['--pop-fg', 'popText'], ['--pop-accent', 'popAccent'], ['--toast-bg', 'toastBg'], ['--toast-fg', 'toastText']]
+  const noteSampleVars = n => NOTE_VARS
     .map(([v, k]) => `${v}:${esc(n[k] || BASE_CONFIG.notifications[k])}`).join(';');
   // WCAG contrast ratio between two hex colours.
   function contrast(a, b) {
@@ -4425,10 +4560,9 @@
     return (x + 0.05) / (y + 0.05);
   }
   function noteContrastHTML(n) {
-    const bad = [['popText', 'popBg', 'Pop-up text'], ['toastText', 'toastBg', 'Message text']].filter(([f, b]) => contrast(n[f], n[b]) < 4.5).map(x => x[2]);
-    return bad.length
-      ? `<span class="match-pill bad">Hard to read</span> ${esc(bad.join(' and '))} may be hard to read on ${bad.length > 1 ? 'their backgrounds' : 'its background'}. Choose colours that differ more in lightness.`
-      : '<span class="match-pill">Easy to read</span> Text and backgrounds have enough contrast.';
+    return contrast(n.popText, n.popBg) < 4.5
+      ? '<span class="match-pill bad">Hard to read</span> The text may be hard to read on this background. Choose colours that differ more in lightness.'
+      : '<span class="match-pill">Easy to read</span> The text and background have enough contrast.';
   }
   const swatch = (path, val, aria) => `<input type="color" class="swatch" ${bind(path)} value="${esc(val)}" aria-label="${esc(aria)}" title="${esc(aria)}">`;
   const cell = (lbl, html, cls = 'grow') => `<div class="cell ${cls}"><span class="mini-label">${esc(lbl)}</span>${html}</div>`;
@@ -4894,16 +5028,16 @@
           ${cell('Play it for', sel('notifications.soundFor', [{ v: 'alerts', l: 'New alerts only' }, { v: 'all', l: 'Every notification' }], d.notifications.soundFor))}
           ${cell('Volume (0–100)', inp('notifications.volume', d.notifications.volume, { type: 'number', num: true, attrs: 'min="0" max="100" step="5"' }))}
         </div>`) +
-      section('Colours', 'The background and text of alert pop-ups and of the short messages that confirm what you did. Pick a ready-made scheme, or choose each colour.', `
-        <div class="note-schemes">${NOTE_SCHEMES.map(s => `<button class="note-scheme" type="button" data-cfg-cmd="note-scheme:${s.id}" style="background:${s.popBg};color:${s.popText};border-left-color:${s.popAccent}"><span class="ns-chip" style="background:${s.toastBg};color:${s.toastText}">Aa</span>${esc(s.name)}</button>`).join('')}</div>
+      section('Colours', 'Alerts and messages share one card. The stripe on the left tells them apart: alerts need you to act, messages confirm what you did. Pick a ready-made scheme, or choose each colour.', `
+        <div class="note-schemes">${NOTE_SCHEMES.map(s => `<button class="note-scheme" type="button" data-cfg-cmd="note-scheme:${s.id}" style="background:${s.popBg};color:${s.popText};border-left-color:${s.popAccent}"><span class="ns-chip" style="background:${s.msgAccent};color:#fff">✓</span>${esc(s.name)}</button>`).join('')}</div>
         <div class="gen-grid">
-          ${[['popBg', 'Pop-up background'], ['popText', 'Pop-up text'], ['popAccent', 'Pop-up accent stripe'], ['toastBg', 'Message background'], ['toastText', 'Message text']].map(([k, l]) =>
+          ${[['popBg', 'Background'], ['popText', 'Text'], ['popAccent', 'Alert stripe'], ['msgAccent', 'Message stripe']].map(([k, l]) =>
             cell(l, `<input type="color" class="swatch" ${bind('notifications.' + k)} data-note-colour="1" value="${esc(d.notifications[k])}" aria-label="${esc(l)}" title="${esc(l)}">`, 'w-auto')).join('')}
         </div>
         <div class="note-sample" data-note-sample style="${noteSampleVars(d.notifications)}">
           <div class="toast pop"><div class="t-title">🔔 New alert for ${esc(viewerName())}</div><div>OMD-014 “Quarterly controls review” was handed off to you.</div>
             <div class="t-actions"><span class="btn-sm b-indigo">Open item</span><span class="btn-sm b-plain">Dismiss</span></div></div>
-          <div class="toast">Saved.</div>
+          <div class="toast msg"><div class="t-text">OMD-014 updated.</div><div class="t-actions"><span class="btn-sm b-indigo">Open item</span><span class="btn-sm b-plain">Dismiss</span></div></div>
         </div>
         <div class="note-contrast" data-note-contrast>${noteContrastHTML(d.notifications)}</div>`) +
       section('Try it', 'Previews use the settings on this screen, including changes you have not saved yet.', `
@@ -5534,13 +5668,13 @@ ctx.person(name)      ctx.team(name)</pre>
       case 'preview-pop': {
         const n = cfgDraft.notifications;
         if (n.sound) chime(n, true);
-        popCard('Preview alert', `This is how new alerts will look: they ${n.position === 'top' ? 'drop down from the top' : 'rise up from the bottom'}, then close after ${+n.popupSeconds || 9} seconds.`, null, n);
+        popCard('Preview alert', `This is how new alerts will look: they ${n.position === 'top' ? 'drop down from the top' : 'rise up from the bottom'}, then close after ${+n.popupSeconds || 9} seconds.`, null, n, { preview: true });
         break;
       }
       case 'preview-toast': {
         const n = cfgDraft.notifications;
         if (n.sound && n.soundFor === 'all') chime(n, true);
-        toast('Preview message: confirmations like “Saved” look like this.', Object.assign({}, n, { sound: false }));
+        toast('Preview message: confirmations like “Saved” look like this.', Object.assign({}, n, { sound: false }), { preview: true });
         break;
       }
       case 'preview-sound': {
@@ -5706,7 +5840,7 @@ ctx.person(name)      ctx.team(name)</pre>
     log(`${it.ref} ${parts.join('; ')} by ${viewerName()}.`, type, it);
     commit();
     flashCard(it.id);
-    if (type === 'VERIFY') toast(`${it.ref} ${parts.join('; ')}.${ctx.sent ? ` ${plural(ctx.sent, 'alert')} sent.` : ''}`);
+    if (type === 'VERIFY') toast(`${it.ref} ${parts.join('; ')}.${ctx.sent ? ` ${plural(ctx.sent, 'alert')} sent.` : ''}`, undefined, { itemId: it.id });
   });
 
   $('#stats').addEventListener('click', e => {
@@ -5778,6 +5912,80 @@ ctx.person(name)      ctx.team(name)</pre>
     if (v) applyView(v);
   });
   $('#sideConfig').addEventListener('click', () => openConfig());
+  // ---------- resizable side columns ----------
+  // Both side columns can be dragged wider or narrower by their inner edge (or with the arrow keys);
+  // double-click or Enter puts one back. The widths are remembered in this browser.
+  const LAYOUT_KEY = 'taskhub.layout';
+  const COLS = {
+    side:  { css: '--side-w',  def: 236, min: 180, max: 440 },
+    panel: { css: '--panel-w', def: 368, min: 300, max: 680 },
+  };
+  const MAIN_MIN = 420;
+  let colWidths = (() => { try { return JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}') || {}; } catch (e) { return {}; } })();
+  const colWidth = k => (Number.isFinite(+colWidths[k]) ? +colWidths[k] : COLS[k].def);
+  function clampCol(k, w) {
+    const c = COLS[k], other = k === 'side' ? colWidth('panel') : colWidth('side');
+    const room = $('.app').getBoundingClientRect().width - other - MAIN_MIN;
+    return Math.round(Math.max(c.min, Math.min(c.max, room, w)));
+  }
+  function applyCols() {
+    const app = $('.app');
+    Object.keys(COLS).forEach(k => {
+      const has = Number.isFinite(+colWidths[k]);
+      if (has) app.style.setProperty(COLS[k].css, clampCol(k, colWidths[k]) + 'px'); else app.style.removeProperty(COLS[k].css);
+      const g = $(`.col-grip[data-grip="${k}"]`);
+      g.setAttribute('aria-valuenow', String(has ? clampCol(k, colWidths[k]) : COLS[k].def));
+      g.setAttribute('aria-valuemin', String(COLS[k].min));
+      g.setAttribute('aria-valuemax', String(COLS[k].max));
+    });
+  }
+  function setCol(k, w) {
+    if (w == null) delete colWidths[k]; else colWidths[k] = clampCol(k, w);
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(colWidths)); } catch (e) { /* storage unavailable */ }
+    applyCols();
+    alignCards();
+  }
+  $$('.col-grip').forEach(g => {
+    const k = g.dataset.grip;
+    g.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      g.setPointerCapture(e.pointerId);
+      g.classList.add('dragging');
+      document.body.classList.add('col-resizing');
+      const box = $('.app').getBoundingClientRect();
+      const move = ev => setCol(k, k === 'side' ? ev.clientX - box.left : box.right - ev.clientX);
+      const up = () => {
+        g.classList.remove('dragging');
+        document.body.classList.remove('col-resizing');
+        g.removeEventListener('pointermove', move);
+        g.removeEventListener('pointerup', up);
+        g.removeEventListener('pointercancel', up);
+      };
+      g.addEventListener('pointermove', move);
+      g.addEventListener('pointerup', up);
+      g.addEventListener('pointercancel', up);
+    });
+    g.addEventListener('dblclick', () => setCol(k, null));
+    g.addEventListener('keydown', e => {
+      const step = e.shiftKey ? 48 : 16;
+      // Arrows move the edge: for the sidebar right is wider, for the panel left is wider.
+      const dir = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (dir) { e.preventDefault(); setCol(k, colWidth(k) + (k === 'side' ? dir : -dir) * step); }
+      else if (e.key === 'Enter' || e.key === 'Home') { e.preventDefault(); setCol(k, null); }
+    });
+  });
+  window.addEventListener('resize', applyCols);
+  applyCols();
+  $$('[data-app-version]').forEach(el => { el.textContent = 'v' + APP_VERSION; el.title = `Version ${APP_VERSION}`; });
+
+  // The counter beside the panel title opens the Action Inbox and brings it into view.
+  $('#panelUnread').addEventListener('click', () => {
+    setPanelOpen('inbox', true);
+    const card = $('.pcard[data-acc="inbox"]');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+  });
   $('#sideGuide').addEventListener('click', () => { if (S.page !== 'guide') { setPage('guide'); $('#content').scrollTop = 0; } });
   $('#view-guide').addEventListener('input', e => { if (e.target.id === 'guideSearch') { guideQuery = e.target.value; filterGuide(); } });
   $('#view-guide').addEventListener('click', e => {

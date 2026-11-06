@@ -33,7 +33,7 @@ window.addEventListener('load', async () => {
     ok('Roles table marks your own roles', qa('#g-roles .g-table tr.mine').length === 2 && ch('roles').textContent.includes('A. Chan'));
     ok('Verification chapter shows the routes and their groups', ch('verify').textContent.includes('Two-group sign-off') && ch('verify').textContent.includes('Controls reviewers') && ch('verify').textContent.includes('Data stewards'));
     ok('Role queues chapter names the queue roles', ch('queues').textContent.includes('Queue: Controls reviewers'));
-    ok('Notification sample uses the configured colours', getComputedStyle(q('#g-inbox .g-note-demo .toast.pop')).backgroundColor === 'rgb(255, 255, 255)');
+    ok('Notification sample uses the configured colours', getComputedStyle(q('#g-inbox .g-note-demo .toast.pop')).borderLeftColor === 'rgb(181, 20, 30)' && getComputedStyle(q('#g-inbox .g-note-demo .toast.msg')).borderLeftColor === 'rgb(47, 122, 30)');
     ok('Data chapter says the browser isn’t using a data file', ch('data').textContent.includes('not using a data file'));
 
     // Search

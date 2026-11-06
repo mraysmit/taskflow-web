@@ -1165,8 +1165,7 @@ TaskHubDefault({
       "popBg": "#ffffff",
       "popText": "#15171a",
       "popAccent": "#b5141e",
-      "toastBg": "#1b1e24",
-      "toastText": "#f2f3f5"
+      "msgAccent": "#2f7a1e"
     },
     "approvals": {
       "enabled": true,

@@ -19,12 +19,13 @@ window.addEventListener('load', async () => {
     // Send B. Lee a handoff request
     btn('OMD-001', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Ready'; q('#dlgOk').click(); await wait(30);
     await logout(); await login('blee');
-    ok('Alert arrives with unread count in inbox header, panel title and stat', unread() === '1 unread' && q('#panelUnread').textContent === '1 unread' && qa('.stat').find(s => s.textContent.includes('Unread alerts')).querySelector('.stat-value').textContent === '1');
+    ok('Alert arrives with unread count in inbox header, panel title and stat', unread() === '1 unread' && q('#panelUnread').textContent === '1 unread alert' && qa('.stat').find(s => s.textContent.includes('Unread alerts')).querySelector('.stat-value').textContent === '1');
     ok('Pop-up shown on sign-in', !!q('.toast.pop'));
     ok('Alert text, type and sender shown', msgs()[0].includes('wants to hand off OMD-001') && q('#inbox .alert-meta').textContent.includes('HANDOFF REQUEST') && q('#inbox .alert-meta').textContent.includes('A. Chan'));
     q('[data-acc=inbox] .pcard-head').click(); await wait(20);
     ok('Collapsed inbox still shows the count', q('[data-acc=inbox]').classList.contains('collapsed') && unread() === '1 unread');
-    q('[data-acc=inbox] .pcard-head').click(); await wait(20);
+    q('#panelUnread').click(); await wait(20);
+    ok('The counter by the panel title is a button that opens the Action Inbox', q('#panelUnread').tagName === 'BUTTON' && !q('[data-acc=inbox]').classList.contains('collapsed') && q('[data-acc=inbox]').classList.contains('flash'));
     const review = qa('#inbox [data-inbox-action]').find(b => b.textContent === 'Review & accept');
     ok('Review & accept and Decline buttons in inbox', !!review && qa('#inbox [data-inbox-action]').some(b => b.textContent === 'Decline'));
     review.click(); await wait(20);
