@@ -71,7 +71,8 @@ window.addEventListener('load', async () => {
     q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
     [...document.querySelectorAll('.demo-list input')].forEach(i => { i.checked = i.value === 'signin'; });
     q('[data-demo="run"]').click(); await wait(300);
-    while (q('[data-demo="run"]').disabled) await wait(100);
+    // A hung demo fails this check instead of stalling the suite until its time budget runs out (which loses every result).
+    for (const t0 = Date.now(); q('[data-demo="run"]').disabled && Date.now() - t0 < 60000;) await wait(100);
     ok('A demo still runs in a resized window', q('#demoResults').textContent.includes('checks passed') && Math.round(box().width) === 470);
     ok('no JS errors', !(window.__errs || []).length);
   } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }

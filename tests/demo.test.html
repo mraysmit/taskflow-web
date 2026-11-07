@@ -20,16 +20,18 @@ window.addEventListener('load', async () => {
     await wait(500);
     while (q('[data-demo="run"]').disabled && Date.now() - t0 < 400000) await wait(200);
     ok('Demo finished', !q('[data-demo="run"]').disabled);
-    // Each demo check becomes a result line, prefixed with its scenario.
-    let scenario = '';
-    q('#demoResults').innerText.split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
-      if (l.startsWith('✓')) out.push(`PASS ${scenario} › ${l.slice(1).trim()}`);
-      else if (l.startsWith('✗')) out.push(`FAIL ${scenario} › ${l.slice(1).trim()}`);
-      else if (!/checks passed/.test(l)) scenario = l.replace(/\s*— stopped$/, '');
+    // Each demo check becomes a result line, prefixed with its scenario. The demo publishes its results as data, so this
+    // doesn't depend on how the panel words them; a scenario that stopped part-way is a failure of its own.
+    const results = JSON.parse(q('#demoResults').dataset.results || '[]');
+    ok('Every scenario reported', results.length === q('.demo-list').querySelectorAll('input').length);
+    results.forEach(r => {
+      r.checks.forEach(c => out.push(`${c.pass ? 'PASS' : 'FAIL'} ${r.title} › ${c.label}${c.note ? ` (${c.note})` : ''}`));
+      if (r.error) out.push(`FAIL ${r.title} › didn’t finish: ${r.error}`);
+      if (!r.checks.length && !r.error) out.push(`FAIL ${r.title} › made no checks`);
     });
     const st = JSON.parse(localStorage.getItem('taskhub.v2'));
     ok('Your own data restored afterwards', st.items.some(i => i.title === 'MY REAL ITEM') && st.session && st.session.userId === 'p1' && !st.config.statuses.some(s => s.name === 'Review'));
-    ok('Demo backup cleared', !localStorage.getItem('taskhub.demo-backup'));
+    ok('No copy of the demo is left in this browser', !localStorage.getItem('taskhub.demo-backup') && !localStorage.getItem('taskhub.demo-scratch'));
     ok('Your notification history is untouched by the demo', !!notesBefore && localStorage.getItem('taskhub.notifications') === notesBefore);
     ok('Your column widths are put back', localStorage.getItem('taskhub.layout') === layoutBefore);
     ok('no JS errors', !(window.__errs || []).length);

@@ -90,6 +90,16 @@ window.addEventListener('load', async () => {
     ok('…and says the file wasn’t found', q('#loginStart').textContent.includes('default-workspace.js') && q('#loginStart').textContent.includes('found'));
     q('[data-load-default]').click(); await wait(300);
     ok('Clicking load explains instead of loading nothing', store().config.people.length === 0 && qa('.toast').some(t => t.textContent.includes('default-workspace.js')));
+    // The demo has its own sample data, so it doesn't need the file.
+    q('[data-open-demo]').click(); await wait(50);
+    q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
+    qa('.demo-list input').forEach(i => { i.checked = ['signin', 'startover'].includes(i.value); });
+    q('[data-demo="run"]').click(); await wait(300);
+    for (const t0 = Date.now(); q('[data-demo="run"]').disabled && Date.now() - t0 < 60000;) await wait(100);
+    const res = JSON.parse(q('#demoResults').dataset.results || '[]');
+    ok('Without the file, the demo still runs on its own sample', res.length === 2 && !res[0].error && res[0].checks.length > 0 && res[0].checks.every(c => c.pass));
+    ok('…and skips only the scenario about the file, saying why', !res[1] || (!res[1].error && res[1].checks.length === 1 && /without default-workspace/.test(res[1].checks[0].label)));
+    ok('…leaving this browser as empty as before', store().config.people.length === 0);
     ok('no JS errors', !(window.__errs || []).length);
   } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
   finish();

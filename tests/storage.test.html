@@ -1,4 +1,4 @@
-<!-- When the browser's storage is full: the automated demo must not start without a backup of your data, and a data file keeps
+<!-- When the browser's storage is full: the automated demo still runs without touching your saved data, and a data file keeps
      attachments even when the browser's own copy has to leave them out. The file picker is replaced by an in-memory file. -->
 <script>
 window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
@@ -33,21 +33,21 @@ window.addEventListener('load', async () => {
     await login('achan');
     q('#btnNew').click(); setv(q('#f_title'), 'MY REAL ITEM'); q('#form').requestSubmit(); await wait(50);
 
-    // ---------- The demo needs a backup before it touches anything ----------
-    full = k => k === 'taskhub.demo-backup';
+    // ---------- The demo never writes over your saved data, so a full store can't cost you anything ----------
+    // Nothing can be saved at all while it runs: not its own scratch copy, not your workspace.
+    const before = localStorage.getItem('taskhub.v2');
+    full = () => true;
     q('[data-open-demo]').click(); await wait(50);
     q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
     qa('.demo-list input').forEach(i => { i.checked = i.value === 'lifecycle'; });
-    q('[data-demo="run"]').click(); await wait(400);
-    ok('Without a backup, the demo doesn’t start', !q('[data-demo="run"]').disabled);
-    ok('Your saved data is untouched', store().items.some(i => i.title === 'MY REAL ITEM'));
-    ok('The demo says why it didn’t start', /back(ed)? ?up/i.test(q('#demoCaption').textContent));
-    for (let t = 0; t < 300 && q('[data-demo="run"]').disabled; t++) await wait(100);
-    full = null;
     q('[data-demo="run"]').click(); await wait(300);
-    ok('With storage available again, the demo runs', q('[data-demo="run"]').disabled);
+    ok('With storage full, the demo still runs', q('[data-demo="run"]').disabled);
     for (let t = 0; t < 300 && q('[data-demo="run"]').disabled; t++) await wait(100);
-    ok('…and puts your data back afterwards', store().items.some(i => i.title === 'MY REAL ITEM'));
+    const res = JSON.parse(q('#demoResults').dataset.results || '[]');
+    ok('…and its checks pass', res.length === 1 && !res[0].error && res[0].checks.length > 0 && res[0].checks.every(c => c.pass));
+    full = null;
+    ok('Your saved data is exactly as it was', localStorage.getItem('taskhub.v2') === before);
+    ok('…and it is back on screen', qa('#board .card').some(c => c.textContent.includes('MY REAL ITEM')));
     q('[data-demo="close"]').click(); await wait(30);
 
     // ---------- A full browser store must not strip attachments from the data file ----------

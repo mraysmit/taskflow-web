@@ -31,7 +31,7 @@ Everything the runner creates goes to `%TEMP%\taskhub-tests`: the test pages, a 
 | `inbox` | The Action Inbox: alerts, accept, decline, pick up, mark read, read-only viewing |
 | `verification` | Approval groups in order or at once, reject, withdraw, maker-checker, routes |
 | `notifications` | Position, animation, sound and colour settings |
-| `startup` | A fresh browser starts empty; one click loads `default-workspace.js`; relative dates, hashed passwords; a missing file |
+| `startup` | A fresh browser starts empty; one click loads `default-workspace.js`; relative dates, hashed passwords; a missing file (the demo still runs without it) |
 | `guide` | The User Guide: opening it, chapters written from the live configuration, search, links, what each role sees |
 | `data-file` | Saving to a data file, picking up a colleague's changes, conflicts, reconnecting after a restart (the browser's file access is replaced by an in-memory file, because headless Edge can't click file dialogs) |
 | `config-remap` | Removing people and teams in Configuration whose items were already moved to someone else who is then removed: you are asked again, and every item ends up with a real owner and team (or none, or a former member) |
@@ -44,9 +44,10 @@ Everything the runner creates goes to `%TEMP%\taskhub-tests`: the test pages, a 
 | `steps` | A Delete step still sends the button's alerts and webhooks; the history names a webhook's site but not its address (which can hold a key); buttons that run each other in a loop run once, warn, and can't be saved |
 | `handoff` | Buttons and scripts that give a queued item an owner (assign, hand straight over, accept an offer) take it out of its role queue |
 | `hardening` | Hostile saved or shared data (colours and ids that try to break out of HTML attributes) is shown safely; an unreadable saved workspace is kept and offered for download instead of being overwritten |
-| `storage` | A full browser store: the demo won't start without a backup of your data, and a data file keeps attachments the browser's own copy has to leave out |
+| `storage` | A full browser store: the demo still runs without touching your saved data, and a data file keeps attachments the browser's own copy has to leave out |
 | `upgrade-v1`, `upgrade-v2`, `upgrade-v5` | Opening data saved by earlier versions |
-| `demo` | Runs every scenario of the built-in automated demo and checks your data is restored |
+| `demo` | Runs every scenario of the built-in automated demo and checks your data is restored (the demo publishes its results as data on `#demoResults`, so nothing depends on their wording) |
+| `demo-safety` | The demo never costs you anything: it won't start over unsaved Configuration changes or a half-written item; it never writes to your saved workspace, panels or column widths (closing the tab mid-run is harmless); it uses its own sample data whatever `default-workspace.js` holds, so nothing (no webhook, email or link) leaves the browser; keys typed during a run don't reach the page; it leaves no pop-ups behind |
 | `demo-window` | Resizing the demo window by its edges, corner and keyboard; minimising, resetting, remembering the size |
 
 ## Adding a test

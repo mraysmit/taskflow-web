@@ -1,0 +1,135 @@
+<!-- inject: early -->
+<!-- budget: 400000 -->
+<!-- The automated demo must never cost the person anything: it won't start over unsaved work, it never touches their saved
+     workspace, panels or column widths (so closing the tab mid-run or opening a second tab is harmless), it never reaches
+     outside the browser (webhooks, emails, links), it runs on its own sample data whatever default-workspace.js holds, and it
+     leaves nothing of itself on screen. Phase 2 is the page reopened after the tab was closed in the middle of a run. -->
+<script>
+(() => {
+  // A workspace that has customised default-workspace.js: one sample item fewer, and "Complete & handoff" also calls a
+  // webhook and drafts an email.
+  let real = null;
+  Object.defineProperty(window, '__taskhubDefault', { configurable: true, get: () => real, set: v => {
+    if (v && v.items && !v.__custom) {
+      v.__custom = true;
+      v.items = v.items.filter(i => i.ref !== 'OMD-004');
+      const a = v.config.actions.find(x => x.id === 'a_handoff');
+      a.steps.push({ type: 'webhook', method: 'POST', url: 'https://hooks.example.test/handoff', body: '{"ref":"{ref}"}' },
+        { type: 'email', to: 'address', address: 'ops@example.test', subject: '{ref} handed off', body: '{title}' });
+    }
+    real = v;
+  } });
+  // Everything that would leave the browser is recorded instead.
+  window.__outside = [];
+  window.fetch = (url) => { window.__outside.push('fetch ' + url); return Promise.resolve({ status: 202 }); };
+  window.open = (url) => { window.__outside.push('open ' + url); return null; };
+  const click = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function () { if (/^(mailto:|https?:)/.test(this.href)) { window.__outside.push('link ' + this.href); return; } return click.call(this); };
+})();
+
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const phase = sessionStorage.getItem('dsphase') || '1';
+  const out = JSON.parse(sessionStorage.getItem('dsout') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const KEYS = ['taskhub.v2', 'taskhub.layout', 'taskhub.panel'];
+  const snapshot = () => Object.fromEntries(KEYS.map(k => [k, localStorage.getItem(k)]));
+  const same = (a, b) => KEYS.every(k => a[k] === b[k]);
+  const running = () => !!q('[data-demo="run"]') && q('[data-demo="run"]').disabled;
+  const until = async (cond, ms) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await wait(100); return cond(); };
+  const choose = ids => qa('.demo-list input').forEach(i => { i.checked = ids.includes(i.value); });
+  const speed = v => { q('#demoSpeed').value = v; q('#demoSpeed').dispatchEvent(new Event('change')); };
+  // The demo publishes its results as data, so tests don't depend on how the panel words them.
+  const results = () => JSON.parse(q('#demoResults').dataset.results || 'null');
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  try {
+    await wait(300);
+    if (phase === '1') {
+      q('[data-load-default]').click(); await wait(400);
+      await login('achan');
+      ok('This workspace’s default-workspace.js is customised (3 items, and handoffs call a webhook)', qa('#board .card').length === 3);
+      q('#btnNew').click(); setv(q('#f_title'), 'MY REAL ITEM'); q('#form').requestSubmit(); await wait(50);
+      q('.col-grip[data-grip="side"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); await wait(30);
+      q('.pcard[data-acc="team"] > .pcard-head') && q('.pcard[data-acc="team"] > .pcard-head').click(); await wait(30);
+      qa('.toast').forEach(t => t.remove());
+      const mine = snapshot();
+      ok('Your workspace, panels and column widths are saved in this browser', !!mine['taskhub.v2'] && !!mine['taskhub.layout'] && !!mine['taskhub.panel']);
+
+      // ---------- 1. Unsaved work is never thrown away ----------
+      q('#sideConfig').click(); await wait(30); q('[data-cfg-nav="general"]').click(); await wait(30);
+      setv(q('[data-bind="general.appName"]'), 'Half-edited name'); await wait(30);
+      q('[data-open-demo]').click(); await wait(50);
+      choose(['signin']); speed('0.03');
+      q('[data-demo="run"]').click(); await wait(300);
+      ok('With unsaved Configuration changes, the demo doesn’t start', !running());
+      ok('…says why', /unsaved|save or discard/i.test(q('#demoCaption').textContent));
+      ok('…and the changes are still there', q('[data-bind="general.appName"]') && q('[data-bind="general.appName"]').value === 'Half-edited name');
+      await until(() => !running(), 60000);
+      q('[data-cfg-cmd="discard"]').click(); await wait(30);
+      if (q('#dlg').open) { q('#dlgOk').click(); await wait(30); }
+      q('#tabs [data-tab="board"]').click(); await wait(30);
+      btn('OMD-001', 'Edit').click(); await wait(30);
+      setv(q('#f_desc'), 'Half-written description'); await wait(20);
+      q('[data-demo="run"]').click(); await wait(300);
+      ok('With an item half-edited in the form, the demo doesn’t start', !running() && q('#f_desc').value === 'Half-written description');
+      await until(() => !running(), 60000);
+      q('#formCancel').click(); await wait(30);
+      ok('Nothing above changed your saved data', same(snapshot(), mine));
+
+      // ---------- 2. A run on its own data, reaching nothing outside ----------
+      choose(['signin', 'handoff', 'notify', 'layout']); speed('0.03');
+      q('[data-demo="run"]').click(); await wait(400);
+      ok('The demo runs', running());
+      const during = snapshot();
+      ok('While it runs, your saved workspace, panels and column widths are untouched', same(during, mine));
+      ok('…so it needs no backup copy of them', !localStorage.getItem('taskhub.demo-backup'));
+      const k = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      (document.activeElement || document.body).dispatchEvent(k);
+      const typed = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertText', data: 'x' });
+      (document.activeElement || document.body).dispatchEvent(typed);
+      ok('Keys pressed during the demo don’t reach the page', k.defaultPrevented && typed.defaultPrevented);
+      await until(() => !running(), 300000);
+      const r = results();
+      const checks = r ? r.flatMap(x => x.checks.map(c => ({ scenario: x.title, ...c }))) : [];
+      const failed = checks.filter(c => !c.pass).map(c => `${c.scenario} › ${c.label}`).concat(r ? r.filter(x => x.error).map(x => `${x.title}: ${x.error}`) : []);
+      ok('Every scenario passes, although default-workspace.js was changed' + (failed.length ? ` (${failed.join('; ')})` : ''), !!r && r.length === 4 && checks.length > 10 && !failed.length);
+      ok('Nothing left the browser: no webhook, email or link', !window.__outside.length || (out.push('     outside: ' + window.__outside.join(', ')), false));
+      ok('No pop-up or message from the demo is left on screen', !qa('#toasts .toast').filter(t => !t.classList.contains('out')).length);
+      ok('Your saved workspace, panels and column widths are exactly as before', same(snapshot(), mine));
+      ok('…and on screen: your item, signed in as you', qa('#board .card').some(c => c.textContent.includes('MY REAL ITEM')) && q('#sideFoot').textContent.includes('A. Chan'));
+
+      // ---------- 3. The tab is closed in the middle of a run ----------
+      choose(['lifecycle', 'handoff']); speed('1');
+      q('[data-demo="run"]').click();
+      await until(() => running() && !!q('#board .card'), 5000); await wait(2500);
+      ok('Mid-run, your saved data is still untouched', running() && same(snapshot(), mine));
+      sessionStorage.setItem('dsmine', JSON.stringify(mine));
+      sessionStorage.setItem('dsout', JSON.stringify(out)); sessionStorage.setItem('dsphase', '2');
+      location.reload(); return;
+    }
+
+    // ---- Phase 2: the page reopened ----
+    const mine = JSON.parse(sessionStorage.getItem('dsmine'));
+    ok('After closing the tab mid-demo, your saved workspace, panels and column widths are exactly as before', same(snapshot(), mine));
+    ok('Nothing of the demo is left in this browser', !Object.keys(localStorage).some(k => /demo-(backup|scratch)/.test(k)));
+    ok('You are back on your own board, signed in', qa('#board .card').some(c => c.textContent.includes('MY REAL ITEM')) && q('#sideFoot').textContent.includes('A. Chan'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR (phase ' + phase + ') ' + e.message + '\n' + e.stack); }
+  finish();
+});
+</script>
