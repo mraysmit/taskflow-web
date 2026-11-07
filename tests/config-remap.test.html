@@ -1,0 +1,175 @@
+<!-- Removing people (and teams) in Configuration when their items were already reassigned to someone who is then removed
+     too: every item must end up with a real owner and team (or none, or a former member), never an id that doesn't exist. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const B = path => q(`#view-config [data-bind="${path}"]`);
+  const nav = async s => { q(`[data-cfg-nav="${s}"]`).click(); await wait(30); };
+  const addRow = async list => { q(`#view-config [data-op="add"][data-list="${list}"]`).click(); await wait(30); };
+  const rowIndex = (list, name) => (window.__draftIdx = qa(`#view-config [data-bind^="${list}."][data-bind$=".name"]`).findIndex(el => el.value === name));
+  const del = async (list, name) => { q(`#view-config [data-op="del"][data-list="${list}"][data-i="${rowIndex(list, name)}"]`).click(); await wait(30); };
+  // In the "Remove …?" dialog, choose the option whose text includes `text`; returns whether the dialog asked at all.
+  const choose = async text => {
+    if (!q('#dlg').open || !q('#m_repl')) return false;
+    const o = [...q('#m_repl').options].find(x => x.textContent.includes(text));
+    if (o) setv(q('#m_repl'), o.value);
+    q('#dlgOk').click(); await wait(30);
+    return true;
+  };
+  const saveCfg = async () => { q('[data-cfg-cmd="save"]').click(); await wait(80); };
+  // A valid reference: empty, someone configured, or a former member the app remembers by name.
+  const validPerson = (s, id) => !id || s.config.people.some(p => p.id === id) || !!s.removed.people[id];
+  const validTeam = (s, id) => !id || s.config.teams.some(t => t.id === id) || !!s.removed.teams[id];
+  const item = ref => store().items.find(i => i.ref === ref);
+  // Every reference in the workspace that points at nothing. (The same check is in integrity.test.html.)
+  const problems = s => {
+    const c = s.config, bad = [];
+    const ids = l => new Set(l.map(x => x.id));
+    const people = ids(c.people), teams = ids(c.teams), statuses = ids(c.statuses), prios = ids(c.priorities), roles = ids(c.roles);
+    const queues = ids(c.roles.filter(r => r.queue)), chains = ids(c.approvals.chains), items = ids(s.items);
+    const formerP = new Set(Object.keys((s.removed || {}).people || {})), formerT = new Set(Object.keys((s.removed || {}).teams || {}));
+    const person = v => !v || people.has(v) || formerP.has(v), team = v => !v || teams.has(v) || formerT.has(v);
+    s.items.forEach(i => {
+      const at = (what, v) => bad.push(`${i.ref} ${what} → ${v}`);
+      ['ownerId', 'nextOwnerId', 'createdBy'].forEach(k => { if (!person(i[k])) at(k, i[k]); });
+      ['teamId', 'nextTeamId'].forEach(k => { if (!team(i[k])) at(k, i[k]); });
+      if (!statuses.has(i.statusId)) at('statusId', i.statusId);
+      if (i.prevStatusId && !statuses.has(i.prevStatusId)) at('prevStatusId', i.prevStatusId);
+      if (!prios.has(i.priorityId)) at('priorityId', i.priorityId);
+      ['queueId', 'nextQueueId'].forEach(k => { if (i[k] && !queues.has(i[k])) at(k, i[k]); });
+      if (i.approvalChainId && i.approvalChainId !== 'none' && !chains.has(i.approvalChainId)) at('approvalChainId', i.approvalChainId);
+      if (i.offer && !people.has(i.offer.toId)) at('offer to', i.offer.toId);
+      (i.approvals || []).filter(r => r.state === 'pending').forEach(r => r.stages.forEach(st => { if ((st.state === 'pending' || st.state === 'waiting') && !roles.has(st.roleId)) at('pending verification by', st.roleId); }));
+      (i.links || []).forEach(l => { if (!items.has(l.itemId)) at('link', l.itemId); });
+    });
+    s.alerts.forEach(a => { if (!people.has(a.toId)) bad.push(`alert to ${a.toId}`); if (a.itemId && !items.has(a.itemId)) bad.push(`alert about ${a.itemId}`); });
+    s.posts.forEach(p => { if (p.itemId && !items.has(p.itemId)) bad.push(`post about ${p.itemId}`); });
+    s.files.forEach(f => { if (f.itemId && !items.has(f.itemId)) bad.push(`file attached to ${f.itemId}`); });
+    return bad;
+  };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  try {
+    await wait(200); q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+    q('#sideConfig').click(); await wait(30);
+
+    // ---------- 1. Reassigned to someone new, who is then removed before saving ----------
+    await nav('people');
+    await addRow('people'); setv(B(`people.${qa('#view-config [data-bind$=".name"][data-bind^="people."]').length - 1}.name`), 'Temp Person'); await wait(30);
+    await del('people', 'E. Ng');
+    ok('Removing E. Ng asks what happens to their items', await choose('Temp Person'));
+    await del('people', 'Temp Person');
+    const asked1 = await choose('F. Ho');
+    ok('Removing the person E. Ng’s items were moved to asks again', asked1);
+    await saveCfg();
+    let s = store();
+    ok('Saved', !s.config.people.some(p => p.name === 'E. Ng' || p.name === 'Temp Person'));
+    ok('E. Ng’s item has a real owner, not someone who was never saved', validPerson(s, item('OMD-003').ownerId));
+    if (asked1) ok('…the one chosen the second time', item('OMD-003').ownerId === 'p6');
+
+    // ---------- 2. Reassigned to a saved person with no work, who is then removed ----------
+    await nav('people');
+    await addRow('people');
+    const sp = qa('#view-config [data-bind$=".name"][data-bind^="people."]').length - 1;
+    setv(B(`people.${sp}.name`), 'Spare Person'); setv(B(`people.${sp}.username`), 'spare'); await wait(30);
+    await saveCfg();
+    ok('Spare Person is saved', store().config.people.some(p => p.name === 'Spare Person'));
+    await nav('people');
+    await del('people', 'G. Lim');
+    ok('Removing G. Lim asks what happens to their items', await choose('Spare Person'));
+    await del('people', 'Spare Person');
+    const asked2 = await choose('Leave unassigned');
+    ok('Removing Spare Person (who owns nothing yet) still asks, because G. Lim’s items are moving to them', asked2);
+    await saveCfg();
+    s = store();
+    ok('G. Lim’s item has a real owner (or none), never a placeholder', validPerson(s, item('OMD-004').ownerId) && item('OMD-004').ownerId !== '__keep');
+    if (asked2) ok('…as chosen: unassigned', item('OMD-004').ownerId === '');
+
+    // ---------- 2b. …and choosing “Keep as a former member” the second time ----------
+    await nav('people');
+    await addRow('people'); setv(B(`people.${qa('#view-config [data-bind$=".name"][data-bind^="people."]').length - 1}.name`), 'Temp Two'); await wait(30);
+    await del('people', 'D. Patel');
+    await choose('Temp Two');
+    await del('people', 'Temp Two');
+    ok('Removing Temp Two offers to keep D. Patel’s items as a former member’s', q('#dlg').open && [...q('#m_repl').options].some(o => o.textContent.includes('former member')));
+    await choose('former member');
+    await saveCfg();
+    s = store();
+    ok('…which leaves them with D. Patel, remembered as a former member', item('OMD-002').nextOwnerId === 'p4' && !!s.removed.people.p4);
+
+    // ---------- 3. The same for teams ----------
+    await nav('teams');
+    const teams = s.config.teams;
+    const t3 = teams.find(t => t.id === item('OMD-002').teamId);
+    await addRow('teams'); setv(B(`teams.${qa('#view-config [data-bind$=".name"][data-bind^="teams."]').length - 1}.name`), 'Temp Team'); await wait(30);
+    await del('teams', t3.name);
+    ok(`Removing ${t3.name} asks what happens to its items`, await choose('Temp Team'));
+    await del('teams', 'Temp Team');
+    const other = teams.find(t => t.id !== t3.id);
+    const asked3 = await choose(other.name);
+    ok('Removing the team its items were moved to asks again', asked3);
+    await saveCfg();
+    s = store();
+    ok('The item’s team is real, not one that was never saved', validTeam(s, item('OMD-002').teamId));
+    if (asked3) ok('…the one chosen the second time', item('OMD-002').teamId === other.id);
+    ok('Every item, alert, post and note points only at real people and teams', s.items.every(i => validPerson(s, i.ownerId) && validPerson(s, i.nextOwnerId) && validTeam(s, i.teamId) && validTeam(s, i.nextTeamId))
+      && s.alerts.every(a => validPerson(s, a.toId)));
+
+    // ---------- 4. Removing someone a handoff is waiting for ----------
+    q('#tabs [data-tab="board"]').click(); await wait(30);
+    btn('OMD-001', 'Complete & handoff').click(); await wait(30);
+    setv(q('[data-note="0"]'), 'Over to you'); q('#dlgOk').click(); await wait(50);
+    ok('OMD-001 is offered to B. Lee', item('OMD-001').offer && item('OMD-001').offer.toId === 'p2');
+    q('#sideConfig').click(); await wait(30);
+    await nav('people');
+    await del('people', 'B. Lee');
+    await choose('C. Wong');
+    await saveCfg();
+    ok('Removing B. Lee and moving their work to C. Wong moves the waiting handoff to C. Wong', item('OMD-001').offer && item('OMD-001').offer.toId === 'p3'
+      && store().alerts.some(a => a.toId === 'p3' && a.offerId === item('OMD-001').offer.id));
+
+    // ---------- 5. Removing a group an item is waiting on for verification ----------
+    q('#tabs [data-tab="board"]').click(); await wait(30);
+    q('#btnNew').click(); setv(q('#f_title'), 'Needs a check'); q('#form').requestSubmit(); await wait(50);
+    const nc = () => store().items.find(i => i.title === 'Needs a check');
+    btn(nc().ref, 'Complete & handoff').click(); await wait(30);
+    if (q('#dlg').open) { q('#dlgOk').click(); await wait(50); }
+    ok('“Needs a check” is waiting for Controls reviewers', !!nc().approvals.find(r => r.state === 'pending' && r.stages.some(st => st.roleId === 'r_reviewer')));
+    q('#sideConfig').click(); await wait(30);
+    await nav('roles');
+    await del('roles', 'Controls reviewers');
+    if (q('#dlg').open) { q('#dlgOk').click(); await wait(30); }
+    // The verification routes named that group: the administrator gives their steps to Data stewards instead.
+    await nav('approvals');
+    const chains = store().config.approvals.chains;
+    for (let ci = 0; ci < chains.length; ci++) {
+      const si = chains[ci].stages.findIndex(st => st.roleId === 'r_reviewer');
+      if (si < 0) continue;
+      if (chains[ci].stages.some(st => st.roleId === 'r_steward')) { q(`#view-config [data-op="del"][data-list="approvals.chains.${ci}.stages"][data-i="${si}"]`).click(); await wait(30); }
+      else { setv(B(`approvals.chains.${ci}.stages.${si}.roleId`), 'r_steward'); await wait(30); }
+    }
+    await saveCfg();
+    ok('Controls reviewers is removed', !store().config.roles.some(r => r.id === 'r_reviewer'));
+    const rec = nc().approvals[0];
+    ok('The verification it was waiting for is withdrawn, and the item is back in its column', rec.state === 'recalled' && nc().statusId === rec.fromStatusId);
+    const bad = problems(store());
+    ok('After all of this, nothing in the workspace points at something that doesn’t exist' + (bad.length ? ` (${bad.join('; ')})` : ''), !bad.length);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

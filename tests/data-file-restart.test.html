@@ -1,0 +1,140 @@
+<!-- inject: early -->
+<!-- budget: 240000 -->
+<!-- The data file across a restart: work done while a conflict was waiting to be resolved must not be silently replaced by
+     the file's version when the browser reconnects. The browser's file access and IndexedDB are replaced by an in-memory
+     "disk" kept in sessionStorage, as in data-file.test.html, so the page can be reloaded like a restart. -->
+<script>
+(() => {
+  const phase = sessionStorage.getItem('drphase') || '1';
+  if (phase === '1') { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('drphase', '1'); }
+  const disk = () => JSON.parse(sessionStorage.getItem('disk') || 'null');
+  const writeDisk = text => { const d = disk() || {}; sessionStorage.setItem('disk', JSON.stringify({ name: d.name, text, lm: (d.lm || 0) + 1 })); };
+  window.__disk = { get: disk, write: writeDisk, data: () => JSON.parse(disk().text) };
+  class FakeHandle {
+    constructor(name) { this.name = name; this.kind = 'file'; }
+    async queryPermission() { return sessionStorage.getItem('perm') || 'granted'; }
+    async requestPermission() { sessionStorage.setItem('perm', 'granted'); return 'granted'; }
+    async getFile() { const d = disk(); return { lastModified: d.lm, text: async () => d.text }; }
+    async createWritable() {
+      if (sessionStorage.getItem('locked')) throw Object.assign(new Error('The file is locked by another program.'), { name: 'NoModificationAllowedError' });
+      let buf = ''; return { write: async t => { buf += t; }, close: async () => { writeDisk(buf); } };
+    }
+  }
+  window.showSaveFilePicker = async o => { sessionStorage.setItem('disk', JSON.stringify({ name: o.suggestedName, text: '', lm: 1 })); return new FakeHandle(o.suggestedName); };
+  const idb = () => JSON.parse(sessionStorage.getItem('idb') || '{}');
+  const later = f => setTimeout(f, 0);
+  Object.defineProperty(window, 'indexedDB', { configurable: true, value: { open() {
+    const req = {};
+    later(() => {
+      req.result = { close() {}, transaction() {
+        const tx = {}; const done = r => { later(() => tx.oncomplete && tx.oncomplete()); return r; };
+        tx.objectStore = () => ({
+          put(v, k) { const s = idb(); s[k] = v.name; sessionStorage.setItem('idb', JSON.stringify(s)); return done({}); },
+          get(k) { const n = idb()[k]; return done({ result: n ? new FakeHandle(n) : undefined }); },
+          delete(k) { const s = idb(); delete s[k]; sessionStorage.setItem('idb', JSON.stringify(s)); return done({}); },
+        });
+        return tx;
+      } };
+      if (req.onsuccess) req.onsuccess();
+    });
+    return req;
+  } } });
+})();
+
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const phase = sessionStorage.getItem('drphase');
+  const out = JSON.parse(sessionStorage.getItem('drout') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const titles = () => qa('#board .card-title').map(t => t.textContent);
+  const side = () => q('#sideFile');
+  const D = window.__disk;
+  const colleague = fn => { const d = D.data(); fn(d); D.write(JSON.stringify(d, null, 2)); };
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  try {
+    await wait(300);
+    if (phase === '1') {
+      q('[data-load-default]').click(); await wait(300);
+      await login('achan');
+      q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+      q('[data-file-cmd="new"]').click(); await wait(300);
+      q('#tabs [data-tab="board"]').click(); await wait(20);
+      // A colleague saves the file while A. Chan is also making a change: a conflict.
+      colleague(d => { d.items.find(i => i.ref === 'OMD-002').title = 'Colleague renamed this'; });
+      btn('OMD-001', 'Start').click(); await wait(700);
+      ok('A conflict is reported', side().classList.contains('bad') && side().textContent.includes('changed elsewhere'));
+      // A. Chan doesn't deal with it now and carries on working, then closes the browser.
+      q('#btnNew').click(); setv(q('#f_title'), 'Made during the conflict'); q('#form').requestSubmit(); await wait(700);
+      ok('The new work is kept in this browser meanwhile', titles().includes('Made during the conflict') && !D.data().items.some(i => i.title === 'Made during the conflict'));
+      sessionStorage.setItem('perm', 'prompt');
+      sessionStorage.setItem('drout', JSON.stringify(out)); sessionStorage.setItem('drphase', '2');
+      location.reload(); return;
+    }
+
+    if (phase === '2') {
+      // ---- Phase 2: the next day ----
+      ok('After the restart the sidebar asks to reconnect', side().classList.contains('warn') && side().textContent.includes('Reconnect'));
+      side().click(); await wait(300);
+      const asked = q('#dlg').open && q('#dlgTitle').textContent.includes('changed elsewhere');
+      ok('Reconnecting doesn’t silently drop the work done during the conflict: it asks again', asked);
+      if (asked) {
+        q('#m_mine').click(); await wait(300);
+        ok('“Keep mine” then saves that work to the file', D.data().items.some(i => i.title === 'Made during the conflict'));
+      }
+      // A colleague with a newer version of the app saves things this version doesn't know about.
+      colleague(d => {
+        d.config.version += 1;
+        d.futureData = { kept: true };
+        d.config.futureList = [{ id: 'fx1' }];
+        d.config.teams[0].futureColourScheme = 'night';
+        d.config.general.futureSetting = 'on';
+        d.items.find(i => i.ref === 'OMD-002').futureField = 42;
+      });
+      for (let t = 0; t < 70 && !qa('.toast').some(x => x.textContent.includes('latest changes')); t++) await wait(100);
+      q('#btnNew').click(); setv(q('#f_title'), 'Saved by the older version'); q('#form').requestSubmit(); await wait(700);
+      const f = D.data();
+      ok('This version’s save reaches the file', f.items.some(i => i.title === 'Saved by the older version'));
+      ok('…without dropping what a newer version saved', f.futureData && f.futureData.kept === true && Array.isArray(f.config.futureList) && f.config.general.futureSetting === 'on' && f.config.teams[0].futureColourScheme === 'night' && f.items.find(i => i.ref === 'OMD-002').futureField === 42);
+      ok('…and the file still says it was written for the newer version', f.config.version > 7);
+
+      // Now saving fails for another reason (the file is locked while OneDrive syncs it), and A. Chan keeps working.
+      sessionStorage.setItem('locked', '1');
+      q('#btnNew').click(); setv(q('#f_title'), 'Made while saving failed'); q('#form').requestSubmit(); await wait(700);
+      ok('A failed save is reported', side().classList.contains('bad'));
+      sessionStorage.removeItem('locked');
+      sessionStorage.setItem('perm', 'prompt');
+      sessionStorage.setItem('drout', JSON.stringify(out)); sessionStorage.setItem('drphase', '3');
+      location.reload(); return;
+    }
+
+    // ---- Phase 3: after another restart ----
+    side().click(); await wait(300);
+    ok('Reconnecting after a failed save keeps the work done meanwhile and saves it', titles().includes('Made while saving failed') && D.data().items.some(i => i.title === 'Made while saving failed'));
+
+    // Loading the default workspace never replaces the shared file.
+    const shared = D.get().text;
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('#view-config [data-load-default]').click(); await wait(50);
+    ok('Loading the default workspace says the file is let go, not changed', q('#dlg').open && q('#dlgBody').textContent.includes('The file itself is not changed'));
+    q('#ldBackup').checked = false; q('#dlgOk').click(); await wait(1000);
+    ok('…and the file is indeed unchanged', D.get().text === shared && side().hidden);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR (phase ' + phase + ') ' + e.message + '\n' + e.stack); }
+  finish();
+});
+</script>

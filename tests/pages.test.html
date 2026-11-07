@@ -1,0 +1,103 @@
+<!-- The Posts, Files and Notes pages: notes appear on their own page (not in the notifications list), editing and deleting notes, and someone viewing as another person (read-only) can't delete anything. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const logout = async () => { q('[data-logout]').click(); await wait(30); };
+  const tab = async t => { q(`#tabs [data-tab="${t}"]`).click(); await wait(30); };
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  // The list on each page is the last block of its sheet, whatever its id.
+  const listOf = page => q(`#view-${page} .sheet`).lastElementChild;
+  const noteEntries = () => [...listOf('notes').querySelectorAll('.entry')].map(e => e.textContent);
+  // A Delete button that is no longer on screen (or never was) can still be clicked by a stale page: forge one.
+  const forge = (page, attr, id) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute(attr, id); listOf(page).appendChild(b); b.click(); };
+  try {
+    await wait(200); q('[data-load-default]').click(); await wait(300);
+    await login('eng');
+
+    // ---------- Overview: only counts what this person may see ----------
+    const seen = qa('#board .card .card-ref').map(r => r.textContent);
+    await tab('overview');
+    const s1 = store(), closed = new Set(s1.config.statuses.filter(x => x.closed).map(x => x.id));
+    const incoming = qa('#overview tbody tr').map(r => [r.dataset.team, +r.lastElementChild.textContent]);
+    const expected = id => s1.items.filter(i => seen.includes(i.ref) && !closed.has(i.statusId) && i.nextTeamId === id).length;
+    ok('E. Ng sees only part of the workspace (the check below means something)', seen.length > 0 && seen.length < s1.items.length && s1.items.some(i => !seen.includes(i.ref) && i.nextTeamId));
+    ok('Overview: “Incoming” counts only items E. Ng can see', incoming.length > 0 && incoming.every(([id, n]) => n === expected(id)));
+
+    // ---------- Notes ----------
+    await tab('notes');
+    q('#noteTitle').value = 'Shift checklist'; q('#noteBody').value = 'Check the overnight queue'; q('#noteForm').requestSubmit(); await wait(30);
+    ok('A saved note is listed on the Notes page', noteEntries().some(t => t.includes('Shift checklist') && t.includes('Check the overnight queue')));
+    ok('Notes page count matches', q('#notesCount').textContent === `${store().notes.length} note${store().notes.length === 1 ? '' : 's'}`);
+    q('#btnBell').click(); await wait(30);
+    ok('The notifications list does not show notes', !q('#noteCentre').textContent.includes('Shift checklist'));
+    q('#btnBell').click(); await wait(30);
+
+    const editBtn = [...listOf('notes').querySelectorAll('[data-note-edit]')].find(b => b.closest('.entry').textContent.includes('Shift checklist'));
+    ok('Each note has Edit and Delete on the Notes page', !!editBtn && !!editBtn.closest('.entry').querySelector('[data-note-del]'));
+    if (editBtn) {
+      editBtn.click(); await wait(20);
+      ok('Edit fills the note form', q('#noteTitle').value === 'Shift checklist' && q('#noteSave').textContent === 'Update note');
+      q('#noteTitle').value = 'Night shift checklist'; q('#noteForm').requestSubmit(); await wait(30);
+      ok('Updating a note changes it in place', noteEntries().some(t => t.includes('Night shift checklist')) && !noteEntries().some(t => t.includes('Shift checklist') && !t.includes('Night')));
+      const del = [...listOf('notes').querySelectorAll('[data-note-del]')].find(b => b.closest('.entry').textContent.includes('Night shift checklist'));
+      del.click(); await wait(30);
+      ok('Deleting a note removes it', !noteEntries().some(t => t.includes('Night shift checklist')) && !store().notes.some(n => n.title === 'Night shift checklist'));
+    }
+
+    // ---------- Things to protect while read-only ----------
+    q('#noteTitle').value = 'Keep me'; q('#noteForm').requestSubmit(); await wait(30);
+    await tab('posts');
+    q('#postText').value = 'Overnight run finished'; q('#postForm').requestSubmit(); await wait(30);
+    ok('A post can be deleted by its author', !!q('#postList [data-post-del]'));
+    await tab('files');
+    const dt = new DataTransfer(); dt.items.add(new File(['hello'], 'runbook.txt', { type: 'text/plain' }));
+    q('#fileInput').files = dt.files; q('#fileInput').dispatchEvent(new Event('change'));
+    for (let t = 0; t < 40 && !q('#fileList [data-file-dl]'); t++) await wait(50);
+    ok('An added file is listed with Download and Remove', q('#fileList').textContent.includes('runbook.txt') && !!q('#fileList [data-file-dl]') && !!q('#fileList [data-file-del]'));
+    const s0 = store();
+    const postId = s0.posts.find(p => p.text === 'Overnight run finished').id;
+    const fileId = s0.files.find(f => f.name === 'runbook.txt').id;
+    const noteId = s0.notes.find(n => n.title === 'Keep me').id;
+    await logout();
+
+    // D. Patel views as E. Ng, which is read-only.
+    await login('dpatel');
+    qa('#teamMembers [data-view-as]').find(b => b.closest('.member-row').textContent.includes('E. Ng')).click(); await wait(30);
+    ok('Viewing as E. Ng is read-only', !!q('#roBanner') && !q('#roBanner').hidden);
+
+    await tab('posts');
+    ok('Read-only: no Delete on E. Ng’s posts', !q('#postList [data-post-del]'));
+    forge('posts', 'data-post-del', postId); await wait(30);
+    ok('Read-only: a post can’t be deleted', store().posts.some(p => p.id === postId));
+
+    await tab('files');
+    ok('Read-only: no Remove on files', !q('#fileList [data-file-del]'));
+    ok('Read-only: files can still be downloaded', !!q('#fileList [data-file-dl]'));
+    forge('files', 'data-file-del', fileId); await wait(30);
+    ok('Read-only: a file can’t be removed', store().files.some(f => f.id === fileId));
+
+    await tab('notes');
+    ok('Read-only: no Edit or Delete on notes', !listOf('notes').querySelector('[data-note-del], [data-note-edit]'));
+    forge('notes', 'data-note-del', noteId); await wait(30);
+    ok('Read-only: a note can’t be deleted', store().notes.some(n => n.id === noteId));
+    ok('Read-only: trying says why', qa('.toast').some(t => t.textContent.includes('read-only')));
+
+    q('[data-back-to-me]').click(); await wait(30);
+    await tab('files');
+    ok('Back as yourself, Remove is offered again', !!q('#fileList [data-file-del]'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

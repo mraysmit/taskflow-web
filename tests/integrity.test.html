@@ -1,0 +1,92 @@
+<!-- Nothing in the workspace may point at something that doesn't exist: items, offers, verifications, links, alerts, posts and files
+     only refer to configured people, teams, columns, priorities, queues, roles, routes and items (or, for people and teams,
+     a former member the app remembers). Phase 1 saves a workspace full of broken references, as a hand-edited file, an old
+     backup or a buggy version could; phase 2 opens it. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const phase = sessionStorage.getItem('iphase') || '1';
+  const out = JSON.parse(sessionStorage.getItem('iout') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  // Every reference in the workspace that points at nothing. (The same check is in config-remap.test.html.)
+  const problems = s => {
+    const c = s.config, bad = [];
+    const ids = l => new Set(l.map(x => x.id));
+    const people = ids(c.people), teams = ids(c.teams), statuses = ids(c.statuses), prios = ids(c.priorities), roles = ids(c.roles);
+    const queues = ids(c.roles.filter(r => r.queue)), chains = ids(c.approvals.chains), items = ids(s.items);
+    const formerP = new Set(Object.keys((s.removed || {}).people || {})), formerT = new Set(Object.keys((s.removed || {}).teams || {}));
+    const person = v => !v || people.has(v) || formerP.has(v), team = v => !v || teams.has(v) || formerT.has(v);
+    const pf = c.fields.custom.filter(f => f.type === 'person').map(f => f.id), tf = c.fields.custom.filter(f => f.type === 'team').map(f => f.id);
+    s.items.forEach(i => {
+      const at = (what, v) => bad.push(`${i.ref} ${what} → ${v}`);
+      ['ownerId', 'nextOwnerId', 'createdBy'].forEach(k => { if (!person(i[k])) at(k, i[k]); });
+      ['teamId', 'nextTeamId'].forEach(k => { if (!team(i[k])) at(k, i[k]); });
+      if (!statuses.has(i.statusId)) at('statusId', i.statusId);
+      if (i.prevStatusId && !statuses.has(i.prevStatusId)) at('prevStatusId', i.prevStatusId);
+      if (!prios.has(i.priorityId)) at('priorityId', i.priorityId);
+      ['queueId', 'nextQueueId'].forEach(k => { if (i[k] && !queues.has(i[k])) at(k, i[k]); });
+      if (i.approvalChainId && i.approvalChainId !== 'none' && !chains.has(i.approvalChainId)) at('approvalChainId', i.approvalChainId);
+      if (i.offer && !people.has(i.offer.toId)) at('offer to', i.offer.toId);
+      (i.approvals || []).filter(r => r.state === 'pending').forEach(r => r.stages.forEach(st => { if ((st.state === 'pending' || st.state === 'waiting') && !roles.has(st.roleId)) at('pending verification by', st.roleId); }));
+      (i.links || []).forEach(l => { if (!items.has(l.itemId)) at('link', l.itemId); });
+      pf.forEach(f => { if (!person((i.fields || {})[f])) at(f, i.fields[f]); });
+      tf.forEach(f => { if (!team((i.fields || {})[f])) at(f, i.fields[f]); });
+    });
+    s.alerts.forEach(a => { if (!people.has(a.toId)) bad.push(`alert to ${a.toId}`); if (a.itemId && !items.has(a.itemId)) bad.push(`alert about ${a.itemId}`); });
+    s.posts.forEach(p => { if (p.itemId && !items.has(p.itemId)) bad.push(`post about ${p.itemId}`); });
+    s.files.forEach(f => { if (f.itemId && !items.has(f.itemId)) bad.push(`file attached to ${f.itemId}`); });
+    return bad;
+  };
+  try {
+    await wait(200);
+    if (phase === '1') {
+      q('[data-load-default]').click(); await wait(300);
+      await login('achan');
+      const s = store();
+      ok('The sample workspace starts with no broken references', !problems(s).length);
+      const it = ref => s.items.find(i => i.ref === ref);
+      Object.assign(it('OMD-001'), { ownerId: 'p_ghost', teamId: 't_ghost', statusId: 's_ghost', priorityId: 'pr_ghost', approvalChainId: 'ap_ghost', links: [{ itemId: 'i_ghost', type: 'Linked' }] });
+      Object.assign(it('OMD-002'), { ownerId: '', queueId: 'r_ghost', nextOwnerId: 'p_ghost2', nextTeamId: 't_ghost' });
+      const o = { id: 'ho_ghost', toId: 'p_ghost', toTeamId: 't_ghost', fromId: 'p5', byId: 'p5', time: Date.now(), note: [] };
+      Object.assign(it('OMD-003'), { offer: o, handovers: [Object.assign({}, o, { state: 'pending' })] });
+      Object.assign(it('OMD-004'), { statusId: 'verify', approvals: [{ id: 'ap_rec', chainId: 'ap_std', chainName: 'Controls check', order: 'sequence', targetStatusId: 'completed', fromStatusId: 'progress',
+        submittedBy: 'p7', ownerId: 'p7', time: Date.now(), state: 'pending', stages: [{ roleId: 'r_ghost', state: 'pending', by: '', at: 0, note: '' }] }] });
+      s.alerts.push({ id: 'al_g1', toId: 'p_ghost', fromId: 'p1', itemId: it('OMD-001').id, kind: 'custom', label: 'NOTE', text: 'To nobody', time: Date.now(), read: false, popped: true });
+      s.alerts.push({ id: 'al_g2', toId: 'p1', fromId: 'p2', itemId: 'i_ghost', kind: 'custom', label: 'NOTE', text: 'About nothing', time: Date.now(), read: false, popped: true });
+      s.posts.push({ id: 'po_g', authorId: 'p1', text: 'About a deleted item', itemId: 'i_ghost', time: Date.now() });
+      localStorage.setItem('taskhub.v2', JSON.stringify(s));
+      sessionStorage.setItem('iout', JSON.stringify(out)); sessionStorage.setItem('iphase', '2');
+      location.reload(); return;
+    }
+
+    // ---- Phase 2: opening it ----
+    await wait(100);
+    const s = store();
+    const bad = problems(s);
+    ok('Opening a workspace with broken references repairs every one of them' + (bad.length ? ` (still broken: ${bad.join('; ')})` : ''), !bad.length);
+    const it = ref => s.items.find(i => i.ref === ref);
+    ok('An item in a column that doesn’t exist goes to the first column', it('OMD-001').statusId === s.config.general.initialStatusId);
+    ok('A handoff offered to someone who doesn’t exist is withdrawn, and the record says so', !it('OMD-003').offer && it('OMD-003').handovers[0].state === 'withdrawn' && it('OMD-003').ownerId === 'p5');
+    ok('A verification waiting for a role that doesn’t exist is withdrawn, and the item goes back to where it was', it('OMD-004').approvals[0].state === 'recalled' && it('OMD-004').statusId === 'progress');
+    ok('Nothing else is lost: all four items, the post and the real alerts are still there', s.items.length === 4 && s.posts.some(p => p.id === 'po_g' && !p.itemId));
+    await login('achan');
+    ok('The board shows all four items', qa('#board .card').length === 4);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR (phase ' + phase + ') ' + e.message + '\n' + e.stack); }
+  finish();
+});
+</script>

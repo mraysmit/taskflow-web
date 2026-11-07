@@ -1,0 +1,99 @@
+<!-- Saved or shared data that is hostile or unreadable. Phases reload the page:
+     1 plants values that try to break out of HTML attributes (colours, and the ids of items, alerts, posts, files and notes),
+     2 checks none of them ran and the app still works with them, then corrupts the saved workspace,
+     3 checks the unreadable copy is kept rather than overwritten, and that the person is told. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const phase = sessionStorage.getItem('hphase') || '1';
+  const out = JSON.parse(sessionStorage.getItem('hout') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const tab = async t => { q(`#tabs [data-tab="${t}"]`).click(); await wait(30); };
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const next = p => {
+    if (window.__errs) out.push('JSERRS (phase ' + phase + '): ' + window.__errs.join(' | '));
+    sessionStorage.setItem('hout', JSON.stringify(out)); sessionStorage.setItem('hphase', p);
+    location.reload();
+  };
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  // Each payload closes the attribute it lands in. If it gets through, it leaves a [data-pwned] attribute or runs onerror.
+  const evil = tag => `x" data-pwned="${tag}"><img src="nowhere:" onerror="window.__pwned=(window.__pwned||'')+'${tag} '"><b x="`;
+  const pwned = () => qa('[data-pwned]').map(e => e.getAttribute('data-pwned')).concat(window.__pwned ? [window.__pwned.trim()] : []);
+  const HEX = /^#[0-9a-f]{6}$/i;
+  try {
+    await wait(200);
+    if (phase === '1') {
+      q('[data-load-default]').click(); await wait(300);
+      await login('achan');
+      const s = store();
+      const c = s.config;
+      c.teams[0].color = evil('teamColor'); c.teams[0].bg = evil('teamBg');
+      c.priorities.forEach(p => { p.fg = evil('prioFg'); p.bg = evil('prioBg'); });
+      c.statuses[0].color = 'red;background-image:url(https://evil.test/s)';
+      c.actions.forEach(a => { a.color = 'red;background-image:url(https://evil.test/a)'; });
+      const base = s.items.find(i => i.ref === 'OMD-001');
+      const itemId = evil('item');
+      s.items.push(Object.assign({}, base, { id: itemId, ref: 'OMD-099', title: 'Planted item', ownerId: 'p1', teamId: c.teams[0].id, history: [], links: [], approvals: [], handovers: [], offer: null }));
+      s.alerts.unshift({ id: evil('alert'), toId: 'p1', fromId: 'p2', itemId, kind: 'custom', label: 'NOTE', text: 'Planted alert', time: Date.now(), read: false, popped: true });
+      s.posts.push({ id: evil('post'), authorId: 'p1', text: 'Planted post', itemId, time: Date.now() });
+      s.files.push({ id: evil('file'), name: 'planted.txt', size: 5, type: 'text/plain', byId: 'p1', itemId: '', time: Date.now(), data: 'data:text/plain;base64,aGVsbG8=' });
+      s.notes.push({ id: evil('note'), authorId: 'p1', title: 'Planted note', body: '', time: Date.now() });
+      localStorage.setItem('taskhub.v2', JSON.stringify(s));
+      next('2'); return;
+    }
+
+    if (phase === '2') {
+      await wait(100);
+      ok('Board: nothing planted got out of an attribute', !pwned().length);
+      const card = () => qa('#board .card').find(x => x.querySelector('.card-ref') && x.querySelector('.card-ref').textContent === 'OMD-099');
+      ok('The planted item still shows, with its id intact', !!card() && card().dataset.id === evil('item'));
+      ok('Team and priority colours that aren’t colours are replaced', store().config.teams[0].color.match(HEX) && store().config.teams[0].bg.match(HEX) && store().config.priorities.every(p => HEX.test(p.fg) && HEX.test(p.bg)));
+      ok('Status and button colours that aren’t colours are replaced', HEX.test(store().config.statuses[0].color) && store().config.actions.every(a => HEX.test(a.color)));
+      ok('No planted style reaches the page', !qa('[style]').some(e => e.getAttribute('style').includes('evil.test')));
+      ok('Inbox: the planted alert shows safely', q('#inbox').textContent.includes('Planted alert') && !pwned().length);
+      q('#inbox [data-alert-open]').click(); await wait(50);
+      ok('Opening the planted alert finds its item', qa('.toast').every(t => !t.textContent.includes('no longer exists')));
+      card().querySelector('[data-open-item]').click(); await wait(50);
+      ok('The item details open for the planted item', q('#dlg').open && q('#dlgTitle').textContent.includes('Planted item'));
+      q('#dlg').close();
+      await tab('posts'); await wait(50);
+      ok('Posts: the planted post shows safely', q('#postList').textContent.includes('Planted post') && !pwned().length);
+      await tab('files'); await wait(50);
+      ok('Files: the planted file shows safely', q('#fileList').textContent.includes('planted.txt') && !pwned().length);
+      await tab('notes'); await wait(50);
+      ok('Notes: the planted note shows safely', q('#view-notes').textContent.includes('Planted note') && !pwned().length);
+      q('#sideConfig').click(); await wait(50);
+      for (const sec of ['teams', 'priorities', 'statuses', 'workflow']) { q(`[data-cfg-nav="${sec}"]`).click(); await wait(30); }
+      ok('Configuration screens show the cleaned colours safely', !pwned().length);
+      await tab('board');
+      // Now the browser's saved copy becomes unreadable (a half-written save, a bad edit, a broken extension...).
+      sessionStorage.setItem('garbage', '{"items": [ {"id": "broken"');
+      localStorage.setItem('taskhub.v2', sessionStorage.getItem('garbage'));
+      next('3'); return;
+    }
+
+    if (phase === '3') {
+      const garbage = sessionStorage.getItem('garbage');
+      ok('The unreadable saved workspace is kept, not overwritten', localStorage.getItem('taskhub.v2.unreadable') === garbage);
+      ok('The person is told, and offered the copy', q('#dlg').open && /couldn.t be (read|opened)/.test(q('#dlgBody').textContent) && q('#dlgOk').textContent.includes('Download'));
+      q('#dlg').close();
+      ok('The app still starts, offering the default workspace', !q('#login').hidden && !!q('[data-load-default]'));
+      ok('no JS errors', !(window.__errs || []).length);
+      finish(); return;
+    }
+  } catch (e) { out.push('ERROR (phase ' + phase + ') ' + e.message + '\n' + e.stack); }
+  finish();
+});
+</script>

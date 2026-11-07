@@ -1,0 +1,41 @@
+<!-- Signing out on a shared computer: nothing of the previous person's (pop-ups, messages, the notifications list) is left on screen for the next one. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  // Unlike other suites, this sign-in leaves the pop-ups on screen: they are what is being tested.
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const logout = async () => { q('[data-logout]').click(); await wait(30); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const onScreen = () => qa('#toasts .toast').filter(t => !t.classList.contains('out'));
+  try {
+    await wait(200); q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+    btn('OMD-001', 'Complete & handoff').click(); await wait(30);
+    setv(q('[data-note="0"]'), 'Over to you'); q('#dlgOk').click(); await wait(50);
+    await logout();
+    qa('#toasts .toast').forEach(t => t.remove());
+
+    await login('blee');
+    ok('B. Lee signs in to a pop-up about the handoff', onScreen().some(t => t.textContent.includes('B. Lee') && t.textContent.includes('OMD-001')));
+    q('#btnBell').click(); await wait(30);
+    ok('…and opens the notifications list', !q('#noteCentre').hidden);
+    await logout();
+    ok('After signing out, no pop-up or message of B. Lee’s is left on screen', !onScreen().length);
+    ok('…and the notifications list is closed', q('#noteCentre').hidden);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

@@ -925,7 +925,7 @@
               <button class="btn btn-red" type="submit" id="noteSave">Save note</button>
             </div>
           </form>
-          <div id="noteList"></div>
+          <div id="notesList"></div>
         </div>
       </section>
 
@@ -1302,6 +1302,8 @@
     const n = parseInt(m[1], 16), t = toWhite ? 255 : 0;
     return '#' + [16, 8, 0].map(s => { const c = (n >> s) & 255; return Math.round(c + (t - c) * amt).toString(16).padStart(2, '0'); }).join('');
   }
+  // Colours from config end up in style attributes: anything that isn't a plain #rrggbb colour falls back to the default.
+  const hexOr = (v, fallback) => (/^#[0-9a-f]{6}$/i.test(String(v ?? '')) ? v : fallback);
   const tint = (hex, amt = 0.82) => mix(hex, true, amt);
   const shade = (hex, amt = 0.14) => mix(hex, false, amt);
 
@@ -1492,8 +1494,8 @@
   const label = k => cfg().fields.labels[k] || k;
   const prioRank = id => { const i = cfg().priorities.findIndex(p => p.id === id); return i < 0 ? 99 : i; };
   const defaultPriorityId = () => { const ps = cfg().priorities; return (ps[Math.floor((ps.length - 1) / 2)] || {}).id || ''; };
-  const prioStyle = id => { const p = priority(id); return p ? `background:${p.bg};color:${p.fg}` : 'background:#eceef1;color:#3d4148'; };
-  const teamStyle = t => t ? `background:${t.bg};color:${t.color}` : 'background:#eceef1;color:#3d4148';
+  const prioStyle = id => { const p = priority(id); return p ? `background:${esc(p.bg)};color:${esc(p.fg)}` : 'background:#eceef1;color:#3d4148'; };
+  const teamStyle = t => t ? `background:${esc(t.bg)};color:${esc(t.color)}` : 'background:#eceef1;color:#3d4148';
   const findByName = (list, name) => { const n = String(name || '').trim().toLowerCase(); return n ? list.find(x => x.name.toLowerCase() === n) : undefined; };
 
   const getItem = id => S.items.find(i => i.id === id);
@@ -1964,6 +1966,10 @@
 
   function normalizeConfig(input) {
     let c = input && typeof input === 'object' ? clone(input) : {};
+    // Saved by a newer version of the app (a colleague sharing the data file has updated): keep what this version
+    // doesn't understand, so saving here doesn't strip it from the file. Older versions' leftovers are dropped as before.
+    const newer = +c.version > CONFIG_VERSION;
+    const keepNew = (src, fixed) => { if (!newer) return fixed; const o = Object.assign({}, src, fixed); delete o.password; delete o.newPassword; return o; };
     const beforeRename = !(c.version >= 7);
     const legacy = c.version === 2 || (Array.isArray(c.statuses) && c.statuses.some(s => s && has(s, 'category'))) || Array.isArray(c.focus) || (Array.isArray(c.actions) && c.actions.some(a => a && has(a, 'kind')));
     if (legacy) c = upgradeV2(c);
@@ -1971,14 +1977,14 @@
     if (c.version === 4 || (Object.keys(c).length && !Array.isArray(c.roles))) c = upgradeV4(c);
     if (Object.keys(c).length && !(c.approvals && typeof c.approvals === 'object')) c = upgradeV5(c);
     const d = clone(BASE_CONFIG);
-    const list = (k, fix) => (Array.isArray(c[k]) ? c[k] : d[k]).filter(x => x && typeof x === 'object').map(fix);
+    const list = (k, fix) => (Array.isArray(c[k]) ? c[k] : d[k]).filter(x => x && typeof x === 'object').map(x => keepNew(x, fix(x)));
     const str = v => String(v ?? '').trim();
-    const out = { version: CONFIG_VERSION };
+    const out = { version: newer ? +c.version : CONFIG_VERSION };
     out.general = Object.assign(d.general, c.general || {});
     if (beforeRename && out.general.appName === 'Design Hub') out.general.appName = 'Task Hub';
     out.general.modules = Object.assign(clone(BASE_CONFIG.general.modules), (c.general && c.general.modules) || {});
     out.general.allowDrag = out.general.allowDrag !== false;
-    out.teams = list('teams', t => ({ id: str(t.id) || uid('t'), name: str(t.name), color: t.color || '#343a8a', bg: t.bg || tint(t.color || '#343a8a', 0.86), leadId: t.leadId || '', nextTeamId: t.nextTeamId || '' }));
+    out.teams = list('teams', t => ({ id: str(t.id) || uid('t'), name: str(t.name), color: hexOr(t.color, '#343a8a'), bg: hexOr(t.bg, tint(hexOr(t.color, '#343a8a'), 0.86)), leadId: t.leadId || '', nextTeamId: t.nextTeamId || '' }));
     out.people = list('people', p => {
       const o = {
         id: str(p.id) || uid('p'), name: str(p.name), teamId: p.teamId || '', role: str(p.role), email: str(p.email), active: p.active !== false,
@@ -1995,8 +2001,8 @@
       sees: SCOPES.some(s => s.v === r.sees) ? r.sees : 'own', viewAs: VIEW_AS.some(s => s.v === r.viewAs) ? r.viewAs : 'none',
       actAs: !!r.actAs, configure: !!r.configure, queue: !!r.queue,
     }));
-    out.priorities = list('priorities', p => ({ id: str(p.id) || uid('pr'), name: str(p.name), fg: p.fg || '#3d4148', bg: p.bg || tint(p.fg || '#3d4148'), dueDays: Number.isFinite(+p.dueDays) ? +p.dueDays : 3 }));
-    out.statuses = list('statuses', s => ({ id: str(s.id) || uid('s'), name: str(s.name), color: s.color || '#6b7280', closed: !!s.closed, hold: !!s.hold && !s.closed, flags: Array.isArray(s.flags) ? s.flags.map(String) : [] }));
+    out.priorities = list('priorities', p => ({ id: str(p.id) || uid('pr'), name: str(p.name), fg: hexOr(p.fg, '#3d4148'), bg: hexOr(p.bg, tint(hexOr(p.fg, '#3d4148'))), dueDays: Number.isFinite(+p.dueDays) ? +p.dueDays : 3 }));
+    out.statuses = list('statuses', s => ({ id: str(s.id) || uid('s'), name: str(s.name), color: hexOr(s.color, '#6b7280'), closed: !!s.closed, hold: !!s.hold && !s.closed, flags: Array.isArray(s.flags) ? s.flags.map(String) : [] }));
     const ex = c.extensions && typeof c.extensions === 'object' ? c.extensions : {};
     const exList = (k, fix) => (Array.isArray(ex[k]) ? ex[k] : []).filter(x => x && typeof x === 'object').map(fix);
     const fixParams = ps => (Array.isArray(ps) ? ps : []).filter(p => p && typeof p === 'object').map(p => ({ key: str(p.key), label: str(p.label), type: PARAM_TYPES.some(t => t.v === p.type) ? p.type : 'text' }));
@@ -2019,7 +2025,7 @@
       conds: (Array.isArray(f.conds) ? f.conds : []).filter(x => x && typeof x === 'object').map(x => ({ subject: String(x.subject || 'state'), op: String(x.op || ''), value: x.value ?? '' })),
     }));
     out.actions = list('actions', a => ({
-      id: str(a.id) || uid('a'), label: str(a.label), color: a.color || '#2e3394', outline: !!a.outline,
+      id: str(a.id) || uid('a'), label: str(a.label), color: hexOr(a.color, '#2e3394'), outline: !!a.outline,
       width: WIDTHS.some(w => w.v === a.width) ? a.width : 'md',
       show: { statuses: Array.isArray(a.show && a.show.statuses) ? a.show.statuses.map(String) : ['*'], filterId: (a.show && a.show.filterId) || '' },
       steps: (Array.isArray(a.steps) ? a.steps : []).filter(s => s && (STEP_TYPES[s.type] || isCustomStep(s.type))).map(s => Object.assign({ type: s.type, when: s.when || '' }, STEP_TYPES[s.type] ? STEP_TYPES[s.type].defaults() : { params: {} }, s)),
@@ -2052,6 +2058,7 @@
         stages: (Array.isArray(ch.stages) ? ch.stages : []).filter(s => s && typeof s === 'object').map(s => ({ roleId: String(s.roleId || '') })),
       })),
     };
+    if (newer) Object.keys(c).forEach(k => { if (!(k in out)) out[k] = c[k]; });
     return fixRefs(out);
   }
 
@@ -2071,6 +2078,70 @@
     return it;
   }
 
+  // The one rule for the work data, as fixRefs is for the configuration: nothing may point at something that doesn't
+  // exist. It runs whenever a workspace is opened (this browser's copy, a data file, a backup) and after every
+  // configuration save, so no path through the app can leave an item, alert, post or file pointing at nothing.
+  // People and teams may be former members the app remembers by name; other broken references are cleared, and work
+  // that can no longer be finished (a handoff to nobody, a verification by a group that's gone) is withdrawn.
+  function repairRefs(s) {
+    const c = s.config;
+    const ids = l => new Set(l.map(x => x.id));
+    const people = ids(c.people), teams = ids(c.teams), statuses = ids(c.statuses), prios = ids(c.priorities), roles = ids(c.roles);
+    const queues = ids(c.roles.filter(r => r.queue)), chains = ids(c.approvals.chains), items = ids(s.items);
+    const removed = s.removed || { people: {}, teams: {} };
+    const person = v => (v && (people.has(v) || has(removed.people, v)) ? v : '');
+    const teamRef = v => (v && (teams.has(v) || has(removed.teams, v)) ? v : '');
+    const firstOpen = (c.statuses.find(x => !x.closed) || c.statuses[0] || {}).id || '';
+    const first = statuses.has(c.general.initialStatusId) ? c.general.initialStatusId : firstOpen;
+    const midPrio = (c.priorities[Math.floor((c.priorities.length - 1) / 2)] || {}).id || '';
+    const personFields = c.fields.custom.filter(f => f.type === 'person').map(f => f.id);
+    const teamFields = c.fields.custom.filter(f => f.type === 'team').map(f => f.id);
+    const openStage = st => st.state === 'pending' || st.state === 'waiting';
+    s.items.forEach(it => {
+      ['ownerId', 'nextOwnerId', 'createdBy'].forEach(k => { it[k] = person(it[k]); });
+      ['teamId', 'nextTeamId'].forEach(k => { it[k] = teamRef(it[k]); });
+      it.fields = it.fields || {};
+      personFields.forEach(f => { if (it.fields[f]) it.fields[f] = person(it.fields[f]); });
+      teamFields.forEach(f => { if (it.fields[f]) it.fields[f] = teamRef(it.fields[f]); });
+      if (it.queueId && !queues.has(it.queueId)) it.queueId = '';
+      if (it.nextQueueId && !queues.has(it.nextQueueId)) it.nextQueueId = '';
+      if (!statuses.has(it.statusId)) it.statusId = first;
+      if (it.prevStatusId && !statuses.has(it.prevStatusId)) it.prevStatusId = '';
+      if (!prios.has(it.priorityId)) it.priorityId = midPrio;
+      if (it.approvalChainId && it.approvalChainId !== 'none' && !chains.has(it.approvalChainId)) it.approvalChainId = '';
+      it.links = it.links.filter(l => l && items.has(l.itemId) && l.itemId !== it.id);
+      const o = it.offer;
+      if (o) {
+        o.fromId = person(o.fromId); o.byId = person(o.byId); o.toTeamId = teamRef(o.toTeamId);
+        if (!people.has(o.toId)) {
+          const rec = it.handovers.find(h => h.id === o.id);
+          if (rec) Object.assign(rec, { state: 'withdrawn', response: 'Withdrawn automatically: the person it was offered to is no longer in the workspace.', settledBy: '', settledAt: Date.now() });
+          s.alerts.forEach(a => { if (a.offerId === o.id) a.read = true; });
+          it.offer = null;
+        }
+      }
+      const rec = it.approvals.find(r => r.state === 'pending');
+      if (rec && rec.stages.some(st => openStage(st) && !roles.has(st.roleId))) {
+        Object.assign(rec, { state: 'recalled', response: 'Withdrawn automatically: a group it was waiting for is no longer in the workspace.', settledBy: '', settledAt: Date.now() });
+        rec.stages.forEach(st => { if (openStage(st)) st.state = 'cancelled'; });
+        s.alerts.forEach(a => { if (a.approvalId === rec.id) a.read = true; });
+        // Back to the column it was finished from (or, from an on-hold column, the one before the hold).
+        const from = c.statuses.find(x => x.id === rec.fromStatusId);
+        const prev = c.statuses.find(x => x.id === it.prevStatusId);
+        let back = first;
+        if (from && from.hold) { if (prev && !prev.closed && !prev.hold) back = prev.id; }
+        else if (from && !from.closed && from.id !== c.approvals.holdStatusId) back = from.id;
+        it.statusId = back;
+      }
+    });
+    s.alerts = s.alerts.filter(a => a && people.has(a.toId) && (!a.itemId || items.has(a.itemId)));
+    s.alerts.forEach(a => { a.fromId = person(a.fromId); });
+    s.posts.forEach(p => { p.authorId = person(p.authorId); if (p.itemId && !items.has(p.itemId)) p.itemId = ''; });
+    s.files.forEach(f => { f.byId = person(f.byId); if (f.itemId && !items.has(f.itemId)) f.itemId = ''; });
+    s.notes.forEach(n => { n.authorId = person(n.authorId); });
+    return s;
+  }
+
   function normalizeState(data) {
     const s = blankState();
     ['items', 'activity', 'alerts', 'posts', 'files', 'notes'].forEach(k => { if (Array.isArray(data[k])) s[k] = data[k]; });
@@ -2081,7 +2152,13 @@
     s.config = normalizeConfig(data.config);
     s.session = data.session && data.session.userId ? { userId: String(data.session.userId), time: data.session.time || Date.now() } : null;
     s.items.forEach(itemDefaults);
+    repairRefs(s);
     if (s.page === 'config') s.page = 'board';
+    // Written by a newer version: keep the parts of the workspace this version doesn't know about (see normalizeConfig).
+    if (+data.version > s.version || (data.config && +data.config.version > CONFIG_VERSION)) {
+      Object.keys(data).forEach(k => { if (!(k in s) && k !== 'app' && k !== 'kind') s[k] = data[k]; });
+      s.version = Math.max(s.version, +data.version || 0);
+    }
     return s;
   }
 
@@ -2139,26 +2216,67 @@
     delete c.roles;
     c.version = 4;
     s.config = normalizeConfig(c);
-    return s;
+    return repairRefs(s);
   }
 
+  // Set when the browser's saved workspace couldn't be read; kept under UNREADABLE_KEY so starting afresh doesn't destroy it.
+  const UNREADABLE_KEY = STORE_KEY + '.unreadable';
+  let unreadable = null;
+  let storageFull = false;
   function loadState() {
+    let raw = null;
     try {
-      const raw = localStorage.getItem(STORE_KEY);
+      raw = localStorage.getItem(STORE_KEY);
       if (raw) return normalizeState(JSON.parse(raw));
       const legacy = localStorage.getItem(LEGACY_KEY);
       if (legacy) return migrateV1(JSON.parse(legacy));
-    } catch (e) { /* storage unavailable or unreadable */ }
+    } catch (e) {
+      if (raw) {
+        unreadable = { text: raw, error: e.message };
+        try { localStorage.setItem(UNREADABLE_KEY, raw); } catch (e2) { /* the dialog still offers a download */ }
+      }
+    }
     return null;
+  }
+  // Tells the person their saved workspace couldn't be read, and offers the unreadable copy as a file.
+  function reportUnreadable() {
+    if (!unreadable) return;
+    const u = unreadable;
+    unreadable = null;
+    modal({
+      title: 'Your saved workspace couldn’t be read',
+      html: `<p>The workspace saved in this browser couldn’t be opened (${esc(u.error)}), so Task Hub started empty. Nothing was thrown away: the unreadable copy is kept in this browser and you can download it, to repair it or to send it to whoever looks after Task Hub.</p>`,
+      ok: 'Download the unreadable copy',
+      onOk: () => {
+        const url = URL.createObjectURL(new Blob([u.text], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = 'task-hub-unreadable.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+    });
   }
   function save() {
     if (GUIDE_TAB) return;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(S));
+      storageFull = false;
     } catch (e) {
       if (S.files.some(f => f.data)) {
-        S.files.forEach(f => { delete f.data; });
-        try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); toast('Storage is full — file contents were dropped, metadata kept.'); } catch (e2) { /* ignore */ }
+        // The browser's copy leaves out file contents. With a data file connected they stay here and in the file;
+        // without one there is nowhere else to keep them.
+        const slim = clone(S);
+        slim.files.forEach(f => { delete f.data; });
+        try {
+          localStorage.setItem(STORE_KEY, JSON.stringify(slim));
+          if (dataFile.handle) {
+            if (!storageFull) toast('This browser’s storage is full: attachments are kept in the data file, but not in this browser’s own copy.');
+            storageFull = true;
+          } else {
+            S.files.forEach(f => { delete f.data; });
+            toast('Storage is full — file contents were dropped, metadata kept.');
+          }
+        } catch (e2) { /* ignore */ }
       }
     }
     queueFileWrite();
@@ -2267,8 +2385,8 @@
 
   function queueFileWrite() {
     if (!dataFile.handle || demo.running) return;
-    if (dataFile.status === 'reconnect') { setDirtyOffline(true); return; }
-    if (dataFile.status === 'conflict') return;
+    // Changes that can't reach the file yet are flagged, so a restart asks before replacing them with the file's version.
+    if (dataFile.status === 'reconnect' || dataFile.status === 'conflict') { setDirtyOffline(true); return; }
     clearTimeout(dataFile.timer);
     dataFile.timer = setTimeout(() => { dataFile.timer = 0; writeFile(); }, 400);
   }
@@ -2283,7 +2401,7 @@
     try {
       if (!overwrite && dataFile.lastModified) {
         const f = await h.getFile();
-        if (f.lastModified !== dataFile.lastModified && (await f.text()) !== dataFile.lastText) { setFileStatus('conflict'); return; }
+        if (f.lastModified !== dataFile.lastModified && (await f.text()) !== dataFile.lastText) { setDirtyOffline(true); setFileStatus('conflict'); return; }
       }
       const w = await h.createWritable();
       await w.write(text);
@@ -2293,7 +2411,9 @@
       setDirtyOffline(false);
       setFileStatus('ok');
     } catch (e) {
-      if (e && e.name === 'NotAllowedError') { setDirtyOffline(true); setFileStatus('reconnect'); }
+      // Whatever went wrong, this browser now has changes the file doesn't.
+      setDirtyOffline(true);
+      if (e && e.name === 'NotAllowedError') setFileStatus('reconnect');
       else setFileStatus('error', e && e.name === 'NotFoundError' ? 'The file was moved, renamed or deleted.' : (e && e.message) || String(e));
     } finally {
       dataFile.writing = false;
@@ -2368,6 +2488,9 @@
       // Changes were made here while the file wasn't connected: save them if nobody else changed the file meanwhile.
       if (dirtyOffline()) {
         if (r.lastModified === dataFile.lastModified) {
+          // This browser's copy may have left out attachment contents (its storage was full): take them back from the file.
+          const theirs = new Map(((r.data && r.data.files) || []).map(f => [f.id, f.data]));
+          S.files.forEach(f => { if (!f.data && theirs.get(f.id)) f.data = theirs.get(f.id); });
           await writeFile(true);
           if (dataFile.status === 'ok') toast(`Connected to ${h.name}; the changes you made meanwhile were saved.`);
           return;
@@ -3176,6 +3299,9 @@
     cfgDraft = null;
     cfgRemap = emptyRemap();
     S.session = null;
+    // On a shared computer the next person mustn't see (or open) the previous person's pop-ups and messages.
+    $('#toasts').replaceChildren();
+    openNoteCentre(false);
     log(`${name} signed out.`, 'SIGN-IN');
     commit();
   }
@@ -3249,9 +3375,9 @@
     const p = priority(it.priorityId);
     const tags = (c.showPriority && p ? `<span class="tag" style="${prioStyle(it.priorityId)}">${esc(p.name)}</span>` : '') +
       (c.showTeam && it.teamId ? `<span class="tag" style="${teamStyle(team(it.teamId))}">${esc(teamNameOf(it.teamId))}</span>` : '');
-    return `<article class="card" draggable="${cfg().general.allowDrag && !readOnly() ? 'true' : 'false'}" data-id="${it.id}" id="card-${it.id}">
+    return `<article class="card" draggable="${cfg().general.allowDrag && !readOnly() ? 'true' : 'false'}" data-id="${esc(it.id)}" id="card-${esc(it.id)}">
       ${c.showRef ? `<div class="card-ref">${esc(it.ref)}</div>` : ''}
-      <button class="card-title-btn" type="button" data-open-item="${it.id}" title="Open details, handovers, comments and history"><h4 class="card-title">${esc(it.title)}</h4></button>
+      <button class="card-title-btn" type="button" data-open-item="${esc(it.id)}" title="Open details, handovers, comments and history"><h4 class="card-title">${esc(it.title)}</h4></button>
       ${tags ? `<div class="tags">${tags}</div>` : ''}
       ${fields.length ? `<div class="fields">${fields.map(f => `<div class="field"><div class="field-l">${esc(f.l)}</div><div class="field-v ${f.cls || ''}">${esc(f.v || '—')}</div></div>`).join('')}</div>` : ''}
       ${c.showDesc && it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ''}
@@ -3260,7 +3386,7 @@
       ${it.queueId ? `<div class="queue-banner">In the <b>${esc(queueName(it.queueId))}</b> queue, waiting to be picked up.</div>` : ''}
       ${verifyBannerHTML(it)}
       ${linksHTML(it)}
-      ${it.comments.length || it.handovers.length ? `<div class="meta-row">${it.handovers.length ? `<button class="meta-chip" type="button" data-open-item="${it.id}">⇄ ${plural(it.handovers.length, 'handover')}</button>` : ''}${it.comments.length ? `<button class="meta-chip" type="button" data-open-item="${it.id}">💬 ${plural(it.comments.length, 'comment')}</button>` : ''}</div>` : ''}
+      ${it.comments.length || it.handovers.length ? `<div class="meta-row">${it.handovers.length ? `<button class="meta-chip" type="button" data-open-item="${esc(it.id)}">⇄ ${plural(it.handovers.length, 'handover')}</button>` : ''}${it.comments.length ? `<button class="meta-chip" type="button" data-open-item="${esc(it.id)}">💬 ${plural(it.comments.length, 'comment')}</button>` : ''}</div>` : ''}
       <div class="actions">${actionsHTML(it)}</div>
     </article>`;
   }
@@ -3358,8 +3484,8 @@
             ${appr ? solid(appr) : ''}
             ${dec ? `<button class="btn-sm b-plain" type="button" data-inbox-action="${esc(dec.id)}" data-id="${esc(it.id)}">${esc(dec.label)}</button>` : ''}
             ${rej ? `<button class="btn-sm b-plain" type="button" data-inbox-action="${esc(rej.id)}" data-id="${esc(it.id)}">${esc(rej.label)}</button>` : ''}
-            <button class="btn-sm ${main ? 'b-plain' : 'b-indigo'}" type="button" data-alert-open="${a.id}">Open item</button>
-            ${main || ro ? '' : `<button class="btn-sm b-plain" type="button" data-alert-read="${a.id}">Mark read</button>`}
+            <button class="btn-sm ${main ? 'b-plain' : 'b-indigo'}" type="button" data-alert-open="${esc(a.id)}">Open item</button>
+            ${main || ro ? '' : `<button class="btn-sm b-plain" type="button" data-alert-read="${esc(a.id)}">Mark read</button>`}
           </div></div>`;
       }).join('')
       : `<div class="empty-box">No unread alerts for the current viewer.</div>`;
@@ -3405,7 +3531,7 @@
         <div class="entry-top"><b>${esc(nameOf(p.authorId))}</b><span class="when">${fmtTime(p.time)}</span>
           ${itemRef(p.itemId) ? `<button class="tag" style="${teamStyle(null)};border:0;cursor:pointer" type="button" data-goto="${esc(p.itemId)}">${esc(itemRef(p.itemId))}</button>` : ''}
           <span class="spacer"></span>
-          ${p.authorId === S.viewerId ? `<button class="btn-sm b-plain" type="button" data-post-del="${p.id}">Delete</button>` : ''}
+          ${p.authorId === S.viewerId && !readOnly() ? `<button class="btn-sm b-plain" type="button" data-post-del="${esc(p.id)}">Delete</button>` : ''}
         </div><p>${esc(p.text)}</p></div>`).join('')
       : `<div class="none">No posts yet.</div>`;
   }
@@ -3415,21 +3541,22 @@
     $('#filesCount').textContent = plural(S.files.length, 'file');
     const list = [...S.files].sort((a, b) => b.time - a.time);
     $('#fileList').innerHTML = list.length ? list.map(f => `<div class="entry file-row">
-        <div class="file-ico">${esc((f.name.split('.').pop() || 'file').slice(0, 4))}</div>
+        <div class="file-ico">${esc((String(f.name || '').split('.').pop() || 'file').slice(0, 4))}</div>
         <div class="file-meta"><div class="file-name" title="${esc(f.name)}">${esc(f.name)}</div>
           <div class="file-sub">${fmtSize(f.size)} · ${esc(nameOf(f.byId))} · ${fmtTime(f.time)}${itemRef(f.itemId) ? ` · ${esc(itemRef(f.itemId))}` : ''}${f.data ? '' : ' · metadata only'}</div></div>
-        ${f.data ? `<button class="btn-sm b-indigo" type="button" data-file-dl="${f.id}">Download</button>` : ''}
-        <button class="btn-sm b-del" type="button" data-file-del="${f.id}">Remove</button>
+        ${f.data ? `<button class="btn-sm b-indigo" type="button" data-file-dl="${esc(f.id)}">Download</button>` : ''}
+        ${readOnly() ? '' : `<button class="btn-sm b-del" type="button" data-file-del="${esc(f.id)}">Remove</button>`}
       </div>`).join('') : `<div class="none">No files yet.</div>`;
   }
 
   function renderNotes() {
     $('#notesCount').textContent = plural(S.notes.length, 'note');
     const list = [...S.notes].sort((a, b) => b.time - a.time);
-    $('#noteList').innerHTML = list.length ? list.map(n => `<div class="entry">
+    const ro = readOnly();
+    $('#notesList').innerHTML = list.length ? list.map(n => `<div class="entry">
         <div class="entry-top"><b>${esc(n.title)}</b><span class="when">${esc(nameOf(n.authorId))} · ${fmtTime(n.time)}</span><span class="spacer"></span>
-          <button class="btn-sm b-plain" type="button" data-note-edit="${n.id}">Edit</button>
-          <button class="btn-sm b-del" type="button" data-note-del="${n.id}">Delete</button>
+          ${ro ? '' : `<button class="btn-sm b-plain" type="button" data-note-edit="${esc(n.id)}">Edit</button>
+          <button class="btn-sm b-del" type="button" data-note-del="${esc(n.id)}">Delete</button>`}
         </div>${n.body ? `<p>${esc(n.body)}</p>` : ''}</div>`).join('')
       : `<div class="none">No notes yet.</div>`;
   }
@@ -3439,7 +3566,7 @@
     const num = v => `<td class="num">${v}</td>`;
     const rows = cfg().teams.map(t => {
       const its = scopedItems().filter(i => i.teamId === t.id);
-      return `<tr data-team="${esc(t.id)}"><td><b>${esc(t.name)}</b></td>${num(its.filter(isOpen).length)}${sts.map(s => num(its.filter(i => i.statusId === s.id).length)).join('')}${num(its.filter(isOverdue).length)}${num(S.items.filter(i => isOpen(i) && i.nextTeamId === t.id).length)}</tr>`;
+      return `<tr data-team="${esc(t.id)}"><td><b>${esc(t.name)}</b></td>${num(its.filter(isOpen).length)}${sts.map(s => num(its.filter(i => i.statusId === s.id).length)).join('')}${num(its.filter(isOverdue).length)}${num(scopedItems().filter(i => isOpen(i) && i.nextTeamId === t.id).length)}</tr>`;
     }).join('');
     $('#overview').innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr>
         <th>Team</th><th class="num">Open</th>${sts.map(s => `<th class="num">${esc(s.name)}</th>`).join('')}<th class="num">Overdue</th><th class="num">Incoming</th>
@@ -3690,20 +3817,26 @@
   }
 
   // Reusable steps ("Run another button", custom sequences) are expanded inline before running.
-  function expandSteps(steps, snap, depth = 0) {
+  // `path` holds the buttons and step types being expanded; one that would run itself again is skipped and noted in `loops`.
+  function expandSteps(steps, snap, depth = 0, path = [], loops = []) {
     if (depth > 5) return [];
     const out = [];
     for (const s of steps) {
       if (!stepApplies(s, snap)) continue;
       if (s.type === 'runButton') {
         const a = cfg().actions.find(x => x.id === s.actionId);
-        if (a) out.push(...expandSteps(a.steps, snap, depth + 1));
+        if (a && path.includes('a:' + a.id)) { loops.push(a.label || 'a button'); continue; }
+        if (a) out.push(...expandSteps(a.steps, snap, depth + 1, [...path, 'a:' + a.id], loops));
         continue;
       }
       if (isCustomStep(s.type)) {
         const x = cfg().extensions.steps.find(y => 'x:' + y.id === s.type);
         if (!x) continue;
-        if (x.mode === 'macro') { out.push(...expandSteps(x.steps, snap, depth + 1)); continue; }
+        if (x.mode === 'macro') {
+          if (path.includes(s.type)) { loops.push(x.name || 'a step type'); continue; }
+          out.push(...expandSteps(x.steps, snap, depth + 1, [...path, s.type], loops));
+          continue;
+        }
       }
       out.push(s);
     }
@@ -3731,6 +3864,14 @@
     let n = 0;
     cfg().people.filter(p => p.active && p.roleIds.includes(roleId)).forEach(p => { if (sendAlert(p.id, it, { kind: 'queue', label: 'QUEUE', text })) n++; });
     return n;
+  }
+  // An item that gets an owner is no longer waiting in a role queue: close the queued handover and clear its queue alerts.
+  function leaveQueue(it) {
+    if (!it.queueId) return;
+    const rec = (it.handovers || []).find(h => h.state === 'queued' && h.toQueueId === it.queueId);
+    if (rec) Object.assign(rec, { state: 'accepted', toId: it.ownerId, settledBy: S.viewerId, settledAt: Date.now() });
+    S.alerts.forEach(x => { if (x.kind === 'queue' && x.itemId === it.id) x.read = true; });
+    it.queueId = '';
   }
   // Puts an item into its next role queue; it has no owner until someone with the role picks it up.
   function queueItem(it, ctx, parts) {
@@ -3792,7 +3933,7 @@
       case 'due': it.due = value ? String(value).slice(0, 10) : ''; return it.due ? `due date set to ${it.due}` : 'due date cleared';
       case 'status': { const st = status(value) || findByName(cfg().statuses, value); if (!st) throw new Error(`Unknown status “${value}”`); const p = moveStatus(it, st.id) ? [`moved to ${st.name}`] : []; gateParts(p, {}); return p.join('; '); }
       case 'priority': { const p = priority(value) || findByName(cfg().priorities, value); if (!p) throw new Error(`Unknown priority “${value}”`); it.priorityId = p.id; return `priority set to ${p.name}`; }
-      case 'owner': { const p = value ? findP(value) : null; if (value && !p) throw new Error(`Unknown person “${value}”`); it.ownerId = p ? p.id : ''; if (p && p.teamId) it.teamId = p.teamId; return p ? `assigned to ${p.name}` : 'unassigned'; }
+      case 'owner': { const p = value ? findP(value) : null; if (value && !p) throw new Error(`Unknown person “${value}”`); it.ownerId = p ? p.id : ''; if (p) leaveQueue(it); if (p && p.teamId) it.teamId = p.teamId; return p ? `assigned to ${p.name}` : 'unassigned'; }
       case 'nextowner': { const p = value ? findP(value) : null; if (value && !p) throw new Error(`Unknown person “${value}”`); it.nextOwnerId = p ? p.id : ''; it.nextTeamId = p ? (p.teamId || it.nextTeamId) : ''; return p ? `next owner set to ${p.name}` : 'next owner cleared'; }
       case 'team': case 'nextteam': { const t = value ? findT(value) : null; if (value && !t) throw new Error(`Unknown team “${value}”`); it[low === 'team' ? 'teamId' : 'nextTeamId'] = t ? t.id : ''; return `${low === 'team' ? 'team' : 'next team'} set to ${t ? t.name : 'none'}`; }
     }
@@ -3873,8 +4014,12 @@
     const a = cfg().actions.find(x => x.id === actionId);
     const it = getItem(itemId);
     if (!a || !it || !guardWrite()) return;
+    // A page that hasn't redrawn yet can still have a button the item no longer shows: it does nothing.
+    if (!actionVisible(a, it)) { toast(`${a.label} doesn’t apply to ${it.ref} any more.`); render(); return; }
     const snap = clone(it);
-    const steps = expandSteps(a.steps, snap);
+    const loops = [];
+    const steps = expandSteps(a.steps, snap, 0, ['a:' + a.id], loops);
+    if (loops.length) toast(`${a.label}: “${loops[0]}” would run itself again in a loop, so the repeat was skipped. Fix this in Configuration › Workflow & buttons.`);
     if (!steps.length) { toast(`${a.label}: nothing to do for ${it.ref}.`); return; }
     const gather = steps.filter(s => (STEP_TYPES[s.type] || {}).gather);
     if (!gather.length) { applySteps(a, it, snap, steps, {}); return; }
@@ -3937,7 +4082,8 @@
     const notes = [];
     let type = 'EDIT';
     let openEditor = false;
-    for (const s of steps) {
+    let deleted = false;
+    run: for (const s of steps) {
       switch (s.type) {
         case 'setStatus': {
           const target = s.to === '__prev' ? holdReturnTarget(it) : s.to;
@@ -3950,6 +4096,7 @@
           if (!it.nextOwnerId) break;
           const from = it.ownerId;
           it.ownerId = it.nextOwnerId;
+          leaveQueue(it);
           it.teamId = it.nextTeamId || personTeam(it.ownerId) || it.teamId;
           it.nextOwnerId = '';
           it.nextTeamId = '';
@@ -3978,6 +4125,7 @@
           const id = personTarget(s.to, it, false);
           if (id === it.ownerId) break;
           it.ownerId = id;
+          if (id) leaveQueue(it);
           if (id && personTeam(id)) it.teamId = personTeam(id);
           if (id && id === it.nextOwnerId) { it.nextOwnerId = ''; it.nextTeamId = ''; }
           parts.push(id ? `assigned to ${nameOf(id)}` : 'unassigned');
@@ -4029,6 +4177,7 @@
           if (!o) break;
           const from = it.ownerId;
           it.ownerId = o.toId;
+          leaveQueue(it);
           it.teamId = o.toTeamId || personTeam(o.toId) || it.teamId;
           it.nextOwnerId = '';
           it.nextTeamId = '';
@@ -4118,10 +4267,9 @@
           S.posts.forEach(p => { if (p.itemId === it.id) p.itemId = ''; });
           S.files.forEach(f => { if (f.itemId === it.id) f.itemId = ''; });
           if (editingId === it.id) resetForm();
-          log(`${it.ref} deleted by ${viewerName()}.`, 'DELETE');
-          commit();
-          toast(`${it.ref} deleted.`);
-          return;
+          // Nothing after a delete can change the item, but the alerts, emails and webhooks queued so far still go out.
+          deleted = true;
+          break run;
         }
         default:
           if (isCustomStep(s.type)) {
@@ -4155,13 +4303,22 @@
         const url = fillTemplate(s.url, it, ctx, snap, { enc: encodeURIComponent });
         const body = s.method === 'GET' ? undefined : fillTemplate(s.body, it, ctx, snap, { enc: jsonEsc, raw: true });
         const ref = it.ref;
+        // The history is read by everyone (and saved to a shared data file); a webhook's path or query often holds its key.
+        let site = '';
+        try { site = new URL(url).host; } catch (e) { site = 'an invalid address'; }
         parts.push(`webhook ${s.method} sent`);
         fetch(url, { method: s.method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body })
-          .then(r => { log(`Webhook for ${ref}: ${s.method} ${url} → ${r.status}`, 'WEBHOOK', getItem(it.id)); toast(`Webhook for ${ref} returned ${r.status}.`); })
+          .then(r => { log(`Webhook for ${ref}: ${s.method} to ${site} → ${r.status}`, 'WEBHOOK', getItem(it.id)); toast(`Webhook for ${ref} returned ${r.status}.`); })
           .catch(err => { log(`Webhook for ${ref} failed: ${err.message}`, 'WEBHOOK', getItem(it.id)); toast(`Webhook for ${ref} failed: ${err.message}`); })
           .finally(() => { save(); renderPanel(); });
       }
     });
+    if (deleted) {
+      log(`${it.ref} deleted by ${viewerName()}${parts.length ? ` (${parts.join('; ')})` : ''}.`, 'DELETE');
+      commit();
+      toast(`${it.ref} deleted.${sent ? ` ${plural(sent, 'alert')} sent.` : ''}`);
+      return;
+    }
     if (parts.length) {
       it.updated = Date.now();
       log(`${it.ref} ${parts.join('; ')} by ${viewerName()}${ctx.reason ? `: ${ctx.reason}` : ''}.`, type, it);
@@ -4669,7 +4826,7 @@
   const tagHTML = (text, style) => `<span class="tag" style="${style}">${esc(text || 'Preview')}</span>`;
   const PREVIEW = {
     teams: t => tagHTML(t.name, teamStyle(t)),
-    priorities: p => tagHTML(p.name, `background:${p.bg};color:${p.fg}`),
+    priorities: p => tagHTML(p.name, `background:${esc(p.bg)};color:${esc(p.fg)}`),
     statuses: s => `<span class="dot" style="background:${esc(s.color)}"></span>`,
   };
   const statusOpts = (d, filter = () => true) => d.statuses.filter(filter).map(s => ({ v: s.id, l: s.name || '(unnamed)' }));
@@ -5467,15 +5624,16 @@ ctx.person(name)      ctx.team(name)</pre>
     }
     if (!REMAPPABLE.includes(list)) { arr.splice(i, 1); renderConfig(); return; }
     const saved = S.config[list].some(x => x.id === row.id);
-    const usage = saved ? USAGE[list](row.id) : 0;
+    const map = cfgRemap[list];
+    // Rows removed earlier in this draft whose items were moved to this one: their items move again now.
+    const inbound = Object.keys(map).filter(k => map[k] === row.id);
+    const usage = (saved ? USAGE[list](row.id) : 0) + inbound.reduce((n, k) => n + USAGE[list](k), 0);
     const remove = replacement => {
       arr.splice(i, 1);
       remapDraftRefs(cfgDraft, list, row.id, replacement === '__keep' ? '' : replacement);
-      if (saved) {
-        const map = cfgRemap[list];
-        Object.keys(map).forEach(k => { if (map[k] === row.id) map[k] = replacement; });
-        if (replacement !== '__keep') map[row.id] = replacement;
-      }
+      // “Keep as a former member” leaves those items with the person who originally had them.
+      inbound.forEach(k => { if (replacement === '__keep') delete map[k]; else map[k] = replacement; });
+      if (saved && replacement !== '__keep') map[row.id] = replacement;
       renderConfig();
     };
     if (!usage) { remove(list === 'people' ? '__keep' : ''); return; }
@@ -5571,6 +5729,32 @@ ctx.person(name)      ctx.team(name)</pre>
       if (!a.show.statuses.length) add('workflow', `Button “${nm}” isn’t shown for any status.`);
       if (!a.steps.length) add('workflow', `Button “${nm}” has no steps.`);
       validateSteps(d, a.steps, `Button “${nm}”`, 'workflow', add);
+    });
+    // Buttons (and step types) that run one another must not end up running themselves.
+    const runs = (steps, out = []) => { steps.forEach(s => { if (s.type === 'runButton' && s.actionId) out.push('a:' + s.actionId); else if (isCustomStep(s.type)) out.push(s.type); }); return out; };
+    const nodeName = k => (k.startsWith('a:') ? `Button “${(d.actions.find(a => 'a:' + a.id === k) || {}).label || '(unnamed)'}”` : `Step type “${(d.extensions.steps.find(x => 'x:' + x.id === k) || {}).name || '(unnamed)'}”`);
+    const callees = k => {
+      if (k.startsWith('a:')) { const a = d.actions.find(y => 'a:' + y.id === k); return runs(a ? a.steps : []); }
+      const x = d.extensions.steps.find(y => 'x:' + y.id === k);
+      return runs(x && x.mode === 'macro' ? x.steps : []);
+    };
+    const reported = new Set();
+    [...d.actions.map(a => 'a:' + a.id), ...d.extensions.steps.map(x => 'x:' + x.id)].forEach(start => {
+      // Depth-first search for a way back to `start`.
+      const seen = new Set();
+      const find = (k, trail) => {
+        for (const n of callees(k)) {
+          if (n === start) return trail;
+          if (!seen.has(n)) { seen.add(n); const t = find(n, [...trail, n]); if (t) return t; }
+        }
+        return null;
+      };
+      const trail = find(start, []);
+      if (!trail) return;
+      const key = [start, ...trail].sort().join('|');
+      if (reported.has(key)) return;
+      reported.add(key);
+      add(start.startsWith('a:') ? 'workflow' : 'extensions', `${nodeName(start)} runs itself${trail.length ? ` through ${trail.map(nodeName).join(' → ')}` : ''}. Remove one of the steps that runs another button or step type.`);
     });
     BUILTIN_FIELDS.forEach(k => { d.fields.labels[k] = String(d.fields.labels[k] || '').trim(); if (!d.fields.labels[k]) add('fields', `The built-in “${BASE_CONFIG.fields.labels[k]}” field needs a label.`); });
     d.fields.custom.forEach(f => {
@@ -5682,15 +5866,18 @@ ctx.person(name)      ctx.team(name)</pre>
     S.config.teams.forEach(t => { if (!tIds.has(t.id)) S.removed.teams[t.id] = t.name; });
     const personFields = d.fields.custom.filter(f => f.type === 'person');
     const teamFields = d.fields.custom.filter(f => f.type === 'team');
-    // Items sitting in a queue whose role was removed or no longer has a queue become unassigned.
-    const queues = new Set(d.roles.filter(r => r.queue).map(r => r.id));
     S.items.forEach(it => {
-      if (it.queueId && !queues.has(it.queueId)) it.queueId = '';
-      if (it.nextQueueId && !queues.has(it.nextQueueId)) it.nextQueueId = '';
       it.ownerId = mp(R.people, it.ownerId);
       it.nextOwnerId = mp(R.people, it.nextOwnerId);
       it.teamId = mp(R.teams, it.teamId);
       it.nextTeamId = mp(R.teams, it.nextTeamId);
+      // A handoff waiting for someone whose work was moved to another person now waits for that person.
+      if (it.offer) {
+        const o = it.offer;
+        Object.assign(o, { toId: mp(R.people, o.toId), fromId: mp(R.people, o.fromId), byId: mp(R.people, o.byId), toTeamId: mp(R.teams, o.toTeamId) });
+        const h = it.handovers.find(x => x.id === o.id);
+        if (h) Object.assign(h, { toId: o.toId, fromId: o.fromId, byId: o.byId, toTeamId: o.toTeamId });
+      }
       it.priorityId = mp(R.priorities, it.priorityId);
       it.statusId = mp(R.statuses, it.statusId);
       it.prevStatusId = mp(R.statuses, it.prevStatusId);
@@ -5705,14 +5892,8 @@ ctx.person(name)      ctx.team(name)</pre>
     S.files.forEach(f => { f.byId = mp(R.people, f.byId); });
     S.viewerId = mp(R.people, S.viewerId);
     S.config = d;
-    // Anything still pointing at a removed status or priority falls back to a sensible default.
-    const sid = new Set(d.statuses.map(s => s.id));
-    const prid = new Set(d.priorities.map(p => p.id));
-    S.items.forEach(it => {
-      if (!sid.has(it.statusId)) it.statusId = d.general.initialStatusId;
-      if (it.prevStatusId && !sid.has(it.prevStatusId)) it.prevStatusId = '';
-      if (!prid.has(it.priorityId)) it.priorityId = defaultPriorityId();
-    });
+    // Whatever the choices above didn't cover, nothing may be left pointing at something this configuration removed.
+    repairRefs(S);
     cleanFilters();
     fixViewer();
     cfgDraft = clone(S.config);
@@ -6160,7 +6341,7 @@ ctx.person(name)      ctx.team(name)</pre>
   $('#postList').addEventListener('click', e => {
     const d = e.target.closest('[data-post-del]');
     const g = e.target.closest('[data-goto]');
-    if (d) { S.posts = S.posts.filter(p => p.id !== d.dataset.postDel); commit(); }
+    if (d && guardWrite()) { S.posts = S.posts.filter(p => p.id !== d.dataset.postDel); commit(); }
     if (g) gotoItem(g.dataset.goto);
   });
 
@@ -6199,7 +6380,7 @@ ctx.person(name)      ctx.team(name)</pre>
       const f = S.files.find(x => x.id === dl.dataset.fileDl);
       if (f && f.data) { const a = document.createElement('a'); a.href = f.data; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }
     }
-    if (del) {
+    if (del && guardWrite()) {
       const f = S.files.find(x => x.id === del.dataset.fileDel);
       S.files = S.files.filter(x => x.id !== del.dataset.fileDel);
       if (f) log(`${viewerName()} removed file ${f.name}.`, 'FILE');
@@ -6227,9 +6408,10 @@ ctx.person(name)      ctx.team(name)</pre>
     commit();
   });
   $('#noteCancel').addEventListener('click', resetNoteForm);
-  $('#noteList').addEventListener('click', e => {
+  $('#notesList').addEventListener('click', e => {
     const ed = e.target.closest('[data-note-edit]');
     const del = e.target.closest('[data-note-del]');
+    if ((ed || del) && !guardWrite()) return;
     if (ed) {
       const n = S.notes.find(x => x.id === ed.dataset.noteEdit);
       if (!n) return;
@@ -6614,7 +6796,7 @@ ctx.person(name)      ctx.team(name)</pre>
       await dType('#noteTitle', 'Handoff checklist');
       await dType('#noteBody', 'Summary, open actions, risks. Ask for a read-back.');
       await dClick('#noteSave', 'Save note');
-      dCheck('Note saved and listed', () => $('#noteList').textContent.includes('Handoff checklist') && S.notes.some(n => n.title === 'Handoff checklist'));
+      dCheck('Note saved and listed', () => $('#notesList').textContent.includes('Handoff checklist') && S.notes.some(n => n.title === 'Handoff checklist'));
       await dClick('#tabs [data-tab="overview"]', 'Team overview tab');
       dCheck('Overview shows a row per team', () => $$('#overview tbody tr').length >= 3);
       await dClick('#tabs [data-tab="board"]', 'Board tab');
@@ -7032,7 +7214,12 @@ ctx.person(name)      ctx.team(name)</pre>
     demo.savedPanel = clone(panelClosed);
     demo.savedCols = clone(colWidths);
     demoNotes = null;
-    try { localStorage.setItem(DEMO_BACKUP_KEY, JSON.stringify({ state: demo.saved, panel: demo.savedPanel, time: Date.now() })); } catch (e) { /* ignore */ }
+    // The demo replaces the saved workspace while it runs, so without this backup a closed tab would lose your data.
+    try { localStorage.setItem(DEMO_BACKUP_KEY, JSON.stringify({ state: demo.saved, panel: demo.savedPanel, time: Date.now() })); } catch (e) {
+      demo.saved = demo.savedPanel = demo.savedCols = null;
+      dCaption('The demo didn’t start: this browser couldn’t keep a backup copy of your data (its storage may be full). Your data is untouched.');
+      return;
+    }
     Object.assign(demo, { running: true, paused: false, stop: false, results: [], speed: +$('#demoSpeed', demoPanel).value });
     demoShield = document.createElement('div');
     demoShield.className = 'demo-shield';
@@ -7085,6 +7272,7 @@ ctx.person(name)      ctx.team(name)</pre>
     fixViewer();
     resetForm();
     commit();
+    reportUnreadable();
     if (loggedIn()) popPendingForViewer();
     if (location.hash === '#demo') openDemoPanel();
     initDataFile();

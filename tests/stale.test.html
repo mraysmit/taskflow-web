@@ -1,0 +1,85 @@
+<!-- inject: early -->
+<!-- budget: 240000 -->
+<!-- A button clicked on out-of-date information: a dialog left open while a colleague changes the item in the shared data
+     file, and a button that is no longer (or never was) shown for the item. The browser's file access is replaced by an
+     in-memory "disk", as in data-file.test.html. -->
+<script>
+(() => {
+  localStorage.clear(); sessionStorage.clear();
+  const disk = () => JSON.parse(sessionStorage.getItem('disk') || 'null');
+  const writeDisk = text => { const d = disk() || {}; sessionStorage.setItem('disk', JSON.stringify({ name: d.name, text, lm: (d.lm || 0) + 1 })); };
+  window.__disk = { get: disk, write: writeDisk, data: () => JSON.parse(disk().text) };
+  class FakeHandle {
+    constructor(name) { this.name = name; this.kind = 'file'; }
+    async queryPermission() { return 'granted'; }
+    async requestPermission() { return 'granted'; }
+    async getFile() { const d = disk(); return { lastModified: d.lm, text: async () => d.text }; }
+    async createWritable() { let buf = ''; return { write: async t => { buf += t; }, close: async () => { writeDisk(buf); } }; }
+  }
+  window.showSaveFilePicker = async o => { sessionStorage.setItem('disk', JSON.stringify({ name: o.suggestedName, text: '', lm: 1 })); return new FakeHandle(o.suggestedName); };
+  const later = f => setTimeout(f, 0);
+  Object.defineProperty(window, 'indexedDB', { configurable: true, value: { open() {
+    const req = {};
+    later(() => { req.result = { close() {}, transaction() { const tx = {}; tx.objectStore = () => ({ put() { later(() => tx.oncomplete && tx.oncomplete()); return {}; }, get() { const r = {}; later(() => tx.oncomplete && tx.oncomplete()); return r; }, delete() { later(() => tx.oncomplete && tx.oncomplete()); return {}; } }); return tx; } }; if (req.onsuccess) req.onsuccess(); });
+    return req;
+  } } });
+})();
+
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const logout = async () => { q('[data-logout]').click(); await wait(700); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const D = window.__disk;
+  const colleague = fn => { const d = D.data(); fn(d); D.write(JSON.stringify(d, null, 2)); };
+  const fileItem = ref => D.data().items.find(i => i.ref === ref);
+  // A button for an action the card isn't showing, as a page that hasn't redrawn yet could still have.
+  const forge = (ref, actionId) => { const c = card(ref); const id = c.dataset.id; const b = document.createElement('button'); b.type = 'button'; b.dataset.action = actionId; b.dataset.id = id; c.appendChild(b); b.click(); };
+  try {
+    await wait(300);
+    q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('[data-file-cmd="new"]').click(); await wait(300);
+    q('#tabs [data-tab="board"]').click(); await wait(20);
+    btn('OMD-001', 'Complete & handoff').click(); await wait(30);
+    setv(q('[data-note="0"]'), 'Over to you'); q('#dlgOk').click(); await wait(700);
+    ok('OMD-001 is offered to B. Lee, in the file too', fileItem('OMD-001').offer && fileItem('OMD-001').offer.toId === 'p2');
+
+    // ---------- A button that isn't shown does nothing ----------
+    forge('OMD-001', 'a_accept'); await wait(50);
+    if (q('#dlg').open) { q('#dlgOk').click(); await wait(50); }
+    ok('A. Chan can’t accept a handoff that was offered to B. Lee', store().items.find(i => i.ref === 'OMD-001').ownerId === 'p1' && !!store().items.find(i => i.ref === 'OMD-001').offer);
+    forge('OMD-004', 'a_start'); await wait(50);
+    ok('A button for another column does nothing (Start on a completed item)', store().items.find(i => i.ref === 'OMD-004').statusId === 'completed');
+    await logout();
+
+    // ---------- A dialog left open while a colleague changes the item ----------
+    await login('blee');
+    btn('OMD-001', 'Accept').click(); await wait(50);
+    ok('B. Lee opens Accept', q('#dlg').open);
+    // Meanwhile, in the shared file, A. Chan withdraws the handoff and offers it to F. Ho instead.
+    colleague(d => { const it = d.items.find(i => i.ref === 'OMD-001'); it.offer = Object.assign({}, it.offer, { id: 'ho_refho', toId: 'p6', toTeamId: 't4' }); it.nextOwnerId = 'p6'; });
+    await wait(6000);
+    q('#dlgOk').click(); await wait(1000);
+    ok('The file still has the handoff to F. Ho: B. Lee’s late Accept doesn’t overwrite it', fileItem('OMD-001').ownerId === 'p1' && fileItem('OMD-001').offer && fileItem('OMD-001').offer.toId === 'p6');
+    const mine = store().items.find(i => i.ref === 'OMD-001');
+    ok('B. Lee never ends up owning an item offered to F. Ho without being asked', !(mine.ownerId === 'p2' && mine.offer) && !(mine.ownerId === 'p6'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

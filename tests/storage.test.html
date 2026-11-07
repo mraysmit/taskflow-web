@@ -1,0 +1,86 @@
+<!-- When the browser's storage is full: the automated demo must not start without a backup of your data, and a data file keeps
+     attachments even when the browser's own copy has to leave them out. The file picker is replaced by an in-memory file. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const tab = async t => { q(`#tabs [data-tab="${t}"]`).click(); await wait(30); };
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  // Make chosen writes to localStorage fail as if the browser's storage were full.
+  const realSet = Storage.prototype.setItem;
+  let full = null;
+  Storage.prototype.setItem = function (k, v) {
+    if (full && full(k, String(v))) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    return realSet.call(this, k, v);
+  };
+  // An in-memory data file.
+  const disk = { name: '', text: '', lm: 0 };
+  class FakeHandle {
+    constructor(name) { this.name = name; this.kind = 'file'; }
+    async queryPermission() { return 'granted'; }
+    async requestPermission() { return 'granted'; }
+    async getFile() { return { lastModified: disk.lm, text: async () => disk.text }; }
+    async createWritable() { let buf = ''; return { write: async t => { buf += t; }, close: async () => { disk.text = buf; disk.lm++; } }; }
+  }
+  window.showOpenFilePicker = async () => [new FakeHandle(disk.name)];
+  window.showSaveFilePicker = async o => { Object.assign(disk, { name: o.suggestedName, text: '', lm: 1 }); return new FakeHandle(o.suggestedName); };
+  try {
+    await wait(200); q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+    q('#btnNew').click(); setv(q('#f_title'), 'MY REAL ITEM'); q('#form').requestSubmit(); await wait(50);
+
+    // ---------- The demo needs a backup before it touches anything ----------
+    full = k => k === 'taskhub.demo-backup';
+    q('[data-open-demo]').click(); await wait(50);
+    q('#demoSpeed').value = '0.03'; q('#demoSpeed').dispatchEvent(new Event('change'));
+    qa('.demo-list input').forEach(i => { i.checked = i.value === 'lifecycle'; });
+    q('[data-demo="run"]').click(); await wait(400);
+    ok('Without a backup, the demo doesn’t start', !q('[data-demo="run"]').disabled);
+    ok('Your saved data is untouched', store().items.some(i => i.title === 'MY REAL ITEM'));
+    ok('The demo says why it didn’t start', /back(ed)? ?up/i.test(q('#demoCaption').textContent));
+    for (let t = 0; t < 300 && q('[data-demo="run"]').disabled; t++) await wait(100);
+    full = null;
+    q('[data-demo="run"]').click(); await wait(300);
+    ok('With storage available again, the demo runs', q('[data-demo="run"]').disabled);
+    for (let t = 0; t < 300 && q('[data-demo="run"]').disabled; t++) await wait(100);
+    ok('…and puts your data back afterwards', store().items.some(i => i.title === 'MY REAL ITEM'));
+    q('[data-demo="close"]').click(); await wait(30);
+
+    // ---------- A full browser store must not strip attachments from the data file ----------
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('[data-file-cmd="new"]').click(); await wait(300);
+    ok('Data file connected', disk.name === 'task-hub-data.json' && JSON.parse(disk.text).kind === 'workspace');
+    // From now on the browser can't store anything with file contents in it.
+    full = (k, v) => k === 'taskhub.v2' && v.includes('data:text/plain');
+    await tab('files');
+    const dt = new DataTransfer(); dt.items.add(new File(['hello world'], 'handover.txt', { type: 'text/plain' }));
+    q('#fileInput').files = dt.files; q('#fileInput').dispatchEvent(new Event('change')); await wait(800);
+    const inFile = JSON.parse(disk.text).files.find(f => f.name === 'handover.txt');
+    ok('The data file keeps the attachment’s contents', !!inFile && String(inFile.data || '').startsWith('data:text/plain'));
+    ok('The attachment can still be downloaded here', !!q('#fileList [data-file-dl]'));
+    const local = store().files.find(f => f.name === 'handover.txt');
+    ok('The browser’s copy keeps the file listed, without its contents', !!local && !local.data);
+    ok('The person is told the browser’s storage is full', qa('.toast').some(t => /storage is full/i.test(t.textContent)));
+    // Another change: the attachment must survive later saves too.
+    await tab('board');
+    q('#btnNew').click(); setv(q('#f_title'), 'After storage filled up'); q('#form').requestSubmit(); await wait(800);
+    const later = JSON.parse(disk.text);
+    ok('Later saves keep the attachment in the data file', later.items.some(i => i.title === 'After storage filled up') && String((later.files.find(f => f.name === 'handover.txt') || {}).data || '').startsWith('data:'));
+    full = null;
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  Storage.prototype.setItem = realSet;
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>
