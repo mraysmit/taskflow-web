@@ -112,7 +112,7 @@ window.addEventListener('load', async () => {
     setv(q('#fFocus'), 'bv_all', 'change'); ok('Focus dropdown switches view and sidebar follows', qa('#sideNav .side-item.active')[0].textContent.includes('All work'));
     qa('.stat')[1].click(); ok('Stat click selects matching view', q('#fFocus').value === 'bv_mine');
     q('#btnReset').click(); ok('Reset filters', q('#fFocus').value === 'bv_all');
-    ok('Pages are tabs only; no duplicate entries', qa('#tabs [data-tab]').map(t => t.dataset.tab).join() === 'posts,files,board,notes,overview' && !q('#btnConfig') && !qa('#sideNav .side-item').some(b => /Posts|Overview/.test(b.textContent)));
+    ok('Pages are tabs only; no duplicate entries', qa('#tabs [data-tab]').map(t => t.dataset.tab).join() === 'posts,files,board,notes,overview,archive' && !q('#btnConfig') && !qa('#sideNav .side-item').some(b => /Posts|Overview/.test(b.textContent)));
     q('#tabs [data-tab="posts"]').click(); await tick(); ok('Each page has its own heading', q('#boardTitle').textContent === 'Posts');
     q('#tabs [data-tab="overview"]').click(); await tick(); ok('Team overview tab', !q('#view-overview').hidden && q('#boardTitle').textContent === 'Team overview');
     q('#tabs [data-tab="board"]').click(); await tick();

@@ -171,11 +171,21 @@
   .stat-sub { font-size: 14.5px; line-height: 1.35; color: var(--ink-2); }
 
   .filters {
-    display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 16px; align-items: end;
+    display: grid; grid-template-columns: repeat(5, minmax(0,1fr)) auto auto; gap: 16px; align-items: end;
     background: var(--surface); border: 1px solid #d9dce1; border-radius: 16px;
     padding: 14px 14px 12px; margin-bottom: 16px;
     box-shadow: 0 1px 2px rgba(15,20,30,.05);
   }
+  .view-mode { display: inline-flex; }
+  .view-mode .btn { border-radius: 0; }
+  .view-mode .btn:first-child { border-radius: 10px 0 0 10px; }
+  .view-mode .btn:last-child { border-radius: 0 10px 10px 0; margin-left: -1px; }
+  .view-mode .btn[aria-pressed="true"] { background: var(--ink, #15171a); color: #fff; border-color: var(--ink, #15171a); }
+  .list-view { background: var(--surface); border: 1px solid #d9dce1; border-radius: 16px; padding: 6px; overflow-x: auto; }
+  .list-view .table { width: 100%; }
+  .list-view .th-sort { all: unset; cursor: pointer; font-weight: 700; white-space: nowrap; }
+  .list-view .th-sort:focus-visible { outline: 2px solid var(--accent, #2e3394); outline-offset: 2px; }
+  .list-view td .link-btn { text-align: left; }
   .flabel-top { display: block; margin: 0 0 8px 2px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .select, .input, .textarea {
     width: 100%; height: 46px; padding: 0 12px;
@@ -878,9 +888,14 @@
           <label><span class="flabel-top" id="lblFilterPriority">Priority</span><select class="select" id="fPriority"></select></label>
           <label><span class="flabel-top">Focus</span><select class="select" id="fFocus"></select></label>
           <button class="btn" id="btnReset" type="button">Reset filters</button>
+          <span class="view-mode" role="group" aria-label="Show as">
+            <button class="btn" type="button" data-mode="board" aria-pressed="true">Board</button><button class="btn" type="button" data-mode="list" aria-pressed="false">List</button>
+          </span>
+          <button class="btn" id="btnCsv" type="button" title="Download the items shown, in the order shown, as a spreadsheet (CSV)">Export CSV</button>
         </div>
         <div class="view-chip" id="viewChip" hidden></div>
         <div class="board" id="board"></div>
+        <div class="list-view" id="list" hidden></div>
       </section>
 
       <!-- Posts -->
@@ -934,6 +949,14 @@
         <div class="sheet">
           <div class="sheet-head"><span class="muted">Click a team to see its items on the board.</span></div>
           <div id="overview"></div>
+        </div>
+      </section>
+
+      <!-- Archive -->
+      <section id="view-archive" hidden>
+        <div class="sheet">
+          <div class="sheet-head"><span class="muted" id="archiveCount" style="flex:1"></span><input class="input" id="archiveSearch" type="search" placeholder="Search the archive" aria-label="Search the archive" style="max-width:280px"></div>
+          <div id="archiveList"></div>
         </div>
       </section>
 
@@ -1255,7 +1278,7 @@
     version: CONFIG_VERSION,
     general: {
       appName: 'Task Hub', tagline: '', boardTitle: 'Board', boardIntro: '', panelTitle: 'Operations Panel',
-      refPrefix: '', refDigits: 3, initialStatusId: '', allowDrag: true, loginHint: true,
+      refPrefix: '', refDigits: 3, initialStatusId: '', allowDrag: true, loginHint: true, archiveAfterDays: 30,
       modules: { posts: true, files: true, notes: true, overview: true },
     },
     teams: [], people: [], roles: [], priorities: [], statuses: [], filters: [], actions: [],
@@ -1316,6 +1339,8 @@
     viewerId: '',
     filters: { teamId: 'all', priorityId: 'all', focus: '' },
     viewId: '', search: '', page: 'board', session: null,
+    // The board shown as a sortable list instead of columns (this browser's choice; never written to a shared file).
+    listView: { on: false, sort: '', dir: 1 },
     config: normalizeConfig(BASE_CONFIG),
   });
 
@@ -1368,7 +1393,9 @@
     const scope = permOf(S.viewerId, 'sees');
     return scope === 'all' || involvesViewer(it) || (scope === 'team' && involvesViewerTeam(it));
   }
-  const scopedItems = () => S.items.filter(canSee);
+  // The board, its views, counts, search and the overview show live work only; archived work is on the Archive page.
+  const scopedItems = () => S.items.filter(it => !it.archivedAt && canSee(it));
+  const archivedItems = () => S.items.filter(it => it.archivedAt && canSee(it));
   // Who the signed-in person may switch "View as" to.
   function viewableIds() {
     const me = sessionId();
@@ -2078,6 +2105,9 @@
     it.createdBy = it.createdBy || '';
     it.approvals = Array.isArray(it.approvals) ? it.approvals : [];
     it.approvalChainId = it.approvalChainId || '';
+    // When it was finished (moved into a closed column), and when it was archived; 0 = not.
+    it.closedAt = +it.closedAt || 0;
+    it.archivedAt = +it.archivedAt || 0;
     return it;
   }
 
@@ -2150,6 +2180,8 @@
     ['items', 'activity', 'alerts', 'posts', 'files', 'notes'].forEach(k => { if (Array.isArray(data[k])) s[k] = data[k]; });
     ['viewerId', 'search', 'page', 'viewId'].forEach(k => { if (typeof data[k] === 'string') s[k] = data[k]; });
     s.filters = Object.assign(s.filters, data.filters || {});
+    const lv = data.listView && typeof data.listView === 'object' ? data.listView : {};
+    s.listView = { on: !!lv.on, sort: typeof lv.sort === 'string' ? lv.sort : '', dir: lv.dir === -1 ? -1 : 1 };
     if (s.filters.focus === 'all' || typeof s.filters.focus !== 'string') s.filters.focus = '';
     s.removed = { people: Object.assign({}, data.removed && data.removed.people), teams: Object.assign({}, data.removed && data.removed.teams) };
     s.config = normalizeConfig(data.config);
@@ -2295,7 +2327,7 @@
   // Edge and Chrome can keep writing to a file the person opened (the File System Access API, plain JavaScript);
   // this browser's copy stays as a cache. Who is signed in, the viewer and filters belong to this browser only,
   // so they are never written to the file. Each save first checks the file hasn't been changed by someone else.
-  const LOCAL_ONLY = ['session', 'viewerId', 'filters', 'viewId', 'search', 'page'];
+  const LOCAL_ONLY = ['session', 'viewerId', 'filters', 'viewId', 'search', 'page', 'listView'];
   const FILE_DIRTY_KEY = 'taskhub.file-dirty';
   const JSON_TYPES = [{ description: 'Task Hub data', accept: { 'application/json': ['.json'] } }];
   const fileApi = () => typeof window.showOpenFilePicker === 'function' && typeof window.showSaveFilePicker === 'function';
@@ -2397,10 +2429,107 @@
     clearTimeout(dataFile.timer);
     dataFile.timer = setTimeout(() => { dataFile.timer = 0; writeFile(); }, 400);
   }
+  // ---------- merging two people's changes to the shared file ----------
+  // Someone else saved the file after this browser last read it, and this browser has changes too. Instead of making one
+  // person throw the other's work away, the two are merged against `base`, the file as this browser last read or wrote it:
+  // records (items, alerts, posts, files, notes, activity) by id, and items field by field. A field both people changed
+  // keeps the later edit (by the item's `updated` time) and the other value is written to the activity log; a record one
+  // side deleted while the other changed it is kept, and logged. Only the configuration isn't merged: if both changed it,
+  // the person is asked, as before. Returns { data, notes } or null.
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const showVal = v => (v == null || v === '' ? '(empty)' : typeof v === 'object' ? JSON.stringify(v) : String(v)).slice(0, 120);
+  function mergeById(b, m, t, mergeRec, onKept) {
+    const B = new Map((b || []).map(x => [x.id, x])), M = new Map((m || []).map(x => [x.id, x])), T = new Map((t || []).map(x => [x.id, x]));
+    const res = [];
+    // Records on both sides are merged; a record only one side still has was either added there (kept) or deleted on the
+    // other side (dropped if the remaining side left it unchanged, otherwise kept: a change beats a delete).
+    uniq([...T.keys(), ...M.keys()]).forEach(id => {
+      const bv = B.get(id), mv = M.get(id), tv = T.get(id);
+      if (mv && tv) res.push(same(mv, tv) || (bv && same(mv, bv)) ? tv : bv && same(tv, bv) ? mv : mergeRec(bv || {}, mv, tv));
+      else if (mv) { if (!bv) res.push(mv); else if (!same(mv, bv)) { res.push(mv); if (onKept) onKept(mv, 'theirs'); } }
+      else if (tv) { if (!bv) res.push(tv); else if (!same(tv, bv)) { res.push(tv); if (onKept) onKept(tv, 'mine'); } }
+    });
+    return res;
+  }
+  // Plain records: per field, whichever side changed it; if both did, this browser's (the later save) wins.
+  const mergeFields = (b, m, t) => {
+    const o = {};
+    Object.keys(Object.assign({}, b, t, m)).forEach(k => { o[k] = same(m[k], b[k]) ? t[k] : m[k]; });
+    return o;
+  };
+  // Alerts: read or popped on either side stays read or popped.
+  const mergeAlert = (b, m, t) => Object.assign(mergeFields(b, m, t), { read: !!(m.read || t.read), popped: !!(m.popped || t.popped) });
+  function mergeItem(b, m, t, notes) {
+    const o = {};
+    const mineLater = (+m.updated || 0) >= (+t.updated || 0);
+    const byTime = dir => (x, y) => dir * ((+x.time || 0) - (+y.time || 0));
+    Object.keys(Object.assign({}, b, t, m)).forEach(k => {
+      const bv = b[k], mv = m[k], tv = t[k];
+      if (k === 'history') o[k] = uniq([...(mv || []), ...(tv || [])].map(h => JSON.stringify(h))).map(s => JSON.parse(s)).sort(byTime(-1)).slice(0, 200);
+      else if (k === 'comments') o[k] = mergeById(bv, mv, tv, mergeFields).sort(byTime(1));
+      else if (k === 'handovers' || k === 'approvals') o[k] = mergeById(bv, mv, tv, mergeFields).sort(byTime(-1));
+      else if (k === 'links') o[k] = uniq([...(mv || []), ...(tv || [])].map(l => JSON.stringify(l))).map(s => JSON.parse(s));
+      else if (k === 'fields') o[k] = mergeFields(bv || {}, mv || {}, tv || {});
+      else if (k === 'updated') o[k] = Math.max(+mv || 0, +tv || 0);
+      else if (same(mv, bv)) o[k] = tv;
+      else if (same(tv, bv) || same(mv, tv)) o[k] = mv;
+      else {
+        o[k] = mineLater ? mv : tv;
+        notes.push({ ref: m.ref || t.ref, text: `${m.ref || t.ref}: “${k}” was changed in two places at once. Kept ${showVal(o[k])}; the other change was ${showVal(mineLater ? tv : mv)}.` });
+      }
+    });
+    return o;
+  }
+  function merge3(base, mine, theirs) {
+    const cfgChanged = !same(mine.config, base.config), theirsChanged = !same(theirs.config, base.config);
+    if (cfgChanged && theirsChanged && !same(mine.config, theirs.config)) return null;
+    const notes = [];
+    const out = {};
+    Object.keys(Object.assign({}, base, theirs, mine)).forEach(k => { out[k] = same(mine[k], base[k]) ? theirs[k] : mine[k]; });
+    out.config = cfgChanged ? mine.config : theirs.config;
+    const kept = (it, deletedBy) => notes.push({ ref: it.ref, text: deletedBy === 'theirs'
+      ? `${it.ref} was deleted in the shared file by someone else while it was being changed here; it has been kept.`
+      : `${it.ref} was deleted here while someone else changed it in the shared file; it has been kept.` });
+    out.items = mergeById(base.items, mine.items, theirs.items, (b, m, t) => mergeItem(b, m, t, notes), kept);
+    out.alerts = mergeById(base.alerts, mine.alerts, theirs.alerts, mergeAlert);
+    ['posts', 'files', 'notes'].forEach(k => { out[k] = mergeById(base[k], mine[k], theirs[k], mergeFields); });
+    out.activity = mergeById(base.activity, mine.activity, theirs.activity, mergeFields).sort((x, y) => (+y.time || 0) - (+x.time || 0)).slice(0, 300);
+    const rm = k => Object.assign({}, ((theirs.removed || {})[k]) || {}, ((mine.removed || {})[k]) || {});
+    out.removed = { people: rm('people'), teams: rm('teams') };
+    return { data: out, notes };
+  }
+  // Merges the file's newer text into this browser's workspace. Returns false when it can't (both changed the
+  // configuration, or there is no earlier copy to compare against): the caller then asks the person, as before.
+  function mergeFromFile(theirsText) {
+    let base, theirs;
+    try { base = JSON.parse(dataFile.lastText); theirs = JSON.parse(theirsText); } catch (e) { return false; }
+    if (!isWorkspace(base) || !isWorkspace(theirs)) return false;
+    const r = merge3(base, JSON.parse(workspaceText()), theirs);
+    if (!r) return false;
+    const keep = {};
+    LOCAL_ONLY.forEach(k => { keep[k] = S[k]; });
+    S = normalizeState(Object.assign({}, r.data, keep));
+    fixViewer();
+    // Two new items given the same reference at the same time: the one created here takes the next free number.
+    const theirIds = new Set(theirs.items.map(i => i.id));
+    S.items.forEach(it => {
+      if (theirIds.has(it.id) || !S.items.some(o => o !== it && o.ref === it.ref)) return;
+      const was = it.ref;
+      it.ref = nextRef();
+      r.notes.push({ ref: it.ref, text: `New item ${was} became ${it.ref}: someone else created ${was} at the same time.` });
+    });
+    r.notes.forEach(n => log(n.text, 'MERGE', S.items.find(i => i.ref === n.ref)));
+    log(`Changes from this browser were merged with changes someone else saved to ${dataFile.name}.`, 'MERGE');
+    if (editingId && !getItem(editingId)) resetForm();
+    render();
+    toast(`Merged your changes with changes someone else saved to ${dataFile.name}.${r.notes.length ? ` ${plural(r.notes.length, 'note')} in the activity log.` : ''}`);
+    return true;
+  }
+
   async function writeFile(overwrite = false) {
     const h = dataFile.handle;
     if (!h) return;
-    const text = workspaceText();
+    let text = workspaceText();
     if (!overwrite && text === dataFile.lastText) return;
     if (dataFile.writing) { dataFile.again = true; return; }
     dataFile.writing = true;
@@ -2408,7 +2537,14 @@
     try {
       if (!overwrite && dataFile.lastModified) {
         const f = await h.getFile();
-        if (f.lastModified !== dataFile.lastModified && (await f.text()) !== dataFile.lastText) { setDirtyOffline(true); setFileStatus('conflict'); return; }
+        if (f.lastModified !== dataFile.lastModified) {
+          const theirsText = await f.text();
+          if (theirsText !== dataFile.lastText) {
+            // Both changed: merge. Only what can't be merged (both changed the configuration) still asks.
+            if (!mergeFromFile(theirsText)) { setDirtyOffline(true); setFileStatus('conflict'); return; }
+            text = workspaceText();
+          }
+        }
       }
       const w = await h.createWritable();
       await w.write(text);
@@ -2793,6 +2929,7 @@
     if (S.page === 'files') renderFiles();
     if (S.page === 'notes') renderNotes();
     if (S.page === 'overview') renderOverview();
+    if (S.page === 'archive') renderArchive();
     if (S.page === 'config') renderConfig();
     if (S.page === 'guide') renderGuide();
   }
@@ -2803,6 +2940,7 @@
     files: { title: 'Files', intro: 'Documents for the work on the board. Files up to 750 KB are stored for download.' },
     notes: { title: 'Notes', intro: 'Working notes and team conventions.' },
     overview: { title: 'Team overview', intro: 'Open work by team and status. Click a team to see its items on the board.' },
+    archive: { title: 'Archive', intro: 'Finished work, moved off the board. Restore an item to put it back in its column.' },
     guide: { title: 'User Guide', intro: '' },
   };
 
@@ -3199,7 +3337,7 @@
     document.body.classList.add('guide-tab');
     const load = () => { S = loadState() || blankState(); S.page = 'guide'; guideSig = ''; };
     load();
-    ['board', 'posts', 'files', 'notes', 'overview', 'config'].forEach(p => { $('#view-' + p).hidden = true; });
+    ['board', 'posts', 'files', 'notes', 'overview', 'archive', 'config'].forEach(p => { $('#view-' + p).hidden = true; });
     $('#view-guide').hidden = false;
     const show = () => { renderGuide(); document.title = `${cfg().general.appName} · User Guide`; };
     show();
@@ -3217,10 +3355,10 @@
     $('#panelTitle').textContent = g.panelTitle;
     document.title = `${g.appName} · ${info ? info.title : g.boardTitle}`;
     $('#btnSample').hidden = $('#btnClear').hidden = !canConfigure();
-    const tabs = [['posts', 'Posts'], ['files', 'Files'], ['board', 'Board'], ['notes', 'Notes'], ['overview', 'Team overview']].filter(([k]) => k === 'board' || g.modules[k]);
+    const tabs = [['posts', 'Posts'], ['files', 'Files'], ['board', 'Board'], ['notes', 'Notes'], ['overview', 'Team overview'], ['archive', 'Archive']].filter(([k]) => k === 'board' || k === 'archive' || g.modules[k]);
     $('#tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab${S.page === k ? ' active' : ''}" type="button" role="tab" aria-selected="${S.page === k}" data-tab="${k}">${l}</button>`).join('');
     $('#hero').hidden = S.page === 'config' || S.page === 'guide';
-    ['board', 'posts', 'files', 'notes', 'overview', 'config', 'guide'].forEach(p => { $('#view-' + p).hidden = S.page !== p; });
+    ['board', 'posts', 'files', 'notes', 'overview', 'archive', 'config', 'guide'].forEach(p => { $('#view-' + p).hidden = S.page !== p; });
   }
 
   // The clicked view stays highlighted; otherwise the plain board view or the matching page view is.
@@ -3411,7 +3549,81 @@
     return '';
   }
 
+  // ---------- list view and CSV export ----------
+  // The same items as the board (filters, views and search apply), as a table sorted by any column.
+  // `text` is what a cell shows and exports; `cmp` orders two items (empty values always sort last).
+  function listCols() {
+    const byText = f => (a, b) => String(f(a)).localeCompare(String(f(b)), undefined, { numeric: true, sensitivity: 'base' });
+    const cols = [
+      { key: 'ref', label: label('ref'), text: it => it.ref },
+      { key: 'title', label: label('title'), text: it => it.title },
+      { key: 'status', label: label('status'), text: it => statusName(it.statusId), cmp: (a, b) => cfg().statuses.findIndex(s => s.id === a.statusId) - cfg().statuses.findIndex(s => s.id === b.statusId) },
+      { key: 'priority', label: label('priority'), text: it => (priority(it.priorityId) || {}).name || '', cmp: (a, b) => prioRank(a.priorityId) - prioRank(b.priorityId) },
+      { key: 'owner', label: label('owner'), text: it => ownerLabel(it) },
+      { key: 'nextOwner', label: label('nextOwner'), text: it => nextLabel(it) },
+      { key: 'team', label: label('team'), text: it => teamNameOf(it.teamId) },
+      { key: 'due', label: label('due'), text: it => it.due || '' },
+      { key: 'updated', label: 'Updated', text: it => fmtDate(it.updated || it.created), cmp: (a, b) => (+a.updated || +a.created || 0) - (+b.updated || +b.created || 0) },
+      ...cfg().fields.custom.map(f => ({ key: 'cf:' + f.id, label: f.label, text: it => customValueText(f, (it.fields || {})[f.id]) })),
+    ];
+    cols.forEach(c => { c.cmp = c.cmp || byText(c.text); });
+    return cols;
+  }
+  // The rows in the order shown: the chosen column (empty values last either way), else the board's own order.
+  function listRows() {
+    const items = visibleItems();
+    const lv = S.listView;
+    const c = lv.on && listCols().find(x => x.key === lv.sort);
+    if (!c) return items;
+    const empty = it => String(c.text(it)) === '';
+    return [...items].sort((a, b) => (empty(a) - empty(b)) || c.cmp(a, b) * lv.dir);
+  }
+  function renderList() {
+    const cols = listCols();
+    const rows = listRows();
+    const lv = S.listView;
+    const sortState = c => (lv.sort === c.key ? (lv.dir > 0 ? 'ascending' : 'descending') : 'none');
+    $('#list').innerHTML = rows.length ? `<table class="table"><thead><tr>${cols.map(c => `<th aria-sort="${sortState(c)}"><button type="button" class="th-sort" data-sort="${esc(c.key)}">${esc(c.label)}${lv.sort === c.key ? (lv.dir > 0 ? ' ▲' : ' ▼') : ''}</button></th>`).join('')}</tr></thead>
+      <tbody>${rows.map(it => `<tr${isOverdue(it) ? ' class="overdue"' : ''}>${cols.map(c => c.key === 'title'
+        ? `<td><button type="button" class="link-btn" data-open-item="${esc(it.id)}">${esc(it.title)}</button></td>`
+        : `<td>${esc(String(c.text(it)) || '—')}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+      : `<div class="empty-box">${S.items.length ? 'No matching items.' : 'No items yet — create one or load the sample.'}</div>`;
+  }
+  $('#list').addEventListener('click', e => {
+    const open = e.target.closest('[data-open-item]');
+    if (open) { openItemDetails(open.dataset.openItem); return; }
+    const s = e.target.closest('[data-sort]');
+    if (s) {
+      const lv = S.listView;
+      if (lv.sort === s.dataset.sort) lv.dir = -lv.dir; else Object.assign(lv, { sort: s.dataset.sort, dir: 1 });
+      commit();
+    }
+  });
+  $$('[data-mode]').forEach(b => b.addEventListener('click', () => { S.listView.on = b.dataset.mode === 'list'; commit(); }));
+  // A spreadsheet of exactly the rows shown, in the order shown, plus each item's description.
+  // Cells that a spreadsheet would run as a formula (=, +, -, @) are made plain text with a leading apostrophe.
+  function csvText() {
+    const cols = listCols();
+    const cell = v => {
+      let s = String(v ?? '');
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [[...cols.map(c => c.label), label('desc')], ...listRows().map(it => [...cols.map(c => c.text(it)), it.desc || ''])];
+    return '﻿' + lines.map(r => r.map(cell).join(',')).join('\r\n') + '\r\n';
+  }
+  $('#btnCsv').addEventListener('click', () => {
+    const name = `${(cfg().general.appName || 'task-hub').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'task-hub'}-items-${todayISO()}.csv`;
+    downloadText(name, csvText(), 'text/csv;charset=utf-8');
+    toast(`Exported ${plural(listRows().length, 'item')} to ${name}.`);
+  });
+
   function renderBoard() {
+    const showList = !!S.listView.on;
+    $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mode === 'list') === showList)));
+    $('#board').hidden = showList;
+    $('#list').hidden = !showList;
+    if (showList) { renderList(); return; }
     const list = visibleItems();
     const sts = cfg().statuses;
     const known = new Set(sts.map(s => s.id));
@@ -3578,6 +3790,52 @@
         <th>Team</th><th class="num">Open</th>${sts.map(s => `<th class="num">${esc(s.name)}</th>`).join('')}<th class="num">Overdue</th><th class="num">Incoming</th>
       </tr></thead><tbody>${rows}</tbody></table></div>`;
   }
+
+  // ---------- archive ----------
+  // Finished work can be moved off the board, by hand or automatically some days after it was finished. It stays in the
+  // workspace (its history, comments and links are kept) and can be restored at any time.
+  const DAY_MS = 864e5;
+  // When an item was finished: recorded since this version; for older data, its latest history entry stands in.
+  const closedTime = it => it.closedAt || Math.max(0, ...(it.history || []).map(h => +h.time || 0)) || it.updated || it.created || 0;
+  function setArchived(it, on, how = '') {
+    if (on && (it.archivedAt || !isClosedStatus(it.statusId))) return false;
+    if (!on && !it.archivedAt) return false;
+    it.archivedAt = on ? Date.now() : 0;
+    log(on ? `${it.ref} archived ${how || `by ${viewerName()}`}.` : `${it.ref} restored from the archive by ${viewerName()}.`, 'ARCHIVE', it);
+    return true;
+  }
+  // Runs when the workspace opens, when someone signs in, when the configuration is saved, and hourly. Returns how many.
+  function autoArchive() {
+    const days = Math.round(+cfg().general.archiveAfterDays || 0);
+    if (days <= 0) return 0;
+    const before = Date.now() - days * DAY_MS;
+    const due = S.items.filter(it => !it.archivedAt && isClosedStatus(it.statusId) && closedTime(it) < before);
+    due.forEach(it => setArchived(it, true, `automatically (finished more than ${plural(days, 'day')} ago)`));
+    return due.length;
+  }
+  function renderArchive() {
+    const all = archivedItems().sort((a, b) => b.archivedAt - a.archivedAt);
+    const qs = $('#archiveSearch').value.trim().toLowerCase();
+    const list = qs ? all.filter(it => haystack(it).includes(qs)) : all;
+    const ro = readOnly();
+    $('#archiveCount').textContent = plural(all.length, 'archived item');
+    $('#archiveList').innerHTML = list.length ? `<div style="overflow-x:auto"><table class="table"><thead><tr>
+        <th>Ref</th><th>Title</th><th>${esc(label('status'))}</th><th>${esc(label('owner'))}</th><th>${esc(label('team'))}</th><th>Finished</th><th>Archived</th><th></th>
+      </tr></thead><tbody>${list.map(it => `<tr>
+        <td>${esc(it.ref)}</td><td><button type="button" class="link-btn" data-open-item="${esc(it.id)}">${esc(it.title)}</button></td>
+        <td>${esc(statusName(it.statusId))}</td><td>${esc(nameOf(it.ownerId) || '—')}</td><td>${esc(teamNameOf(it.teamId) || '—')}</td>
+        <td>${esc(fmtDate(closedTime(it)))}</td><td>${esc(fmtDate(it.archivedAt))}</td>
+        <td>${ro ? '' : `<button type="button" class="btn-sm b-plain" data-unarchive="${esc(it.id)}">Restore</button>`}</td>
+      </tr>`).join('')}</tbody></table></div>`
+      : `<div class="empty-box">${all.length ? 'Nothing in the archive matches.' : 'Nothing is archived. Finished work can be archived from its details, and is archived automatically after a while (Configuration › General).'}</div>`;
+  }
+  $('#archiveSearch').addEventListener('input', () => renderArchive());
+  $('#archiveList').addEventListener('click', e => {
+    const open = e.target.closest('[data-open-item]');
+    if (open) { openItemDetails(open.dataset.openItem); return; }
+    const r = e.target.closest('[data-unarchive]');
+    if (r && guardWrite()) { const it = getItem(r.dataset.unarchive); if (it && setArchived(it, false)) { commit(); toast(`${it.ref} is back on the board.`, undefined, { itemId: it.id }); } }
+  });
 
   // ---------- toasts & dialog ----------
   // n = notification settings; previews pass the unsaved draft instead of the saved configuration.
@@ -3767,6 +4025,8 @@
     });
     return added;
   }
+  // Time-based housekeeping, run whenever the workspace opens, someone signs in, the configuration is saved, and hourly.
+  const upkeep = () => autoArchive() + remindDue();
   function popPendingForViewer() {
     const pending = unreadFor(S.viewerId).filter(a => !a.popped);
     if (!pending.length) return;
@@ -4037,6 +4297,8 @@
     }
     if (isHoldStatus(target) && !isHoldStatus(it.statusId)) it.prevStatusId = it.statusId;
     it.blockReason = isHoldStatus(target) ? reason : '';
+    if (!isClosedStatus(target)) it.closedAt = 0;
+    else if (!isClosedStatus(it.statusId) || !it.closedAt) it.closedAt = Date.now();
     it.statusId = target;
     return true;
   }
@@ -4409,7 +4671,12 @@
     const hist = it.history.length
       ? it.history.map(h => `<div class="hist"><span class="when">${fmtTime(h.time)} · ${esc(h.type)}</span><br>${esc(h.text)}</div>`).join('')
       : '<p class="muted" style="margin:0">No history yet.</p>';
-    return `<div class="detail-meta">${meta}</div>
+    // Finished work can be archived; archived work restored. Not while looking at someone else's work read-only.
+    const archiveBar = readOnly() ? ''
+      : it.archivedAt ? `<div class="data-actions"><span class="muted" style="flex:1">Archived on ${esc(fmtDate(it.archivedAt))}.</span><button type="button" class="btn" data-unarchive-item="${esc(it.id)}">Restore to the board</button></div>`
+      : isClosedStatus(it.statusId) ? `<div class="data-actions"><span class="muted" style="flex:1">Finished. Archive it to move it off the board; it can be restored any time.</span><button type="button" class="btn" data-archive-item="${esc(it.id)}">Archive</button></div>`
+      : '';
+    return `${archiveBar}<div class="detail-meta">${meta}</div>
       ${it.offer ? `<div class="offer-banner">Waiting for <b>${esc(nameOf(it.offer.toId))}</b> to accept, since ${fmtTime(it.offer.time)}.</div>` : ''}
       ${it.desc ? `<p style="margin:0">${esc(it.desc)}</p>` : ''}
       <div class="detail-sec"><h4>Handovers</h4>${handovers}</div>
@@ -4425,6 +4692,15 @@
     const it = getItem(id);
     if (!it) return;
     const wire = body => {
+      const arch = $('[data-archive-item], [data-unarchive-item]', body);
+      if (arch) arch.addEventListener('click', () => {
+        if (!guardWrite()) return;
+        const on = !!arch.dataset.archiveItem;
+        if (!setArchived(it, on)) return;
+        dlg.close();
+        commit();
+        toast(on ? `${it.ref} archived. It is on the Archive page.` : `${it.ref} is back on the board.`, undefined, on ? {} : { itemId: it.id });
+      });
       $('#d_addComment', body).addEventListener('click', () => {
         if (!guardWrite()) return;
         const text = $('#d_comment', body).value.trim();
@@ -4449,6 +4725,7 @@
   // Shows an item on the board, clearing the filters only if they hide it.
   function showItem(id) {
     if (!getItem(id)) { toast('That item no longer exists.'); return; }
+    if (getItem(id).archivedAt) { setPage('archive'); openItemDetails(id); return; }
     setPage('board', () => { if (!visibleItems().some(i => i.id === id)) resetFilters(); });
     flashCard(id);
   }
@@ -5059,8 +5336,12 @@
           ${cell('Digits', inp('general.refDigits', d.general.refDigits, { type: 'number', num: true, attrs: 'min="1" max="8"' }))}
           <div class="cell full muted">Next new item: <b data-live="refPreview">${esc(nextRef(d))}</b></div>
         </div>`) +
-      section('Pages', 'The tabs at the top of the workspace. Turn pages on or off; the Board is always available.', `
-        <div class="chips">${[['posts', 'Posts'], ['files', 'Files'], ['notes', 'Notes'], ['overview', 'Team overview']].map(([k, l]) => `<label class="chip"><input type="checkbox" ${bind('general.modules.' + k)}${d.general.modules[k] ? ' checked' : ''}> ${l}</label>`).join('')}</div>`),
+      section('Pages', 'The tabs at the top of the workspace. Turn pages on or off; the Board and the Archive are always available.', `
+        <div class="chips">${[['posts', 'Posts'], ['files', 'Files'], ['notes', 'Notes'], ['overview', 'Team overview']].map(([k, l]) => `<label class="chip"><input type="checkbox" ${bind('general.modules.' + k)}${d.general.modules[k] ? ' checked' : ''}> ${l}</label>`).join('')}</div>`) +
+      section('Archive', 'Finished work moves off the board to the Archive page, where it can be searched and restored. Anyone can archive a finished item from its details; this archives it automatically.', `
+        <div class="gen-grid">
+          ${cell('Archive finished work after (days, 0 = never)', inp('general.archiveAfterDays', d.general.archiveAfterDays, { type: 'number', num: true, attrs: 'min="0" max="3650"' }))}
+        </div>`),
 
     teams: d => section('Teams & routing',
       'Teams own work. <b>Hands off to</b> sets the default route used by the “Route to the next team” button step, and the team’s <b>lead</b> can be proposed as the next owner.', `
@@ -5948,14 +6229,15 @@ ctx.person(name)      ctx.team(name)</pre>
     const ed = editingId && getItem(editingId);
     if (ed) fillForm(ed); else if (!F('title').value.trim()) resetForm();
     log(`Configuration saved by ${viewerName()}.`, 'CONFIG');
-    remindDue();
+    upkeep();
     commit();
     toast('Configuration saved.');
     popPendingForViewer();
   }
 
-  function download(name, data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  function download(name, data) { downloadText(name, JSON.stringify(data, null, 2), 'application/json'); }
+  function downloadText(name, text, type) {
+    const blob = new Blob([text], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = name;
@@ -6194,7 +6476,7 @@ ctx.person(name)      ctx.team(name)</pre>
     $('#loginPass').value = '';
     $('#loginUser').value = '';
     resetForm();
-    remindDue();
+    upkeep();
     commit();
     toast(`Signed in as ${who.name}.`);
     popPendingForViewer();
@@ -7352,12 +7634,12 @@ ctx.person(name)      ctx.team(name)</pre>
     S = loadState() || blankState();
     fixViewer();
     resetForm();
-    remindDue();
+    upkeep();
     commit();
     reportUnreadable();
     if (loggedIn()) popPendingForViewer();
     // A day can change while someone stays signed in.
-    setInterval(() => { if (!demo.running && remindDue()) { commit(); popPendingForViewer(); } }, 60 * 60 * 1000);
+    setInterval(() => { if (!demo.running && upkeep()) { commit(); popPendingForViewer(); } }, 60 * 60 * 1000);
     if (location.hash === '#demo') openDemoPanel();
     initDataFile();
     // A guide link followed from a guide tab that had no app tab to talk to.

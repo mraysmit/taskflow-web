@@ -106,20 +106,30 @@ window.addEventListener('load', async () => {
       for (let t = 0; t < 70 && !titles().includes('From a colleague'); t++) await wait(100);
       ok('A colleague’s change is picked up automatically (within one 5-second check)', titles().includes('From a colleague') && qa('.toast').some(t => t.textContent.includes('latest changes')));
 
+      // Both changed different things at once: merged (data-file-merge.test.html covers merging in depth).
       colleague(d => { d.items.find(i => i.ref === 'OMD-002').title = 'Colleague renamed this'; });
       btn('OMD-001', 'Start').click(); await wait(700);
-      ok('Both changed: nothing is overwritten, you are asked', D.data().items.find(i => i.ref === 'OMD-002').title === 'Colleague renamed this' && side().classList.contains('bad') && side().textContent.includes('changed elsewhere'));
+      ok('Both changed work at once: merged, nothing lost and nobody asked', D.data().items.find(i => i.ref === 'OMD-002').title === 'Colleague renamed this'
+        && D.data().items.find(i => i.ref === 'OMD-001').statusId === 'progress' && titles().includes('Colleague renamed this') && !side().classList.contains('bad'));
+      q('#btnNew').click(); setv(q('#f_title'), 'Saved after the merge'); q('#form').requestSubmit(); await wait(700);
+      ok('…and saving carries on normally', D.data().items.some(i => i.title === 'Saved after the merge') && !side().classList.contains('bad'));
+
+      // Both changed the configuration: that isn't merged, so the person is asked.
+      const rename = async name => { q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="general"]').click(); await wait(20); setv(q('[data-bind="general.appName"]'), name); q('[data-cfg-cmd="save"]').click(); await wait(700); };
+      colleague(d => { d.config.general.appName = 'Their Hub'; });
+      await rename('My Hub');
+      ok('Both changed the configuration: nothing is overwritten, you are asked', D.data().config.general.appName === 'Their Hub' && side().classList.contains('bad') && side().textContent.includes('changed elsewhere'));
       side().click(); await wait(50);
       ok('Conflict dialog offers both versions and a download', q('#dlg').open && !!q('#m_mine') && !!q('#m_backup'));
       q('#dlgOk').click(); await wait(100);
-      ok('“Use the file’s version” takes theirs', titles().includes('Colleague renamed this') && !side().classList.contains('bad'));
+      ok('“Use the file’s version” takes theirs', q('#brandTitle').textContent === 'Their Hub' && !side().classList.contains('bad'));
 
-      colleague(d => { d.items.find(i => i.ref === 'OMD-003').title = 'Theirs again'; });
-      btn('OMD-001', 'Start').click(); await wait(700);
+      colleague(d => { d.config.general.appName = 'Theirs again'; });
+      await rename('Mine again');
       side().click(); await wait(50);
       q('#m_mine').click(); await wait(200);
-      const d2 = D.data();
-      ok('“Keep mine” writes your version over theirs', d2.items.find(i => i.ref === 'OMD-001').statusId === 'progress' && d2.items.find(i => i.ref === 'OMD-003').title !== 'Theirs again' && side().textContent.includes('Saved'));
+      ok('“Keep mine” writes your version over theirs', D.data().config.general.appName === 'Mine again' && side().textContent.includes('Saved'));
+      q('#tabs [data-tab="board"]').click(); await wait(20);
 
       // A run of the automated demo uses sample data: it must never reach the file.
       const before = D.get().text;

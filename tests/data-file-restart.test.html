@@ -50,8 +50,6 @@ window.addEventListener('load', async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
   const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
-  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
-  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
   const titles = () => qa('#board .card-title').map(t => t.textContent);
   const side = () => q('#sideFile');
   const D = window.__disk;
@@ -74,9 +72,11 @@ window.addEventListener('load', async () => {
       q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
       q('[data-file-cmd="new"]').click(); await wait(300);
       q('#tabs [data-tab="board"]').click(); await wait(20);
-      // A colleague saves the file while A. Chan is also making a change: a conflict.
-      colleague(d => { d.items.find(i => i.ref === 'OMD-002').title = 'Colleague renamed this'; });
-      btn('OMD-001', 'Start').click(); await wait(700);
+      // A colleague changes the configuration while A. Chan does too: a conflict (work itself would be merged).
+      colleague(d => { d.config.general.appName = 'Their Hub'; });
+      q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="general"]').click(); await wait(20);
+      setv(q('[data-bind="general.appName"]'), 'My Hub'); q('[data-cfg-cmd="save"]').click(); await wait(700);
+      q('#tabs [data-tab="board"]').click(); await wait(20);
       ok('A conflict is reported', side().classList.contains('bad') && side().textContent.includes('changed elsewhere'));
       // A. Chan doesn't deal with it now and carries on working, then closes the browser.
       q('#btnNew').click(); setv(q('#f_title'), 'Made during the conflict'); q('#form').requestSubmit(); await wait(700);

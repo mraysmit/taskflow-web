@@ -1,0 +1,109 @@
+<!-- budget: 240000 -->
+<!-- Two people changing the shared data file at the same time: their changes are merged record by record instead of one
+     person choosing whose to throw away. Different items, different fields of one item, new items, comments and alerts all
+     combine; the same field changed by both keeps the later edit and logs the other; a delete meets an edit by keeping the
+     item; two new items with the same reference are renumbered. Only both changing the configuration still asks.
+     The browser's file access is replaced by an in-memory file that the test edits "as a colleague". -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const side = () => q('#sideFile');
+  // The shared file, in memory.
+  const disk = { name: '', text: '', lm: 0 };
+  class FakeHandle {
+    constructor(name) { this.name = name; this.kind = 'file'; }
+    async queryPermission() { return 'granted'; }
+    async requestPermission() { return 'granted'; }
+    async getFile() { return { lastModified: disk.lm, text: async () => disk.text }; }
+    async createWritable() { let buf = ''; return { write: async t => { buf += t; }, close: async () => { disk.text = buf; disk.lm++; } }; }
+  }
+  window.showSaveFilePicker = async o => { Object.assign(disk, { name: o.suggestedName, text: '', lm: 1 }); return new FakeHandle(o.suggestedName); };
+  const file = () => JSON.parse(disk.text);
+  const fileItem = ref => file().items.find(i => i.ref === ref);
+  const mine = ref => JSON.parse(localStorage.getItem('taskhub.v2')).items.find(i => i.ref === ref);
+  // A colleague saves the file (their app would write it the same way).
+  const colleague = fn => { const d = file(); fn(d); disk.text = JSON.stringify(d, null, 2); disk.lm++; };
+  const settle = () => wait(900);
+  const edit = async (ref, fn) => { btn(ref, 'Edit').click(); await wait(30); fn(); q('#form').requestSubmit(); await wait(30); };
+  const noConflict = () => !side().classList.contains('bad') && !q('#dlg').open;
+  const inSync = () => JSON.stringify(file().items.map(i => [i.ref, i.title, i.statusId, i.priorityId, i.desc]).sort()) === JSON.stringify(JSON.parse(localStorage.getItem('taskhub.v2')).items.map(i => [i.ref, i.title, i.statusId, i.priorityId, i.desc]).sort());
+  try {
+    await wait(300);
+    q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="data"]').click(); await wait(20);
+    q('[data-file-cmd="new"]').click(); await wait(300);
+    q('#tabs [data-tab="board"]').click(); await wait(30);
+    ok('Saving to a shared file', !!disk.text && file().items.length === 4);
+
+    // ---------- 1. Different items ----------
+    colleague(d => { d.items.find(i => i.ref === 'OMD-002').title = 'Renamed by a colleague'; });
+    btn('OMD-001', 'Start').click(); await settle();
+    ok('Different items changed at once: both changes are kept, in the file and on screen', fileItem('OMD-002').title === 'Renamed by a colleague' && fileItem('OMD-001').statusId === 'progress'
+      && !!card('OMD-002') && card('OMD-002').textContent.includes('Renamed by a colleague'));
+    ok('…without asking anyone to choose', noConflict());
+    ok('…and you are told it was merged', qa('.toast').some(t => /merged/i.test(t.textContent)));
+
+    // ---------- 2. The same item, different fields ----------
+    colleague(d => { d.items.find(i => i.ref === 'OMD-003').desc = 'Description from a colleague'; });
+    await edit('OMD-003', () => setv(q('#f_priority'), 'pr1')); await settle();
+    ok('The same item, different fields: both are kept', fileItem('OMD-003').desc === 'Description from a colleague' && fileItem('OMD-003').priorityId === 'pr1' && noConflict());
+
+    // ---------- 3. The same field ----------
+    colleague(d => { const i = d.items.find(x => x.ref === 'OMD-001'); i.title = 'Their title'; i.updated = Date.now() - 60000; });
+    await edit('OMD-001', () => setv(q('#f_title'), 'My title')); await settle();
+    ok('The same field changed by both: the later edit is kept', fileItem('OMD-001').title === 'My title' && mine('OMD-001').title === 'My title' && noConflict());
+    ok('…and the other value is kept in the activity log, so nothing disappears silently', file().activity.some(a => a.msg.includes('OMD-001') && a.msg.includes('Their title')));
+
+    // ---------- 4. New items at the same time ----------
+    colleague(d => { const i = JSON.parse(JSON.stringify(d.items[0])); Object.assign(i, { id: 'i_theirs', ref: 'OMD-005', title: 'Their new item', history: [], comments: [] }); d.items.push(i); });
+    q('#btnNew').click(); setv(q('#f_title'), 'My new item'); q('#form').requestSubmit(); await settle();
+    const refs = file().items.map(i => i.ref);
+    ok('Both new items are kept', file().items.some(i => i.title === 'Their new item') && file().items.some(i => i.title === 'My new item'));
+    ok('…with different references (yours is renumbered)', new Set(refs).size === refs.length && file().items.find(i => i.title === 'Their new item').ref === 'OMD-005' && file().items.find(i => i.title === 'My new item').ref !== 'OMD-005');
+
+    // ---------- 5. Deletes ----------
+    colleague(d => { d.items = d.items.filter(i => i.ref !== 'OMD-004'); });
+    btn('OMD-002', 'Block').click(); await wait(30); setv(q('[data-reason]'), 'Waiting'); q('#dlgOk').click(); await settle();
+    ok('An item a colleague deleted (and you didn’t touch) is gone', !fileItem('OMD-004') && !card('OMD-004'));
+    colleague(d => { d.items = d.items.filter(i => i.ref !== 'OMD-002'); });
+    btn('OMD-002', 'Unblock').click(); await settle();
+    ok('An item a colleague deleted while you changed it is kept, and the log says so', !!fileItem('OMD-002') && file().activity.some(a => a.msg.includes('OMD-002') && /deleted/i.test(a.msg)));
+
+    // ---------- 6. Comments and alerts on both sides ----------
+    colleague(d => {
+      const i = d.items.find(x => x.ref === 'OMD-001');
+      i.comments.push({ id: 'cm_theirs', authorId: 'p2', text: 'Their comment', time: Date.now() });
+      d.alerts.unshift({ id: 'al_theirs', toId: 'p1', fromId: 'p2', itemId: i.id, kind: 'comment', label: 'COMMENT', text: 'B. Lee commented on OMD-001', time: Date.now(), read: false, popped: false });
+    });
+    card('OMD-001').querySelector('[data-open-item]').click(); await wait(30);
+    setv(q('#d_comment'), 'My comment'); q('#d_addComment').click(); q('#dlgOk').click(); await settle();
+    const cs = fileItem('OMD-001').comments.map(c => c.text);
+    ok('Comments added on both sides are all kept', cs.includes('Their comment') && cs.includes('My comment'));
+    ok('A colleague’s new alert for you arrives', file().alerts.some(a => a.id === 'al_theirs') && q('#inbox').textContent.includes('B. Lee commented on OMD-001'));
+    ok('After all of this, the file and this browser agree', inSync() && noConflict());
+
+    // ---------- 7. Both changed the configuration: you are asked ----------
+    colleague(d => { d.config.general.appName = 'Their Hub'; });
+    q('#sideConfig').click(); await wait(20); q('[data-cfg-nav="general"]').click(); await wait(20);
+    setv(q('[data-bind="general.appName"]'), 'My Hub'); q('[data-cfg-cmd="save"]').click(); await settle();
+    ok('Both changed the configuration: nothing is overwritten, you are asked', file().config.general.appName === 'Their Hub' && side().classList.contains('bad'));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>
