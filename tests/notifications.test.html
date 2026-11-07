@@ -27,6 +27,8 @@ window.addEventListener('load', async () => {
   try {
     await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
     await login('achan');
+    // Signing in pops up (and sounds) A. Chan's due-today reminder; clear it so the previews below are measured alone.
+    qa('.toast').forEach(t => t.remove()); window.__tones = [];
     const n0 = store().config.notifications;
     ok('Defaults: top, right, slide, bell on for alerts', n0.position === 'top' && n0.align === 'right' && n0.animation === 'slide' && n0.sound === true && n0.soundFor === 'alerts' && n0.tone === 'bell' && n0.volume === 50);
 

@@ -27,7 +27,8 @@ window.addEventListener('load', async () => {
     await wait(200); document.querySelector('[data-load-default]').click(); await wait(300); const loginAs = async (u, p = 'demo') => { document.querySelector('#loginUser').value = u; document.querySelector('#loginPass').value = p; document.querySelector('#loginForm').requestSubmit(); await new Promise(r => setTimeout(r, 60)); }; await loginAs('achan');
     // ---------- board basics ----------
     ok('4 sample cards in 5 columns (incl. Verification)', qa('#board .card').length === 4 && qa('.col').length === 5);
-    ok('stats 3,1,0,1,0', statVals() === '3,1,0,1,0');
+    // Open, assigned to me, overdue, blocked, unread alerts: the one unread alert is A. Chan's reminder that OMD-001 is due today.
+    ok('stats 3,1,0,1,1', statVals() === '3,1,0,1,1');
     ok('sidebar counts', sideCount('All work') === '3' && sideCount('Assigned to me') === '1' && sideCount('Awaiting my acceptance') === '0' && sideCount('Coming to me next') === '0' && sideCount('Blocked') === '1');
     ok('All work highlighted by default', qa('#sideNav .side-item.active').map(b => b.firstElementChild.textContent).join() === 'All work');
     ok('card buttons from config', [...card('OMD-001').querySelectorAll('[data-action]')].map(b => b.textContent).join('|') === 'Start|Complete & handoff|Block|Set next|Edit|Delete');

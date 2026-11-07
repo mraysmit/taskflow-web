@@ -1269,7 +1269,7 @@
     card: { fields: ['owner', 'nextOwner', 'nextTeam', 'due'], showRef: true, showPriority: true, showTeam: true, showDesc: true },
     stats: [], views: [],
     notifications: {
-      assigned: true, next: true, comments: true, popups: true, popupSeconds: 9, toastSeconds: 4,
+      assigned: true, next: true, comments: true, dueReminders: true, dueSoonDays: 1, popups: true, popupSeconds: 9, toastSeconds: 4,
       position: 'top', align: 'right', animation: 'slide', animMs: 300, reduceMotion: true,
       sound: true, soundFor: 'alerts', tone: 'bell', volume: 50,
       popBg: '#ffffff', popText: '#15171a', popAccent: '#b5141e', msgAccent: '#2f7a1e',
@@ -1426,7 +1426,10 @@
       && (a.allowSelf || (p.id !== rec.submittedBy && p.id !== rec.ownerId))
       && (!a.oneStagePerPerson || !rec.stages.some(s => s !== st && s.by === p.id)));
   }
+  // Maker-checker sign-off must come from the verifier themself: acting on someone's behalf never verifies.
+  const actingForSomeoneElse = () => !!S.session && S.viewerId !== sessionId();
   function myStage(it, pid = S.viewerId) {
+    if (pid === S.viewerId && actingForSomeoneElse()) return null;
     const rec = pendingApproval(it);
     return rec ? openStages(rec).find(st => stageApprovers(rec, st).some(p => p.id === pid)) || null : null;
   }
@@ -3741,6 +3744,29 @@
     if (noteCfg().sound && audio() && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   }, { capture: true, passive: true }));
 
+  // Due-date reminders. Nothing runs in the background here, so they are raised whenever someone signs in, the page opens,
+  // the configuration is saved, and every hour while signed in: the signed-in person's own open work that is overdue or due
+  // within the warning period raises one alert a day (a new day's alert retires the day before's). Work waiting for
+  // verification is with the verifiers, so it isn't reminded. Returns how many were raised.
+  function remindDue() {
+    const n = cfg().notifications;
+    if (!loggedIn() || !n.dueReminders) return 0;
+    const me = sessionId(), today = todayISO();
+    const soon = addDays(today, Math.max(0, Math.min(60, Math.round(+n.dueSoonDays || 0))));
+    let added = 0;
+    S.items.forEach(it => {
+      if (it.ownerId !== me || !it.due || !isOpen(it) || pendingApproval(it) || it.due > soon) return;
+      const kind = it.due < today ? 'overdue' : 'soon';
+      const key = `${it.id}|${kind}|${today}`;
+      if (S.alerts.some(a => a.dueKey === key)) return;
+      S.alerts.forEach(a => { if (a.kind === 'due' && a.itemId === it.id) a.read = true; });
+      const days = Math.round((new Date(it.due) - new Date(today)) / 864e5);
+      const when = days < 0 ? `was due on ${it.due} (${plural(-days, 'day')} ago)` : days === 0 ? 'is due today' : days === 1 ? 'is due tomorrow' : `is due in ${days} days (${it.due})`;
+      S.alerts.unshift({ id: uid('al'), toId: me, fromId: '', itemId: it.id, kind: 'due', label: kind === 'overdue' ? 'OVERDUE' : 'DUE SOON', text: `${it.ref} "${it.title}" ${when}.`, dueKey: key, time: Date.now(), read: false, popped: false });
+      added++;
+    });
+    return added;
+  }
   function popPendingForViewer() {
     const pending = unreadFor(S.viewerId).filter(a => !a.popped);
     if (!pending.length) return;
@@ -3775,11 +3801,14 @@
   // The workspace feed keeps the latest 300 events; each item keeps its own history as well.
   function log(msg, type, it) {
     const time = Date.now();
-    S.activity.unshift({ id: uid('ac'), msg, type, time, itemId: it ? it.id : '' });
+    // Work done on someone's behalf is recorded under them and under who really did it.
+    const byId = S.session && S.viewerId !== sessionId() ? sessionId() : '';
+    if (byId) msg = `${msg} (done by ${nameOf(byId)}, acting as ${viewerName()})`;
+    S.activity.unshift(Object.assign({ id: uid('ac'), msg, type, time, itemId: it ? it.id : '' }, byId ? { actorId: S.viewerId, byId } : {}));
     if (S.activity.length > 300) S.activity.length = 300;
     if (it) {
       it.history = it.history || [];
-      it.history.unshift({ time, type, text: msg, actorId: S.viewerId });
+      it.history.unshift(Object.assign({ time, type, text: msg, actorId: S.viewerId }, byId ? { byId } : {}));
       if (it.history.length > 200) it.history.length = 200;
     }
   }
@@ -4018,7 +4047,13 @@
     const it = getItem(itemId);
     if (!a || !it || !guardWrite()) return;
     // A page that hasn't redrawn yet can still have a button the item no longer shows: it does nothing.
-    if (!actionVisible(a, it)) { toast(`${a.label} doesn’t apply to ${it.ref} any more.`); render(); return; }
+    if (!actionVisible(a, it)) {
+      const verifying = a.steps.some(s => s.type === 'approve' || s.type === 'reject');
+      toast(verifying && actingForSomeoneElse() && pendingApproval(it)
+        ? `Verification can’t be given on someone else’s behalf: only ${viewerName()} can verify as themself. Switch back to yourself first.`
+        : `${a.label} doesn’t apply to ${it.ref} any more.`);
+      render(); return;
+    }
     const snap = clone(it);
     const loops = [];
     const steps = expandSteps(a.steps, snap, 0, ['a:' + a.id], loops);
@@ -4211,6 +4246,7 @@
         case 'approve': case 'reject': {
           const rec = pendingApproval(it);
           if (!rec) break;
+          if (actingForSomeoneElse()) { toast(`Verification can’t be given on someone else’s behalf: only ${viewerName()} can verify as themself. Switch back to yourself first.`); break; }
           const st = myStage(it);
           if (!st) { toast(`You can’t verify ${it.ref}: ${openStages(rec).some(s => rolesOf(S.viewerId).some(r => r.id === s.roleId)) ? 'you did this work or already verified another step' : `it is waiting for ${openStages(rec).map(s => groupName(s.roleId)).join(' and ')}`}.`); break; }
           const tell = (label, text) => uniq([rec.submittedBy, it.ownerId]).forEach(pid => { if (sendAlert(pid, it, { kind: 'custom', label, text })) ctx.sent = (ctx.sent || 0) + 1; });
@@ -5253,6 +5289,11 @@
           <div>${chk('notifications.next', d.notifications.next, 'Next-owner alerts')}<span class="toggle-desc">A person, when the form makes them the next owner.</span></div>
           <div>${chk('notifications.comments', d.notifications.comments, 'Comment alerts')}<span class="toggle-desc">The owner, the next owner and anyone being offered the item, when someone else comments on it.</span></div>
         </div>`) +
+      section('Due-date reminders', 'When someone signs in, and every hour while they stay signed in, each open item they own that is overdue or due soon raises one alert a day. Work waiting for verification is with the verifiers, so it isn’t reminded.', `
+        <div class="gen-grid">
+          <div class="cell full">${chk('notifications.dueReminders', d.notifications.dueReminders, 'Remind owners of overdue and due-soon work')}</div>
+          ${cell('Warn this many days ahead (0 = only on the day)', inp('notifications.dueSoonDays', d.notifications.dueSoonDays, { type: 'number', num: true, attrs: 'min="0" max="60"' }))}
+        </div>`) +
       section('Pop-ups', 'Pop-up notifications appear when you sign in, or switch “View as” to someone, with new alerts. Short messages confirm what you just did, for example “Saved”.', `
         <div class="gen-grid">
           <div class="cell full">${chk('notifications.popups', d.notifications.popups, 'Show pop-up notifications for new alerts')}</div>
@@ -5907,8 +5948,10 @@ ctx.person(name)      ctx.team(name)</pre>
     const ed = editingId && getItem(editingId);
     if (ed) fillForm(ed); else if (!F('title').value.trim()) resetForm();
     log(`Configuration saved by ${viewerName()}.`, 'CONFIG');
+    remindDue();
     commit();
     toast('Configuration saved.');
+    popPendingForViewer();
   }
 
   function download(name, data) {
@@ -6151,6 +6194,7 @@ ctx.person(name)      ctx.team(name)</pre>
     $('#loginPass').value = '';
     $('#loginUser').value = '';
     resetForm();
+    remindDue();
     commit();
     toast(`Signed in as ${who.name}.`);
     popPendingForViewer();
@@ -7308,9 +7352,12 @@ ctx.person(name)      ctx.team(name)</pre>
     S = loadState() || blankState();
     fixViewer();
     resetForm();
+    remindDue();
     commit();
     reportUnreadable();
     if (loggedIn()) popPendingForViewer();
+    // A day can change while someone stays signed in.
+    setInterval(() => { if (!demo.running && remindDue()) { commit(); popPendingForViewer(); } }, 60 * 60 * 1000);
     if (location.hash === '#demo') openDemoPanel();
     initDataFile();
     // A guide link followed from a guide tab that had no app tab to talk to.

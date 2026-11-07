@@ -1,0 +1,63 @@
+<!-- Acting on someone else's behalf (an administrator's "View as" with actions allowed): every change records who really
+     did it, and verification (maker-checker sign-off) can only be given by the verifier themself, never on their behalf. -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const out = []; const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); qa('.toast').forEach(t => t.remove()); };
+  const card = ref => qa('#board .card').find(c => c.querySelector('.card-ref') && c.querySelector('.card-ref').textContent === ref);
+  const btn = (ref, label) => card(ref) && [...card(ref).querySelectorAll('[data-action]')].find(b => b.textContent === label);
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const item = ref => store().items.find(i => i.ref === ref);
+  const viewAs = async id => { setv(q('#fViewer'), id); await wait(50); qa('.toast').forEach(t => t.remove()); };
+  try {
+    await wait(200); q('[data-load-default]').click(); await wait(300);
+    await login('achan');
+
+    // ---------- A. Chan finishes their own High-priority item: it needs two groups' sign-off ----------
+    btn('OMD-001', 'Set next').click(); await wait(30); setv(q('#m_owner'), ''); q('#dlgOk').click(); await wait(50);
+    btn('OMD-001', 'Complete & handoff').click(); await wait(30); q('#dlgOk').click(); await wait(50);
+    ok('OMD-001 waits for Controls reviewers', !!(item('OMD-001').approvals[0] || {}).stages && item('OMD-001').approvals[0].state === 'pending');
+
+    // ---------- Acting as C. Wong, a Controls reviewer ----------
+    await viewAs('p3');
+    ok('A. Chan is acting as C. Wong (not read-only)', !q('#roBanner').hidden && !/read-only/.test(q('#roBanner').textContent));
+    ok('No Approve or Reject on the card while acting as someone else', !btn('OMD-001', 'Approve') && !btn('OMD-001', 'Reject'));
+    ok('…nor in the Action Inbox', !qa('#inbox [data-inbox-action]').some(b => /Approve|Reject/.test(b.textContent)));
+    // A page that hasn't redrawn could still have an Approve button: it must refuse too.
+    const forged = document.createElement('button'); forged.dataset.action = 'a_approve'; forged.dataset.id = item('OMD-001').id; card('OMD-001').appendChild(forged); forged.click(); await wait(30);
+    if (q('#dlg').open) { const r = q('[data-reason]'); if (r) setv(r, 'Looks fine'); q('#dlgOk').click(); await wait(50); }
+    ok('Approving on C. Wong’s behalf is refused: the step is still waiting', item('OMD-001').approvals[0].stages[0].state === 'pending');
+    ok('…and A. Chan is told why', qa('.toast').some(t => /on (someone else’s|their) behalf|yourself/i.test(t.textContent)));
+
+    // ---------- Ordinary work done on someone's behalf records who really did it ----------
+    btn('OMD-002', 'Pause') ? btn('OMD-002', 'Pause').click() : btn('OMD-002', 'Block').click();
+    await wait(30); if (q('#dlg').open) { const r = q('[data-reason]'); if (r) setv(r, 'Waiting on a supplier'); q('#dlgOk').click(); await wait(50); }
+    const h = item('OMD-002').history[0];
+    ok('The item’s history records both: on behalf of C. Wong, by A. Chan', h.actorId === 'p3' && h.byId === 'p1');
+    const act = store().activity[0].msg;
+    ok('The activity log says so in words', act.includes('A. Chan') && act.includes('C. Wong'));
+
+    // ---------- As themself, C. Wong can verify ----------
+    await viewAs('p1');
+    q('[data-logout]').click(); await wait(30);
+    await login('cwong');
+    ok('Signed in as themself, C. Wong has Approve', !!btn('OMD-001', 'Approve'));
+    btn('OMD-001', 'Approve').click(); await wait(30); setv(q('[data-reason]'), 'Evidence checked'); q('#dlgOk').click(); await wait(50);
+    ok('…and their approval counts', item('OMD-001').approvals[0].stages[0].state === 'approved' && item('OMD-001').approvals[0].stages[0].by === 'p3');
+    ok('Work done as yourself records no one else', !item('OMD-001').history[0].byId);
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR ' + e.message + '\n' + e.stack); }
+  if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+  try { localStorage.clear(); } catch (e) {}
+  const fails = out.filter(l => !l.startsWith('PASS'));
+  const pre = document.createElement('pre');
+  pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+  pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+  document.body.appendChild(pre);
+  if (window.__report) window.__report(out);
+});
+</script>

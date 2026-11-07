@@ -1,0 +1,110 @@
+<!-- Due-date reminders: when someone signs in (or the day changes while they're signed in), each open item they own that is
+     overdue or due soon raises one alert for that day, in the Action Inbox and as a pop-up. Finished, undated, later work and
+     work waiting for verification raise none; nothing repeats the same day; a new day brings fresh reminders and retires
+     yesterday's; Configuration can give a longer warning or switch them off. Phases reload the page as "the next day". -->
+<script>
+window.addEventListener('error', e => { (window.__errs = window.__errs || []).push(e.message + ' @' + e.lineno); });
+window.addEventListener('load', async () => {
+  const phase = sessionStorage.getItem('rphase') || '1';
+  const out = JSON.parse(sessionStorage.getItem('rout') || '[]');
+  const ok = (n, c) => out.push((c ? 'PASS ' : 'FAIL ') + n);
+  const q = s => document.querySelector(s), qa = s => [...document.querySelectorAll(s)];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const setv = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const login = async u => { q('#loginUser').value = u; q('#loginPass').value = 'demo'; q('#loginForm').requestSubmit(); await wait(300); };
+  const logout = async () => { q('[data-logout]').click(); await wait(30); };
+  const store = () => JSON.parse(localStorage.getItem('taskhub.v2'));
+  const pad = n => String(n).padStart(2, '0');
+  const day = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const cardOf = title => qa('#board .card').find(c => c.textContent.includes(title));
+  const create = async (title, due, owner = 'A. Chan') => { q('#btnNew').click(); setv(q('#f_title'), title); setv(q('#f_owner'), owner); setv(q('#f_due'), due); q('#form').requestSubmit(); await wait(50); };
+  const about = (title, pid = 'p1') => store().alerts.filter(a => a.toId === pid && a.kind === 'due' && String(a.text).includes(title));
+  const MINE = ['Overdue reconciliation', 'Due today report', 'Due tomorrow check', 'Later review', 'Undated idea', 'Waiting for sign-off'];
+  // "The next day": the stored reminders are dated yesterday, as if this browser were opened again tomorrow.
+  const nextDay = p => {
+    const s = store(); s.alerts.filter(a => a.kind === 'due').forEach(a => { a.dueKey = String(a.dueKey).replace(/\|[^|]*$/, '|' + day(-1)); });
+    localStorage.setItem('taskhub.v2', JSON.stringify(s));
+    sessionStorage.setItem('rout', JSON.stringify(out)); sessionStorage.setItem('rphase', p);
+    location.reload();
+  };
+  const finish = () => {
+    if (window.__errs) out.push('JSERRS: ' + window.__errs.join(' | '));
+    sessionStorage.clear(); try { localStorage.clear(); } catch (e) {}
+    const fails = out.filter(l => !l.startsWith('PASS'));
+    const pre = document.createElement('pre');
+    pre.textContent = `${out.length - fails.length} passed, ${fails.length} failed\n\n` + (fails.join('\n') || '(no failures)') + '\n\n' + out.join('\n');
+    pre.style.cssText = 'position:fixed;inset:0;margin:0;z-index:2147483647;background:#fff;color:#000;font:13px/1.4 monospace;padding:12px;white-space:pre-wrap';
+    document.body.appendChild(pre);
+    if (window.__report) window.__report(out);
+  };
+  try {
+    await wait(200);
+    if (phase === '1') {
+      q('[data-load-default]').click(); await wait(300);
+      await login('achan');
+      await create('Overdue reconciliation', day(-3));
+      await create('Due today report', day(0));
+      await create('Due tomorrow check', day(1));
+      await create('Later review', day(10));
+      await create('Undated idea', '');
+      await create('Overdue for B. Lee', day(-2), 'B. Lee');
+      await create('Finished but late', day(-5));
+      await create('Waiting for sign-off', day(-4));
+      // Finished work: deleted from the open columns by completing it; Normal-priority work goes to verification first.
+      [...cardOf('Waiting for sign-off').querySelectorAll('[data-action]')].find(b => b.textContent === 'Edit').click(); await wait(30);
+      setv(q('#f_status'), 'completed'); q('#form').requestSubmit(); await wait(50);
+      ok('Set-up: one late item is waiting for verification', (store().items.find(i => i.title === 'Waiting for sign-off').approvals[0] || {}).state === 'pending');
+      const s = store(); s.items.find(i => i.title === 'Finished but late').statusId = 'completed';
+      await logout();
+      localStorage.setItem('taskhub.v2', JSON.stringify(s));
+      sessionStorage.setItem('rout', JSON.stringify(out)); sessionStorage.setItem('rphase', '2');
+      location.reload(); return;
+    }
+
+    if (phase === '2') {
+      // ---------- Signing in ----------
+      await login('achan');
+      const o = about('Overdue reconciliation');
+      ok('Signing in raises a reminder for overdue work', o.length === 1 && /OVERDUE/.test(o[0].label) && /3 days/.test(o[0].text));
+      ok('…and for work due today and tomorrow', about('Due today report').length === 1 && /today/.test(about('Due today report')[0].text)
+        && about('Due tomorrow check').length === 1 && /tomorrow/.test(about('Due tomorrow check')[0].text));
+      ok('Not for later, undated, finished or waiting-for-verification work', ['Later review', 'Undated idea', 'Finished but late', 'Waiting for sign-off'].every(t => !about(t).length));
+      ok('Not for other people’s work', !about('Overdue for B. Lee').length);
+      ok('The reminders are in the Action Inbox', q('#inbox').textContent.includes('Overdue reconciliation') && q('#inbox').textContent.includes('Due today report'));
+      ok('…and pop up', qa('#toasts .toast.pop').some(t => /Overdue reconciliation|Due today report|Due tomorrow check/.test(t.textContent)));
+      await logout();
+      await login('achan');
+      ok('Signing in again the same day doesn’t repeat them', MINE.every(t => about(t).length <= 1));
+      await logout();
+      await login('blee');
+      ok('B. Lee is reminded of their own overdue work when they sign in', about('Overdue for B. Lee', 'p2').length === 1);
+      await logout();
+      await login('achan');
+      nextDay('3'); return;
+    }
+
+    if (phase === '3') {
+      // ---------- The next day, still signed in ----------
+      const o = about('Overdue reconciliation');
+      ok('The next day brings a fresh reminder', o.length === 2 && o.some(a => a.dueKey.endsWith(day(0))));
+      ok('…and retires yesterday’s', o.filter(a => !a.read).length === 1 && o.find(a => a.dueKey.endsWith(day(-1))).read === true);
+      // ---------- A longer warning ----------
+      q('#sideConfig').click(); await wait(30); q('[data-cfg-nav="notifications"]').click(); await wait(30);
+      ok('Configuration offers due-date reminders', !!q('[data-bind="notifications.dueReminders"]') && !!q('[data-bind="notifications.dueSoonDays"]'));
+      setv(q('[data-bind="notifications.dueSoonDays"]'), '12'); await wait(30);
+      q('[data-cfg-cmd="save"]').click(); await wait(80);
+      ok('With a 12-day warning, work due in 10 days is reminded too', about('Later review').length === 1 && /in 10 days/.test(about('Later review')[0].text));
+      // ---------- Switched off ----------
+      q('[data-bind="notifications.dueReminders"]').click(); await wait(30);
+      q('[data-cfg-cmd="save"]').click(); await wait(80);
+      ok('Reminders can be switched off', store().config.notifications.dueReminders === false);
+      nextDay('4'); return;
+    }
+
+    // ---------- Phase 4: the day after, with reminders off ----------
+    ok('With reminders off, the next day brings none', MINE.every(t => !about(t).some(a => a.dueKey.endsWith(day(0)))));
+    ok('no JS errors', !(window.__errs || []).length);
+  } catch (e) { out.push('ERROR (phase ' + phase + ') ' + e.message + '\n' + e.stack); }
+  finish();
+});
+</script>

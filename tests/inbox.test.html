@@ -15,6 +15,9 @@ window.addEventListener('load', async () => {
   try {
     await wait(200); document.querySelector('[data-load-default]').click(); await wait(300);
     await login('achan');
+    // The sample's OMD-001 is A. Chan's and due today, so signing in reminds them; reading it empties the inbox.
+    ok('Signing in reminds A. Chan that OMD-001 is due today', unread() === '1 unread' && msgs()[0].includes('OMD-001') && msgs()[0].includes('due today'));
+    q('#btnMarkRead').click(); await wait(30);
     ok('Empty inbox shows a message', unread() === '0 unread' && q('#inbox').textContent.includes('No unread alerts'));
     // Send B. Lee a handoff request
     btn('OMD-001', 'Complete & handoff').click(); q('[data-note="0"]').value = 'Ready'; q('#dlgOk').click(); await wait(30);
